@@ -1,0 +1,16 @@
+.page {
+  min-width: 1000px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.photo {
+  width: 512px;
+  height: 512px;
+}
+
+.plate {
+  height: 42px;
+  border: 3px solid;
+  border-radius: 8px;
+}
