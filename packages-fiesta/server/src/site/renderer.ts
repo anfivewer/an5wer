@@ -9,7 +9,7 @@ import {
   FiestaRenderFun,
   FiestaRenderPage,
   RequestData,
-} from '@-/site/src/entries/types';
+} from '@-/fiesta-site/src/entries/types';
 import {SiteManifest, SiteRenderer} from './types';
 
 export class SiteRendererProd implements SiteRenderer {

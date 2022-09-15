@@ -2,7 +2,7 @@ import {
   FiestaRenderPage,
   FiestaRenderPageEnum,
   RequestData,
-} from '@-/site/src/entries/types';
+} from '@-/fiesta-site/src/entries/types';
 import {object, array, string, infer as Infer, record} from 'zod';
 import {Context} from '../types/context';
 

@@ -4,8 +4,8 @@ import {
   FiestaRenderFun,
   FiestaRenderPage,
   RequestData,
-} from '@-/site/src/entries/types';
-import {createViteDevServer} from '@-/site/src/server/dev-server';
+} from '@-/fiesta-site/src/entries/types';
+import {createViteDevServer} from '@-/fiesta-site/src/server/dev-server';
 import {SiteRenderer} from './types';
 
 export class SiteRendererDev implements SiteRenderer {

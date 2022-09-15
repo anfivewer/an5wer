@@ -22,7 +22,9 @@ export const getConfig = ({logger}: {logger: Logger}): Config => {
   const dataPath = getNonEmptyString('FIESTA_DATA_PATH');
 
   const config: Config = {
+    // uses local site renderer
     isDev: process.env.IS_DEV === '1',
+    // sets logger to not escape \n in stack traces
     isDebug: process.env.IS_DEBUG === '1',
     dataPath,
     buildsPath: path.join(dataPath, 'builds'),
