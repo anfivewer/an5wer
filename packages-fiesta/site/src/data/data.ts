@@ -41,10 +41,30 @@ export const fiestaData: CarData = {
   events: [
     createEvent({
       type: MileageTimeEventType.fuel,
+      title: 'заправка 95, 22 литра',
+      dateStr: '2022-09-04',
+      addFuelLiters: 22,
+      price: {byn: 54.12, usd: 21.21},
+    }),
+    createEvent({
+      type: MileageTimeEventType.fuel,
+      title: 'заправка 95, 20 литров',
+      dateStr: '2022-08-28',
+      addFuelLiters: 20,
+      price: {byn: 49.2, usd: 19.31},
+    }),
+    createEvent({
+      type: MileageTimeEventType.odometer,
+      title: 'одометр',
+      dateStr: '2022-08-28',
+      mileageKm: 43438,
+    }),
+    createEvent({
+      type: MileageTimeEventType.fuel,
       title: 'заправка 95, 20 литров',
       dateStr: '2022-08-06',
       addFuelLiters: 20,
-      price: {byn: 49.2, usd: 0},
+      price: {byn: 49.2, usd: 18.96},
     }),
     createEvent({
       type: MileageTimeEventType.odometer,
