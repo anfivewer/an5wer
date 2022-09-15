@@ -14,8 +14,12 @@ export type RequestData = {
   url: string;
 };
 
-export type FiestaRenderFun = (options: {
+export type FiestaRenderOptions = {
   manifest: ServerManifest | undefined;
   page: FiestaRenderPage;
   request: RequestData;
-}) => Promise<string>;
+  clientBuildPath: string;
+  stylesCache: Map<string, string>;
+};
+
+export type FiestaRenderFun = (options: FiestaRenderOptions) => Promise<string>;

@@ -1,8 +1,10 @@
+import {readFile} from 'fs/promises';
+import {join} from 'path';
 import React, {ComponentType, FC} from 'react';
 import ReactDOMServer from 'react-dom/server';
 import {Fiesta} from '../components/pages/fiesta/fiesta';
 import {STATE_KEY} from './constants';
-import {FiestaRenderFun, FiestaRenderPage} from './types';
+import {FiestaRenderFun, FiestaRenderOptions, FiestaRenderPage} from './types';
 
 const NoSsrComponent: FC<{state: {rootId: string}}> = () => null;
 
@@ -33,11 +35,19 @@ const entryPages = {
   }),
 };
 
-export const render: FiestaRenderFun = async ({page, manifest}) => {
+export const render: FiestaRenderFun = async ({
+  page,
+  manifest,
+  clientBuildPath,
+  stylesCache,
+}) => {
   const {component, getState, devClient} = entryPages[page];
 
   const Component = component as ComponentType<{state: unknown}>;
-  const state = await getState();
+  const [state, styles] = await Promise.all([
+    getState(),
+    renderStyles({manifest, clientBuildPath, stylesCache}),
+  ]);
 
   const stateScript = `window.${STATE_KEY}=${JSON.stringify(state)};`;
 
@@ -63,6 +73,7 @@ export const render: FiestaRenderFun = async ({page, manifest}) => {
             }
             rel="stylesheet"
           />
+          {styles}
         </head>
 
         <body>
@@ -73,7 +84,13 @@ export const render: FiestaRenderFun = async ({page, manifest}) => {
           {!manifest ? (
             <script type="module" src={devClient} />
           ) : (
-            manifest.js.map((path, index) => <script key={index} src={path} />)
+            (() => {
+              const {basePath} = manifest;
+
+              return manifest.js.map((path, index) => (
+                <script key={index} src={`${basePath}${path}`} />
+              ));
+            })()
           )}
         </body>
       </html>
@@ -81,4 +98,35 @@ export const render: FiestaRenderFun = async ({page, manifest}) => {
   );
 
   return `<!doctype html>${content}`;
+};
+
+const renderStyles = ({
+  manifest,
+  clientBuildPath,
+  stylesCache,
+}: Pick<
+  FiestaRenderOptions,
+  'manifest' | 'clientBuildPath' | 'stylesCache'
+>) => {
+  if (!manifest) {
+    return Promise.resolve(null);
+  }
+
+  const promises = manifest.css.map(async (cssPath) => {
+    const cached = stylesCache.get(cssPath);
+
+    const content =
+      cached ||
+      (await readFile(join(clientBuildPath, cssPath), {
+        encoding: 'utf8',
+      }));
+
+    if (!cached) {
+      stylesCache.set(cssPath, content);
+    }
+
+    return <style key={cssPath}>{content}</style>;
+  });
+
+  return Promise.all(promises);
 };

@@ -106,6 +106,7 @@ const processClientEntries = async ({
   const serverManifest: ServerManifest = {
     name: entryName,
     version,
+    basePath: process.env.BASE_PATH || '/',
     js: [],
     css: [],
   };

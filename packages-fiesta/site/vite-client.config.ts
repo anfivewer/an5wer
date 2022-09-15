@@ -8,7 +8,6 @@ export default defineConfig({
     ...viteBaseConfig.build,
     manifest: true,
     outDir: resolve(__dirname, 'dist/client'),
-    assetsDir: '.',
     rollupOptions: {
       input: {
         client: resolve(__dirname, 'src/entries/main-client.tsx'),

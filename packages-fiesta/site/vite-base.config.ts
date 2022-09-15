@@ -9,4 +9,7 @@ export const viteBaseConfig: UserConfig = {
   base: process.env.BASE_PATH,
   plugins: [react(), sassDts()],
   clearScreen: false,
+  build: {
+    assetsDir: '.',
+  },
 };

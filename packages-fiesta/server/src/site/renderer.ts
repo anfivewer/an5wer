@@ -15,6 +15,8 @@ import {SiteManifest, SiteRenderer} from './types';
 export class SiteRendererProd implements SiteRenderer {
   private manifest: SiteManifest | undefined;
   private renderFn: FiestaRenderFun | undefined;
+  private clientBuildPath: string | undefined;
+  private stylesCache = new Map<string, string>();
 
   async init({context}: {context: Context}) {
     const {
@@ -42,6 +44,8 @@ export class SiteRendererProd implements SiteRenderer {
 
     this.renderFn = mod.render as FiestaRenderFun;
     this.manifest = manifest;
+    this.clientBuildPath = path.join(buildsPath, buildName, 'client');
+    this.stylesCache = new Map();
 
     dependenciesGraph.markCompleted(siteRendererDependency);
   }
@@ -53,10 +57,16 @@ export class SiteRendererProd implements SiteRenderer {
     page: FiestaRenderPage;
     request: RequestData;
   }): Promise<string> {
-    if (!this.manifest || !this.renderFn) {
+    if (!this.manifest || !this.renderFn || !this.clientBuildPath) {
       throw new Error('SiteRenderer not initialized');
     }
 
-    return this.renderFn({manifest: this.manifest[page], page, request});
+    return this.renderFn({
+      manifest: this.manifest[page],
+      page,
+      request,
+      clientBuildPath: this.clientBuildPath,
+      stylesCache: this.stylesCache,
+    });
   }
 }

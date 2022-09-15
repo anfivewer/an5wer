@@ -4,6 +4,7 @@
   "description": "",
   "scripts": {
     "build": "ts-node src/build/build.ts",
+    "build:prod": "MODE=production BASE_PATH=https://static.anfivewer.com/fiesta/ npm run build",
     "clean": "rm -rf dist",
     "tsc": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"

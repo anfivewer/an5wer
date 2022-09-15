@@ -9,6 +9,7 @@ import {Context} from '../types/context';
 export const EntryManifest = object({
   name: string(),
   version: string(),
+  basePath: string(),
   js: array(string()),
   css: array(string()),
 });
