@@ -1,0 +1,14 @@
+{
+  "name": "@-/types",
+  "version": "0.0.1",
+  "description": "",
+  "scripts": {
+    "tsc": "tsc"
+  },
+  "author": "Alexander Ruliov <alexander.rulov@gmail.com>",
+  "license": "ISC",
+  "dependencies": {
+    "typescript": "4.6.4",
+    "zod": "3.17.3"
+  }
+}

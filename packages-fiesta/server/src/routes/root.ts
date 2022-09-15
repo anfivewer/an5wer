@@ -19,7 +19,7 @@ export const registerRootRoute = ({
       });
 
       return {
-        type: HttpResultType.html,
+        type: HttpResultType.html as const,
         html,
       };
     },

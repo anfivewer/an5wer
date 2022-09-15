@@ -2,6 +2,7 @@ export const enum MileageTimeEventType {
   fuel = 'fuel',
   accident = 'accident',
   service = 'service',
+  odometer = 'odometer',
   custom = 'custom',
 }
 

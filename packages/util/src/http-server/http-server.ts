@@ -10,8 +10,10 @@ import {
 export class HttpServer {
   private server: http.Server;
   private rawMiddlewares: HttpRawMiddleware[] = [];
-  readonly routesGet: Routing<HttpHandler> = new Routing();
-  readonly routesPost: Routing<HttpHandler> = new Routing();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  readonly routesGet: Routing<HttpHandler<any>> = new Routing();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  readonly routesPost: Routing<HttpHandler<any>> = new Routing();
 
   constructor() {
     this.server = http.createServer(this.handleRequest.bind(this));
@@ -46,6 +48,21 @@ export class HttpServer {
         url,
         path,
         rawQuery,
+        groups: (handler.data.mapGroups?.(handler.regexpGroups) ??
+          handler.regexpGroups) as string[],
+        getHeader: (name) => {
+          const value = req.headers[name];
+          if (!value) {
+            return undefined;
+          }
+
+          if (Array.isArray(value)) {
+            return value[0];
+          }
+
+          return value;
+        },
+        getHeaders: () => req.headers,
       });
 
       if (result.statusCode) {
@@ -60,6 +77,12 @@ export class HttpServer {
         case HttpResultType.html:
           res.setHeader('content-type', 'text/html; charset=utf-8');
           res.end(result.html);
+          break;
+        case HttpResultType.stream:
+          result.stream.pipe(res);
+          break;
+        case HttpResultType.raw:
+          res.end(result.data);
           break;
         default: {
           const shouldBeNever: never = result;

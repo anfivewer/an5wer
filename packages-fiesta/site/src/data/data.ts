@@ -40,7 +40,26 @@ const parseDate = (dateStr: string | undefined): MileageTimeEvent['date'] => {
 export const fiestaData: CarData = {
   events: [
     createEvent({
-      type: MileageTimeEventType.custom,
+      type: MileageTimeEventType.fuel,
+      title: 'заправка 95, 20 литров',
+      dateStr: '2022-08-06',
+      addFuelLiters: 20,
+      price: {byn: 49.2, usd: 0},
+    }),
+    createEvent({
+      type: MileageTimeEventType.odometer,
+      title: 'одометр',
+      dateStr: '2022-08-06',
+      mileageKm: 43186,
+    }),
+    createEvent({
+      type: MileageTimeEventType.odometer,
+      title: 'одометр',
+      dateStr: '2022-07-31',
+      mileageKm: 43064,
+    }),
+    createEvent({
+      type: MileageTimeEventType.odometer,
       title: 'одометр',
       dateStr: '2022-07-26',
       mileageKm: 42940,
@@ -53,7 +72,7 @@ export const fiestaData: CarData = {
       price: {byn: 36.9, usd: 14.39},
     }),
     createEvent({
-      type: MileageTimeEventType.custom,
+      type: MileageTimeEventType.odometer,
       title: 'одометр',
       dateStr: '2022-07-09',
       mileageKm: 42702,
@@ -66,7 +85,7 @@ export const fiestaData: CarData = {
       price: {byn: 49.2, usd: 18.94},
     }),
     createEvent({
-      type: MileageTimeEventType.custom,
+      type: MileageTimeEventType.odometer,
       title: 'одометр',
       dateStr: '2022-07-04',
       mileageKm: 42684,
@@ -78,7 +97,7 @@ export const fiestaData: CarData = {
       mileageKm: 42684,
     }),
     createEvent({
-      type: MileageTimeEventType.custom,
+      type: MileageTimeEventType.odometer,
       title: 'одометр',
       dateStr: '2022-06-22',
       mileageKm: 42533,
@@ -98,7 +117,7 @@ export const fiestaData: CarData = {
       dateStr: '2022-06-09',
     }),
     createEvent({
-      type: MileageTimeEventType.custom,
+      type: MileageTimeEventType.odometer,
       title: 'фото одометра',
       mileageKm: 42163,
       dateStr: '2022-05-31',

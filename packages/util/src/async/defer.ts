@@ -1,6 +1,6 @@
-export class Defer<R = void, E = void> {
+export class Defer<R = void> {
   public resolve!: (value: R) => void;
-  public reject!: (error: E) => void;
+  public reject!: (error: Error) => void;
   public promise: Promise<R>;
 
   constructor() {
