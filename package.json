@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "",
   "scripts": {
+    "start:fiesta": "cd packages-fiesta/server && npm run start",
     "lint": "eslint '**/*.+(t|j)s+(x|)'",
     "tsc": "cd packages/server && npm run tsc && cd ../site && npm run tsc && cd ../util && npm run tsc",
     "prettier": "prettier --check .",
