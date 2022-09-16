@@ -6,6 +6,11 @@ an5wer monorepo
 ## How to run
 
 * Install [nvm](https://github.com/nvm-sh/nvm)
+
+* Use node version:
+  `nvm use`
+  (maybe `nvm install` will be required)
+
 * Install `pnpm`:
   `npm install -g pnpm`
 
