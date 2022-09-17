@@ -1,5 +1,6 @@
 import {Logger} from '@-/util/src/logging/logger';
 import {IOError} from '@-/types/src/errors/io';
+import {startDirectus} from '@-/directus-fiesta/src/start';
 import './config';
 import {createContext} from './context/context';
 import {getConfig} from './config';
@@ -9,6 +10,7 @@ import {SiteRendererDev} from './site/renderer-dev';
 import {Config} from './types/config';
 import {mkdir, stat as fsStat} from 'fs/promises';
 import {Stats} from 'fs';
+import {registerDirectusRoute} from './routes/directus';
 
 const PORT = 3001;
 
@@ -17,29 +19,45 @@ mainLogger.info('helloWorld');
 
 (async () => {
   const config = getConfig({logger: mainLogger.fork('config')});
-  mainLogger.setDebug(config.isDebug);
+  const {isDev, isDebug, directusPublicPath} = config;
+
+  mainLogger.setDebug(isDebug);
 
   const context = createContext({
     config,
     logger: mainLogger,
-    getSiteRenderer: config.isDev ? () => new SiteRendererDev() : undefined,
+    getSiteRenderer: isDev ? () => new SiteRendererDev() : undefined,
   });
 
   await ensureDataFolderExists({config});
 
   const {httpServer: server} = context;
 
+  const {port: directusPort, runningDirectusPromise} = await startDirectus({
+    publicUrl: directusPublicPath,
+  });
+
   context.registerOnInit(async () => {
+    registerDirectusRoute({
+      context,
+      logger: mainLogger.fork('directus'),
+      directusPort,
+    });
+
     await context.dependenciesGraph.onCompleted([siteRendererDependency]);
 
     registerRootRoute({context, logger: mainLogger.fork('/')});
   });
+
+  //
 
   await context.init();
 
   await server.listen(PORT);
 
   mainLogger.info('started', {port: PORT});
+
+  await runningDirectusPromise;
 })().catch((error) => {
   mainLogger.error('start', undefined, {error});
 

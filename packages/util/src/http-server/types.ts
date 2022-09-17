@@ -57,5 +57,5 @@ export const createHttpHandler = <Groups>(
 export type HttpRawMiddleware = (
   req: IncomingMessage,
   res: ServerResponse,
-  next?: () => void,
+  next: () => void,
 ) => void;

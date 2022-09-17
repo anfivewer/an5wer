@@ -72,7 +72,7 @@ const readAndFixProjectEnv = async (): Promise<DotenvParseOutput> => {
   };
 };
 
-export const startDirectus = async () => {
+export const startDirectus = async ({publicUrl}: {publicUrl: string}) => {
   const [env, directusEnv] = await Promise.all([
     readAndFixProjectEnv(),
     readDotEnv(resolve(__dirname, '../.env')),
@@ -103,6 +103,7 @@ export const startDirectus = async () => {
   const runningDirectusPromise = runDirectus({
     args: ['start'],
     fiestaDataPath,
+    publicUrl,
     env: {
       ...env,
       ...commonEnv,
@@ -116,7 +117,7 @@ export const startDirectus = async () => {
 };
 
 if (require.main === module) {
-  startDirectus()
+  startDirectus({publicUrl: '/'})
     .then(({runningDirectusPromise}) => {
       return runningDirectusPromise;
     })

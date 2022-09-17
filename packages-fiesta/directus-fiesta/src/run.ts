@@ -25,6 +25,7 @@ export const runDirectus = async ({
   const directusProcess = spawn('./node_modules/.bin/directus', args, {
     cwd: path.resolve(__dirname, '..'),
     stdio: 'inherit',
+    detached: false,
     env: {
       ...process.env,
       ...env,

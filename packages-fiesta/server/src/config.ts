@@ -29,6 +29,7 @@ export const getConfig = ({logger}: {logger: Logger}): Config => {
     dataPath,
     buildsPath: path.join(dataPath, 'builds'),
     siteVersionPath: path.join(dataPath, 'site-version.json'),
+    directusPublicPath: '/_directus/',
   };
 
   if (error) {
