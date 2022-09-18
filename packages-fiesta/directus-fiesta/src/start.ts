@@ -4,6 +4,7 @@ import {createLinesStream} from '@-/util/src/stream/lines-stream';
 import {createDirectus} from './types';
 import {setupFolders} from './setup/folders';
 import {setupPermissions} from './setup/permissions';
+import {resolve} from 'path';
 
 export const startDirectus = async ({publicPath}: {publicPath: string}) => {
   const {fiestaDataPath, env, directusEnv} = await prepareDirectus();
@@ -11,18 +12,30 @@ export const startDirectus = async ({publicPath}: {publicPath: string}) => {
   const adminEmail = env.FIESTA_DIRECTUS_ADMIN_EMAIL || 'admin@example.org';
   const adminPassword = env.FIESTA_DIRECTUS_ADMIN_PASSWORD || '123';
 
-  await (
-    await runDirectus({
-      args: ['bootstrap'],
-      fiestaDataPath,
-      needMkDir: true,
-      env: {
-        ...env,
-        ADMIN_EMAIL: adminEmail,
-        ADMIN_PASSWORD: adminPassword,
-      },
-    })
-  ).runningPromise;
+  // TODO: check if this steps are needed to execute
+  await runDirectus({
+    args: ['bootstrap'],
+    fiestaDataPath,
+    needMkDir: true,
+    resolveOnExit: true,
+    env: {
+      ...env,
+      ADMIN_EMAIL: adminEmail,
+      ADMIN_PASSWORD: adminPassword,
+    },
+  });
+
+  await runDirectus({
+    args: [
+      'schema',
+      'apply',
+      '--yes',
+      resolve(__dirname, '../data-model/snapshot.yaml'),
+    ],
+    fiestaDataPath,
+    resolveOnExit: true,
+    env,
+  });
 
   const {childProcess, runningPromise} = await runDirectus({
     args: ['start'],
@@ -102,7 +115,6 @@ if (require.main === module) {
 
       process.on('SIGINT', () => {
         (async () => {
-          console.log('go shutdown');
           await shutdownHandler();
           shutdownDefer.resolve();
         })().catch(shutdownDefer.reject);

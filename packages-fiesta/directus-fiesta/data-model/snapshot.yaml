@@ -24,11 +24,12 @@ collections:
     schema:
       name: events
       sql: >-
-        CREATE TABLE "events" (`id` varchar(255) NOT NULL DEFAULT null, `title`
-        varchar(255) NOT NULL DEFAULT null, `mileageKm` integer NULL DEFAULT
-        null, `date` varchar(255) NULL, `description` text NULL, `addFuelLiters`
-        integer NULL, `usdToByn` float NULL, `fuelPriceByn` float null, `type`
-        varchar(255) null, PRIMARY KEY (`id`))
+        CREATE TABLE `events` (`addFuelLiters` integer null default null, `date`
+        varchar(255) null default null, `description` text null default null,
+        `fuelPriceByn` float null default null, `id` varchar(255) not null
+        default null, `mileageKm` integer null default null, `title`
+        varchar(255) not null default null, `type` varchar(255) null default
+        null, `usdToByn` float null default null, primary key (`id`))
   - collection: events_directus_files
     meta:
       accountability: all
@@ -75,7 +76,7 @@ fields:
       options: null
       readonly: false
       required: false
-      sort: null
+      sort: 8
       special: null
       translations: null
       validation: null
@@ -113,7 +114,7 @@ fields:
       options: null
       readonly: false
       required: false
-      sort: null
+      sort: 5
       special: null
       translations: null
       validation: null
@@ -151,7 +152,7 @@ fields:
       options: null
       readonly: false
       required: false
-      sort: null
+      sort: 4
       special: null
       translations: null
       validation: null
@@ -189,7 +190,7 @@ fields:
       options: null
       readonly: false
       required: false
-      sort: null
+      sort: 9
       special: null
       translations: null
       validation: null
@@ -227,7 +228,7 @@ fields:
       options: null
       readonly: false
       required: false
-      sort: null
+      sort: 1
       special: null
       translations: null
       validation: null
@@ -265,7 +266,7 @@ fields:
       options: null
       readonly: false
       required: false
-      sort: null
+      sort: 6
       special:
         - m2m
       translations: null
@@ -289,7 +290,7 @@ fields:
       options: null
       readonly: false
       required: false
-      sort: null
+      sort: 7
       special: null
       translations: null
       validation: null
@@ -327,7 +328,7 @@ fields:
       options: null
       readonly: false
       required: true
-      sort: null
+      sort: 3
       special: null
       translations: null
       validation: null
@@ -378,7 +379,7 @@ fields:
             value: planned
       readonly: false
       required: true
-      sort: null
+      sort: 2
       special: null
       translations: null
       validation: null
@@ -416,7 +417,7 @@ fields:
       options: null
       readonly: false
       required: false
-      sort: null
+      sort: 10
       special: null
       translations: null
       validation: null

@@ -33,6 +33,7 @@ importers:
       sqlite3: 5.1.1
       ts-node: 10.8.1
       typescript: 4.6.4
+      zod: 3.17.3
     dependencies:
       '@-/types': link:../../packages/types
       '@-/util': link:../../packages/util
@@ -42,6 +43,7 @@ importers:
       sqlite3: 5.1.1
       ts-node: 10.8.1_7f5n76yem6rtxrdae2ii5kgqka
       typescript: 4.6.4
+      zod: 3.17.3
     devDependencies:
       '@types/node': 17.0.42
 

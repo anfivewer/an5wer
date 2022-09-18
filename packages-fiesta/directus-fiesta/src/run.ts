@@ -100,6 +100,7 @@ export const runDirectus = async ({
   fiestaDataPath,
   env,
   stdio = 'inherit',
+  resolveOnExit = false,
 }: {
   args: string[];
   needMkDir?: boolean;
@@ -107,6 +108,7 @@ export const runDirectus = async ({
   fiestaDataPath: string;
   env: Record<string, string | undefined>;
   stdio?: StdioOptions;
+  resolveOnExit?: boolean;
 }) => {
   const directusDataPath = path.join(fiestaDataPath, 'directus');
 
@@ -137,6 +139,10 @@ export const runDirectus = async ({
 
     defer.resolve();
   });
+
+  if (resolveOnExit) {
+    await defer.promise;
+  }
 
   return {
     childProcess: directusProcess,
