@@ -24,6 +24,7 @@ importers:
 
   packages-fiesta/directus-fiesta:
     specifiers:
+      '@-/fiesta-types': workspace:*
       '@-/types': workspace:*
       '@-/util': workspace:*
       '@directus/sdk': 10.1.4
@@ -35,6 +36,7 @@ importers:
       typescript: 4.6.4
       zod: 3.17.3
     dependencies:
+      '@-/fiesta-types': link:../types
       '@-/types': link:../../packages/types
       '@-/util': link:../../packages/util
       '@directus/sdk': 10.1.4
@@ -110,6 +112,14 @@ importers:
       '@types/react': 18.0.15
       '@types/react-dom': 18.0.6
       ts-node: 10.8.1_7f5n76yem6rtxrdae2ii5kgqka
+
+  packages-fiesta/types:
+    specifiers:
+      typescript: 4.6.4
+      zod: 3.17.3
+    dependencies:
+      typescript: 4.6.4
+      zod: 3.17.3
 
   packages/statics:
     specifiers:

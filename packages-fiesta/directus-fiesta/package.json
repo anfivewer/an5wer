@@ -13,6 +13,7 @@
   "dependencies": {
     "@-/types": "workspace:*",
     "@-/util": "workspace:*",
+    "@-/fiesta-types": "workspace:*",
     "@directus/sdk": "10.1.4",
     "directus": "9.17.4",
     "dotenv": "16.0.1",

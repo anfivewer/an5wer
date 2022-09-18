@@ -7,6 +7,7 @@ import {
   unknown,
   infer as Infer,
   number,
+  nullable,
   optional,
 } from 'zod';
 import {FiestaDirectus} from '../types';
@@ -84,7 +85,7 @@ const Permission = object({
   collection: string(),
   action: literal('read'),
   permissions: unknown(),
-  fields: optional(array(string())),
+  fields: optional(nullable(array(string()))),
 });
 type Permission = Infer<typeof Permission>;
 

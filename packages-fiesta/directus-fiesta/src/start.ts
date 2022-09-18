@@ -5,6 +5,7 @@ import {createDirectus} from './types';
 import {setupFolders} from './setup/folders';
 import {setupPermissions} from './setup/permissions';
 import {resolve} from 'path';
+import {setupMockData} from './setup/mock-data';
 
 export const startDirectus = async ({publicPath}: {publicPath: string}) => {
   const {fiestaDataPath, env, directusEnv} = await prepareDirectus();
@@ -57,6 +58,11 @@ export const startDirectus = async ({publicPath}: {publicPath: string}) => {
   const defer = new Defer();
   const readingStdoutDefer = new Defer();
 
+  runningPromise.catch((error) => {
+    defer.reject(error);
+    readingStdoutDefer.reject(error);
+  });
+
   (async () => {
     const linesGenerator = getGenerator();
 
@@ -92,10 +98,12 @@ export const startDirectus = async ({publicPath}: {publicPath: string}) => {
   const setupOptions = {directus};
 
   await Promise.all(
-    [setupFolders, setupPermissions].map((fun) => fun(setupOptions)),
+    [setupFolders, setupPermissions, setupMockData].map((fun) =>
+      fun(setupOptions),
+    ),
   );
 
-  const shutdownHandler = async () => {
+  const shutdown = async () => {
     childProcess.kill('SIGINT');
 
     await readingStdoutDefer.promise;
@@ -104,13 +112,18 @@ export const startDirectus = async ({publicPath}: {publicPath: string}) => {
   return {
     port: directusPort,
     runningDirectusPromise: runningPromise,
-    shutdownHandler,
+    shutdown,
   };
 };
 
 if (require.main === module) {
+  let shutdownHandler = () => Promise.resolve();
+  let runningPromise: Promise<void> = Promise.resolve();
+
   startDirectus({publicPath: '/'})
-    .then(async ({runningDirectusPromise, shutdownHandler}) => {
+    .then(async ({runningDirectusPromise, shutdown}) => {
+      shutdownHandler = shutdown;
+      runningPromise = runningDirectusPromise;
       const shutdownDefer = new Defer();
 
       process.on('SIGINT', () => {
@@ -122,8 +135,14 @@ if (require.main === module) {
 
       await Promise.all([shutdownDefer.promise, runningDirectusPromise]);
     })
-    .catch((error) => {
+    .catch(async (error) => {
       console.error(error);
+
+      await shutdownHandler();
+      await runningPromise.catch(() => {
+        //
+      });
+
       process.exit(1);
     });
 }

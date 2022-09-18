@@ -1,6 +1,9 @@
 import {Directus} from '@directus/sdk';
+import {CarEvent} from '@-/fiesta-types/src/data/events';
 
-type FiestaDirectusType = Record<string, never>;
+type FiestaDirectusType = {
+  events: CarEvent;
+};
 
 export type FiestaDirectus = Directus<FiestaDirectusType>;
 
