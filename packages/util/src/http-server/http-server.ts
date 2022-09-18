@@ -1,6 +1,5 @@
 import http from 'http';
 import {createHttpTerminator, HttpTerminator} from 'http-terminator';
-import {Defer} from '../async/defer';
 import {Routing} from './routing';
 import {
   HttpHandler,

@@ -23,7 +23,7 @@ export const getConfig = ({logger}: {logger: Logger}): Config => {
 
     if (mapper) {
       try {
-      return mapper(value);
+        return mapper(value);
       } catch (e) {
         error = e;
         logger.error('mapper', {name}, {error: e});
@@ -43,7 +43,7 @@ export const getConfig = ({logger}: {logger: Logger}): Config => {
     sessionsPath: path.join(dataPath, 'sessions.json'),
     httpPort: getParameter('FIESTA_STATICS_PORT', (str) => {
       const port = parseInt(str, 10);
-      if (!isFinite(port) || port <= 0 || port >= 2**16) {
+      if (!isFinite(port) || port <= 0 || port >= 2 ** 16) {
         throw new Error(`invalid port: ${str}`);
       }
 

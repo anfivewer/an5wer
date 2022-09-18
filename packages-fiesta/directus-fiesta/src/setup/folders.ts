@@ -1,10 +1,6 @@
 import {FiestaDirectus} from '../types';
 
-export const setupFolders = async ({
-  directus,
-}: {
-  directus: FiestaDirectus;
-}) => {
+export const setupFolders = async ({directus}: {directus: FiestaDirectus}) => {
   const folders = await directus.folders.readByQuery({
     filter: {
       name: {_eq: 'public'},
