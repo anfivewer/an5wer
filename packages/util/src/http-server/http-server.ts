@@ -28,8 +28,7 @@ export class HttpServer {
         req.method!.toUpperCase() as HttpMethod,
       );
       if (!routing) {
-        res.statusCode = 405;
-        res.end('405');
+        await this.routeNotFound(req, res);
         return;
       }
 

@@ -34,7 +34,7 @@ mainLogger.info('helloWorld');
   const {httpServer: server} = context;
 
   const {port: directusPort, runningDirectusPromise} = await startDirectus({
-    publicUrl: directusPublicPath,
+    publicPath: directusPublicPath,
   });
 
   context.registerOnInit(async () => {

@@ -26,6 +26,7 @@ importers:
     specifiers:
       '@-/types': workspace:*
       '@-/util': workspace:*
+      '@directus/sdk': 10.1.4
       '@types/node': 17.0.42
       directus: 9.17.4
       dotenv: 16.0.1
@@ -35,6 +36,7 @@ importers:
     dependencies:
       '@-/types': link:../../packages/types
       '@-/util': link:../../packages/util
+      '@directus/sdk': 10.1.4
       directus: 9.17.4_typescript@4.6.4
       dotenv: 16.0.1
       sqlite3: 5.1.1
@@ -1768,6 +1770,14 @@ packages:
       - sqlite3
       - supports-color
       - tedious
+    dev: false
+
+  /@directus/sdk/10.1.4:
+    resolution: {integrity: sha512-e8iwEbdMLMYBfla7QPh5ZfWua03PRMhhAwMkNz1/6k+ZCHc5+VQh7oR13OFU8r5KinsVPc7TjXElw3B6wxG0wg==}
+    dependencies:
+      axios: 0.27.2
+    transitivePeerDependencies:
+      - debug
     dev: false
 
   /@directus/shared/9.17.4_g25fn2ayecozds5ssd7q4pobcy:

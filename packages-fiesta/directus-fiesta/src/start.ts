@@ -1,125 +1,114 @@
-import {DotenvParseOutput, parse} from 'dotenv';
-import {readFile, writeFile} from 'fs/promises';
-import {resolve} from 'path';
-import {randomBytes} from 'crypto';
-
-import {runDirectus} from './run';
+import {prepareDirectus, runDirectus} from './run';
 import {Defer} from '@-/util/src/async/defer';
+import {createLinesStream} from '@-/util/src/stream/lines-stream';
+import {createDirectus} from './types';
+import {setupFolders} from './setup/folders';
+import {setupPermissions} from './setup/permissions';
 
-const readDotEnv = async (dotEnvPath: string) => {
-  const dotEnvContent = await readFile(dotEnvPath, {
-    encoding: 'utf8',
-  });
+export const startDirectus = async ({publicPath}: {publicPath: string}) => {
+  const {fiestaDataPath, env, directusEnv} = await prepareDirectus();
 
-  return parse(dotEnvContent);
-};
+  const adminEmail = env.FIESTA_DIRECTUS_ADMIN_EMAIL || 'admin@example.org';
+  const adminPassword = env.FIESTA_DIRECTUS_ADMIN_PASSWORD || '123';
 
-const genKey = () => {
-  const defer = new Defer<string>();
+  await (
+    await runDirectus({
+      args: ['bootstrap'],
+      fiestaDataPath,
+      needMkDir: true,
+      env: {
+        ...env,
+        ADMIN_EMAIL: adminEmail,
+        ADMIN_PASSWORD: adminPassword,
+      },
+    })
+  ).runningPromise;
 
-  randomBytes(16, (error, buffer) => {
-    if (error) {
-      defer.reject(error);
-      return;
-    }
-
-    defer.resolve(buffer.toString('hex'));
-  });
-
-  return defer.promise;
-};
-
-const readAndFixProjectEnv = async (): Promise<DotenvParseOutput> => {
-  const dotEnvPath = resolve(__dirname, '../../../.env');
-
-  const dotEnvContent = await readFile(dotEnvPath, {
-    encoding: 'utf8',
-  });
-
-  const env = parse(dotEnvContent);
-
-  const linesToAppend: string[] = [];
-
-  const [key, secret] = await Promise.all(
-    ['FIESTA_DIRECTUS_KEY', 'FIESTA_DIRECTUS_SECRET'].map(async (name) => {
-      const key = env[name];
-
-      if (key) {
-        return key;
-      }
-
-      const generatedKey = await genKey();
-
-      linesToAppend.push(`${name} = ${generatedKey}`);
-
-      return generatedKey;
-    }),
-  );
-
-  if (linesToAppend.length) {
-    const newContent = `${dotEnvContent.replace(
-      /\n+$/,
-      '',
-    )}\n\n${linesToAppend.join('\n')}\n`;
-
-    await writeFile(dotEnvPath, newContent, {encoding: 'utf8'});
-  }
-
-  return {
-    ...env,
-    FIESTA_DIRECTUS_KEY: key,
-    FIESTA_DIRECTUS_SECRET: secret,
-  };
-};
-
-export const startDirectus = async ({publicUrl}: {publicUrl: string}) => {
-  const [env, directusEnv] = await Promise.all([
-    readAndFixProjectEnv(),
-    readDotEnv(resolve(__dirname, '../.env')),
-  ]);
-
-  const fiestaDataPath = env.FIESTA_DATA_PATH;
-  if (!fiestaDataPath) {
-    throw new Error('No FIESTA_DATA_PATH');
-  }
-
-  const commonEnv = {
-    KEY: env.FIESTA_DIRECTUS_KEY,
-    SECRET: env.FIESTA_DIRECTUS_SECRET,
-  };
-
-  await runDirectus({
-    args: ['bootstrap'],
-    fiestaDataPath,
-    needMkDir: true,
-    env: {
-      ...env,
-      ...commonEnv,
-      ADMIN_EMAIL: env.FIESTA_DIRECTUS_ADMIN_EMAIL || 'admin@example.org',
-      ADMIN_PASSWORD: env.FIESTA_DIRECTUS_ADMIN_PASSWORD || '123',
-    },
-  });
-
-  const runningDirectusPromise = runDirectus({
+  const {childProcess, runningPromise} = await runDirectus({
     args: ['start'],
     fiestaDataPath,
-    publicUrl,
-    env: {
-      ...env,
-      ...commonEnv,
-    },
+    publicUrl: publicPath,
+    stdio: ['inherit', 'pipe', 'inherit'],
+    env,
   });
 
+  const directusPort = parseInt(directusEnv.PORT, 10);
+
+  if (!childProcess.stdout) {
+    throw new Error('Directus child process has no stdout');
+  }
+
+  childProcess.stdout.setEncoding('utf8');
+  const {getGenerator} = createLinesStream({stream: childProcess.stdout});
+
+  const defer = new Defer();
+  const readingStdoutDefer = new Defer();
+
+  (async () => {
+    const linesGenerator = getGenerator();
+
+    for await (const line of linesGenerator) {
+      process.stdout.write(line);
+      process.stdout.write('\n');
+
+      if (line.includes('Server started')) {
+        defer.resolve();
+        break;
+      }
+    }
+
+    for await (const line of linesGenerator) {
+      process.stdout.write(line);
+      process.stdout.write('\n');
+    }
+
+    readingStdoutDefer.resolve();
+  })().catch((error) => {
+    defer.reject(error);
+  });
+
+  await defer.promise;
+
+  const directus = createDirectus(`http://127.0.0.1:${directusPort}/`);
+
+  await directus.auth.login({
+    email: adminEmail,
+    password: adminPassword,
+  });
+
+  const setupOptions = {directus};
+
+  await Promise.all(
+    [setupFolders, setupPermissions].map((fun) => fun(setupOptions)),
+  );
+
+  const shutdownHandler = async () => {
+    childProcess.kill('SIGINT');
+
+    await readingStdoutDefer.promise;
+  };
+
   return {
-    port: parseInt(directusEnv.PORT, 10),
-    runningDirectusPromise,
+    port: directusPort,
+    runningDirectusPromise: runningPromise,
+    shutdownHandler,
   };
 };
 
 if (require.main === module) {
-  startDirectus({publicUrl: '/'})
-    .then(({runningDirectusPromise}) => {
-      return runningDirectusPromise;
+  startDirectus({publicPath: '/'})
+    .then(async ({runningDirectusPromise, shutdownHandler}) => {
+      const shutdownDefer = new Defer();
+
+      process.on('SIGINT', () => {
+        (async () => {
+          console.log('go shutdown');
+          await shutdownHandler();
+          shutdownDefer.resolve();
+        })().catch(shutdownDefer.reject);
+      });
+
+      await Promise.all([shutdownDefer.promise, runningDirectusPromise]);
     })
     .catch((error) => {
       console.error(error);

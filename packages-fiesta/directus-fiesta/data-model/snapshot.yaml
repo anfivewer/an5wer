@@ -1,0 +1,598 @@
+version: 1
+directus: 9.17.4
+collections:
+  - collection: events
+    meta:
+      accountability: all
+      archive_app_filter: true
+      archive_field: null
+      archive_value: null
+      collapse: open
+      collection: events
+      color: null
+      display_template: null
+      group: null
+      hidden: false
+      icon: null
+      item_duplication_fields: null
+      note: null
+      singleton: false
+      sort: null
+      sort_field: null
+      translations: null
+      unarchive_value: null
+    schema:
+      name: events
+      sql: >-
+        CREATE TABLE "events" (`id` varchar(255) NOT NULL DEFAULT null, `title`
+        varchar(255) NOT NULL DEFAULT null, `mileageKm` integer NULL DEFAULT
+        null, `date` varchar(255) NULL, `description` text NULL, `addFuelLiters`
+        integer NULL, `usdToByn` float NULL, `fuelPriceByn` float null, `type`
+        varchar(255) null, PRIMARY KEY (`id`))
+  - collection: events_directus_files
+    meta:
+      accountability: all
+      archive_app_filter: true
+      archive_field: null
+      archive_value: null
+      collapse: open
+      collection: events_directus_files
+      color: null
+      display_template: null
+      group: null
+      hidden: true
+      icon: import_export
+      item_duplication_fields: null
+      note: null
+      singleton: false
+      sort: null
+      sort_field: null
+      translations: null
+      unarchive_value: null
+    schema:
+      name: events_directus_files
+      sql: >-
+        CREATE TABLE "events_directus_files" (`directus_files_id` char(36) NULL
+        DEFAULT null, `events_id` varchar(255) NULL DEFAULT null, `id` integer
+        PRIMARY KEY AUTOINCREMENT NOT NULL, CONSTRAINT
+        `events_directus_files_directus_files_id_foreign` FOREIGN KEY
+        (`directus_files_id`) REFERENCES `directus_files` (`id`) ON DELETE SET
+        NULL, CONSTRAINT `events_directus_files_events_id_foreign` FOREIGN KEY
+        (`events_id`) REFERENCES `events` (`id`) ON DELETE SET NULL)
+fields:
+  - collection: events
+    field: addFuelLiters
+    meta:
+      collection: events
+      conditions: null
+      display: null
+      display_options: null
+      field: addFuelLiters
+      group: null
+      hidden: false
+      interface: input
+      note: null
+      options: null
+      readonly: false
+      required: false
+      sort: null
+      special: null
+      translations: null
+      validation: null
+      validation_message: null
+      width: full
+    schema:
+      data_type: integer
+      default_value: null
+      foreign_key_column: null
+      foreign_key_table: null
+      generation_expression: null
+      has_auto_increment: false
+      is_generated: false
+      is_nullable: true
+      is_primary_key: false
+      is_unique: false
+      max_length: null
+      name: addFuelLiters
+      numeric_precision: null
+      numeric_scale: null
+      table: events
+    type: integer
+  - collection: events
+    field: date
+    meta:
+      collection: events
+      conditions: null
+      display: null
+      display_options: null
+      field: date
+      group: null
+      hidden: false
+      interface: input
+      note: null
+      options: null
+      readonly: false
+      required: false
+      sort: null
+      special: null
+      translations: null
+      validation: null
+      validation_message: null
+      width: full
+    schema:
+      data_type: varchar
+      default_value: null
+      foreign_key_column: null
+      foreign_key_table: null
+      generation_expression: null
+      has_auto_increment: false
+      is_generated: false
+      is_nullable: true
+      is_primary_key: false
+      is_unique: false
+      max_length: 255
+      name: date
+      numeric_precision: null
+      numeric_scale: null
+      table: events
+    type: string
+  - collection: events
+    field: description
+    meta:
+      collection: events
+      conditions: null
+      display: null
+      display_options: null
+      field: description
+      group: null
+      hidden: false
+      interface: input-multiline
+      note: null
+      options: null
+      readonly: false
+      required: false
+      sort: null
+      special: null
+      translations: null
+      validation: null
+      validation_message: null
+      width: full
+    schema:
+      data_type: text
+      default_value: null
+      foreign_key_column: null
+      foreign_key_table: null
+      generation_expression: null
+      has_auto_increment: false
+      is_generated: false
+      is_nullable: true
+      is_primary_key: false
+      is_unique: false
+      max_length: null
+      name: description
+      numeric_precision: null
+      numeric_scale: null
+      table: events
+    type: text
+  - collection: events
+    field: fuelPriceByn
+    meta:
+      collection: events
+      conditions: null
+      display: null
+      display_options: null
+      field: fuelPriceByn
+      group: null
+      hidden: false
+      interface: input
+      note: null
+      options: null
+      readonly: false
+      required: false
+      sort: null
+      special: null
+      translations: null
+      validation: null
+      validation_message: null
+      width: full
+    schema:
+      data_type: float
+      default_value: null
+      foreign_key_column: null
+      foreign_key_table: null
+      generation_expression: null
+      has_auto_increment: false
+      is_generated: false
+      is_nullable: true
+      is_primary_key: false
+      is_unique: false
+      max_length: null
+      name: fuelPriceByn
+      numeric_precision: null
+      numeric_scale: null
+      table: events
+    type: float
+  - collection: events
+    field: id
+    meta:
+      collection: events
+      conditions: null
+      display: null
+      display_options: null
+      field: id
+      group: null
+      hidden: false
+      interface: input
+      note: null
+      options: null
+      readonly: false
+      required: false
+      sort: null
+      special: null
+      translations: null
+      validation: null
+      validation_message: null
+      width: full
+    schema:
+      data_type: varchar
+      default_value: null
+      foreign_key_column: null
+      foreign_key_table: null
+      generation_expression: null
+      has_auto_increment: false
+      is_generated: false
+      is_nullable: false
+      is_primary_key: true
+      is_unique: true
+      max_length: 255
+      name: id
+      numeric_precision: null
+      numeric_scale: null
+      table: events
+    type: string
+  - collection: events
+    field: images
+    meta:
+      collection: events
+      conditions: null
+      display: null
+      display_options: null
+      field: images
+      group: null
+      hidden: false
+      interface: list-m2m
+      note: null
+      options: null
+      readonly: false
+      required: false
+      sort: null
+      special:
+        - m2m
+      translations: null
+      validation: null
+      validation_message: null
+      width: full
+    schema: null
+    type: alias
+  - collection: events
+    field: mileageKm
+    meta:
+      collection: events
+      conditions: null
+      display: null
+      display_options: null
+      field: mileageKm
+      group: null
+      hidden: false
+      interface: input
+      note: null
+      options: null
+      readonly: false
+      required: false
+      sort: null
+      special: null
+      translations: null
+      validation: null
+      validation_message: null
+      width: full
+    schema:
+      data_type: integer
+      default_value: null
+      foreign_key_column: null
+      foreign_key_table: null
+      generation_expression: null
+      has_auto_increment: false
+      is_generated: false
+      is_nullable: true
+      is_primary_key: false
+      is_unique: false
+      max_length: null
+      name: mileageKm
+      numeric_precision: null
+      numeric_scale: null
+      table: events
+    type: integer
+  - collection: events
+    field: title
+    meta:
+      collection: events
+      conditions: null
+      display: null
+      display_options: null
+      field: title
+      group: null
+      hidden: false
+      interface: input
+      note: null
+      options: null
+      readonly: false
+      required: true
+      sort: null
+      special: null
+      translations: null
+      validation: null
+      validation_message: null
+      width: full
+    schema:
+      data_type: varchar
+      default_value: null
+      foreign_key_column: null
+      foreign_key_table: null
+      generation_expression: null
+      has_auto_increment: false
+      is_generated: false
+      is_nullable: false
+      is_primary_key: false
+      is_unique: false
+      max_length: 255
+      name: title
+      numeric_precision: null
+      numeric_scale: null
+      table: events
+    type: string
+  - collection: events
+    field: type
+    meta:
+      collection: events
+      conditions: null
+      display: null
+      display_options: null
+      field: type
+      group: null
+      hidden: false
+      interface: select-dropdown
+      note: null
+      options:
+        choices:
+          - text: fuel
+            value: fuel
+          - text: accident
+            value: accident
+          - text: service
+            value: service
+          - text: odometer
+            value: odometer
+          - text: custom
+            value: custom
+          - text: planned
+            value: planned
+      readonly: false
+      required: true
+      sort: null
+      special: null
+      translations: null
+      validation: null
+      validation_message: null
+      width: full
+    schema:
+      data_type: varchar
+      default_value: null
+      foreign_key_column: null
+      foreign_key_table: null
+      generation_expression: null
+      has_auto_increment: false
+      is_generated: false
+      is_nullable: true
+      is_primary_key: false
+      is_unique: false
+      max_length: 255
+      name: type
+      numeric_precision: null
+      numeric_scale: null
+      table: events
+    type: string
+  - collection: events
+    field: usdToByn
+    meta:
+      collection: events
+      conditions: null
+      display: null
+      display_options: null
+      field: usdToByn
+      group: null
+      hidden: false
+      interface: input
+      note: null
+      options: null
+      readonly: false
+      required: false
+      sort: null
+      special: null
+      translations: null
+      validation: null
+      validation_message: null
+      width: full
+    schema:
+      data_type: float
+      default_value: null
+      foreign_key_column: null
+      foreign_key_table: null
+      generation_expression: null
+      has_auto_increment: false
+      is_generated: false
+      is_nullable: true
+      is_primary_key: false
+      is_unique: false
+      max_length: null
+      name: usdToByn
+      numeric_precision: null
+      numeric_scale: null
+      table: events
+    type: float
+  - collection: events_directus_files
+    field: directus_files_id
+    meta:
+      collection: events_directus_files
+      conditions: null
+      display: null
+      display_options: null
+      field: directus_files_id
+      group: null
+      hidden: true
+      interface: null
+      note: null
+      options: null
+      readonly: false
+      required: false
+      sort: null
+      special: null
+      translations: null
+      validation: null
+      validation_message: null
+      width: full
+    schema:
+      data_type: char
+      default_value: null
+      foreign_key_column: id
+      foreign_key_table: directus_files
+      generation_expression: null
+      has_auto_increment: false
+      is_generated: false
+      is_nullable: true
+      is_primary_key: false
+      is_unique: false
+      max_length: 36
+      name: directus_files_id
+      numeric_precision: null
+      numeric_scale: null
+      table: events_directus_files
+    type: string
+  - collection: events_directus_files
+    field: events_id
+    meta:
+      collection: events_directus_files
+      conditions: null
+      display: null
+      display_options: null
+      field: events_id
+      group: null
+      hidden: true
+      interface: null
+      note: null
+      options: null
+      readonly: false
+      required: false
+      sort: null
+      special: null
+      translations: null
+      validation: null
+      validation_message: null
+      width: full
+    schema:
+      data_type: varchar
+      default_value: null
+      foreign_key_column: id
+      foreign_key_table: events
+      generation_expression: null
+      has_auto_increment: false
+      is_generated: false
+      is_nullable: true
+      is_primary_key: false
+      is_unique: false
+      max_length: 255
+      name: events_id
+      numeric_precision: null
+      numeric_scale: null
+      table: events_directus_files
+    type: string
+  - collection: events_directus_files
+    field: id
+    meta:
+      collection: events_directus_files
+      conditions: null
+      display: null
+      display_options: null
+      field: id
+      group: null
+      hidden: true
+      interface: null
+      note: null
+      options: null
+      readonly: false
+      required: false
+      sort: null
+      special: null
+      translations: null
+      validation: null
+      validation_message: null
+      width: full
+    schema:
+      data_type: integer
+      default_value: null
+      foreign_key_column: null
+      foreign_key_table: null
+      generation_expression: null
+      has_auto_increment: true
+      is_generated: false
+      is_nullable: false
+      is_primary_key: true
+      is_unique: false
+      max_length: null
+      name: id
+      numeric_precision: null
+      numeric_scale: null
+      table: events_directus_files
+    type: integer
+relations:
+  - collection: events_directus_files
+    field: directus_files_id
+    meta:
+      junction_field: events_id
+      many_collection: events_directus_files
+      many_field: directus_files_id
+      one_allowed_collections: null
+      one_collection: directus_files
+      one_collection_field: null
+      one_deselect_action: nullify
+      one_field: null
+      sort_field: null
+    related_collection: directus_files
+    schema:
+      column: directus_files_id
+      constraint_name: null
+      foreign_key_column: id
+      foreign_key_table: directus_files
+      on_delete: SET NULL
+      on_update: NO ACTION
+      table: events_directus_files
+  - collection: events_directus_files
+    field: events_id
+    meta:
+      junction_field: directus_files_id
+      many_collection: events_directus_files
+      many_field: events_id
+      one_allowed_collections: null
+      one_collection: events
+      one_collection_field: null
+      one_deselect_action: nullify
+      one_field: images
+      sort_field: null
+    related_collection: events
+    schema:
+      column: events_id
+      constraint_name: null
+      foreign_key_column: id
+      foreign_key_table: events
+      on_delete: SET NULL
+      on_update: NO ACTION
+      table: events_directus_files
