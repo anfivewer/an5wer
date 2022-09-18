@@ -17,8 +17,44 @@ const PORT = 3001;
 const mainLogger = new Logger('main');
 mainLogger.info('helloWorld');
 
+let config: Config | undefined;
+const shutdownCallbacks: (() => Promise<void>)[] = [];
+
+const shutdownServer = async () => {
+  const timeoutId = setTimeout(() => {
+    mainLogger.error('shutdown:timeout');
+
+    if (config?.isDev || config?.isDebug) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const requests = (process as any)._getActiveRequests();
+        console.error(requests);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const handles = (process as any)._getActiveHandles();
+        console.error(handles);
+      } catch (error) {
+        //
+      }
+    }
+
+    process.exit(1);
+  }, 3000);
+
+  await Promise.all(
+    shutdownCallbacks.map((fun) =>
+      fun().catch((error) => {
+        mainLogger.error('shutdown', undefined, {error});
+      }),
+    ),
+  );
+
+  clearTimeout(timeoutId);
+
+  process.exit(0);
+};
+
 (async () => {
-  const config = getConfig({logger: mainLogger.fork('config')});
+  config = getConfig({logger: mainLogger.fork('config')});
   const {isDev, isDebug, directusPublicPath} = config;
 
   mainLogger.setDebug(isDebug);
@@ -33,9 +69,16 @@ mainLogger.info('helloWorld');
 
   const {httpServer: server} = context;
 
-  const {port: directusPort, runningDirectusPromise} = await startDirectus({
+  const {
+    port: directusPort,
+    runningDirectusPromise,
+    shutdown,
+  } = await startDirectus({
     publicPath: directusPublicPath,
   });
+
+  shutdownCallbacks.push(shutdown);
+  shutdownCallbacks.push(() => runningDirectusPromise);
 
   context.registerOnInit(async () => {
     registerDirectusRoute({
@@ -49,20 +92,22 @@ mainLogger.info('helloWorld');
     registerRootRoute({context, logger: mainLogger.fork('/')});
   });
 
-  //
-
   await context.init();
 
+  shutdownCallbacks.push(server.stop.bind(server));
   await server.listen(PORT);
 
   mainLogger.info('started', {port: PORT});
 
   await runningDirectusPromise;
-})().catch((error) => {
+})().catch(async (error) => {
   mainLogger.error('start', undefined, {error});
 
-  // FIXME: shutdown initialized components
-  process.exit(1);
+  await shutdownServer();
+});
+
+process.on('SIGINT', () => {
+  shutdownServer();
 });
 
 async function ensureDataFolderExists({config}: {config: Config}) {
