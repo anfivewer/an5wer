@@ -5,7 +5,9 @@ type PickNonUndefined<Type> = {
   >]: Type[Property];
 };
 
-export const pickNonUndefined = <T>(obj: T): PickNonUndefined<T> => {
+export const pickNonUndefined = <T extends Record<string, unknown>>(
+  obj: T,
+): PickNonUndefined<T> => {
   const result: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(obj)) {

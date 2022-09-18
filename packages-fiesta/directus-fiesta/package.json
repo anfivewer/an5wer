@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "ts-node -T src/start.ts",
-    "exec": "ts-node -T src/run.ts"
+    "exec": "ts-node -T src/run.ts",
+    "tsc": "tsc"
   },
   "keywords": [],
   "author": "",
@@ -19,7 +20,7 @@
     "dotenv": "16.0.1",
     "sqlite3": "5.1.1",
     "ts-node": "10.8.1",
-    "typescript": "4.6.4",
+    "typescript": "4.8.3",
     "zod": "3.17.3"
   },
   "devDependencies": {

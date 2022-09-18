@@ -2,7 +2,7 @@ import {spawn, StdioOptions} from 'child_process';
 import path, {resolve} from 'path';
 import {mkdir, readFile, writeFile} from 'fs/promises';
 import {Defer} from '@-/util/src/async/defer';
-import {parse} from 'dotenv';
+import {DotenvParseOutput, parse} from 'dotenv';
 import {randomBytes} from 'crypto';
 
 const readDotEnv = async (dotEnvPath: string) => {
@@ -87,7 +87,7 @@ export const prepareDirectus = async () => {
       ...env,
       KEY: env.FIESTA_DIRECTUS_KEY,
       SECRET: env.FIESTA_DIRECTUS_SECRET,
-    },
+    } as typeof env,
     directusEnv,
     fiestaDataPath,
   };

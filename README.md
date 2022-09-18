@@ -21,3 +21,9 @@
   `npm run start:fiesta`
 
 - Open [http://localhost:3001/](http://localhost:3001/)
+
+# tsconfig
+
+## `skipLibCheck`
+
+- `@directus/sdk` is not supports latest TypeScript, remove `skipLibCheck` when it will
