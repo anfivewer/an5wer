@@ -4,4 +4,5 @@ export type Config = {
   dataPath: string;
   buildsPath: string;
   siteVersionPath: string;
+  directusPublicPath: string;
 };

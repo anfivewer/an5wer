@@ -1,1 +1,1 @@
-* Hide any error pages from proxied url
+- Hide any error pages from proxied url

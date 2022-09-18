@@ -30,6 +30,12 @@ export class SiteRendererDev implements SiteRenderer {
     page: FiestaRenderPage;
     request: RequestData;
   }): Promise<string> {
-    return this._render!({manifest: undefined, page, request});
+    return this._render!({
+      manifest: undefined,
+      page,
+      request,
+      clientBuildPath: '',
+      stylesCache: new Map(),
+    });
   }
 }

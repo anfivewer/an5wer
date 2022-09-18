@@ -1,4 +1,5 @@
 import http from 'http';
+import {createHttpTerminator, HttpTerminator} from 'http-terminator';
 import {Routing} from './routing';
 import {
   HttpHandler,
@@ -9,6 +10,7 @@ import {
 
 export class HttpServer {
   private server: http.Server;
+  private serverTerminator: HttpTerminator;
   private rawMiddlewares: HttpRawMiddleware[] = [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   readonly routesGet: Routing<HttpHandler<any>> = new Routing();
@@ -17,6 +19,7 @@ export class HttpServer {
 
   constructor() {
     this.server = http.createServer(this.handleRequest.bind(this));
+    this.serverTerminator = createHttpTerminator({server: this.server});
   }
 
   private handleRequest(
@@ -28,8 +31,7 @@ export class HttpServer {
         req.method!.toUpperCase() as HttpMethod,
       );
       if (!routing) {
-        res.statusCode = 405;
-        res.end('405');
+        await this.routeNotFound(req, res);
         return;
       }
 
@@ -124,6 +126,10 @@ export class HttpServer {
         resolve();
       });
     });
+  }
+
+  stop(): Promise<void> {
+    return this.serverTerminator.terminate();
   }
 
   getRoutingByMethod(method: HttpMethod): Routing<HttpHandler> | undefined {

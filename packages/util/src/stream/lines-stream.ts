@@ -82,6 +82,7 @@ export const createLinesStream = ({
 
     stream.off('data', onData);
     stream.off('end', onEnd);
+    stream.off('close', onEnd);
     stream.off('error', onError);
   };
 
@@ -159,7 +160,8 @@ export const createLinesStream = ({
   };
 
   stream.on('data', onData);
-  stream.on('end', onData);
+  stream.on('end', onEnd);
+  stream.on('close', onEnd);
   stream.on('error', onError);
 
   return {

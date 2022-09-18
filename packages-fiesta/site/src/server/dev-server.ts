@@ -26,6 +26,8 @@ export const createViteDevServer = async () => {
         manifest: undefined,
         page,
         request,
+        stylesCache: new Map(),
+        clientBuildPath: '',
       });
 
       const html = await vite.transformIndexHtml(url, appHtml);

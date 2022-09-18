@@ -52,10 +52,10 @@ export type HttpHandler<Groups = unknown> =
 
 export const createHttpHandler = <Groups>(
   handler: HttpHandlerWithGroups<Groups>,
-) => handler;
+): HttpHandlerWithGroups<Groups> => handler;
 
 export type HttpRawMiddleware = (
   req: IncomingMessage,
   res: ServerResponse,
-  next?: () => void,
+  next: () => void,
 ) => void;
