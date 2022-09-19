@@ -1,8 +1,8 @@
 import {resolve as pathResolve} from 'path';
 import childProcess from 'child_process';
 import {readFile, writeFile} from 'fs/promises';
-import {ServerManifest} from '../types/build/manifest';
 import {array, object, optional, record, string, infer as Infer} from 'zod';
+import {EntryManifest} from '@-/fiesta-types/src/server/manifest';
 
 const PackageJson = object({
   version: string(),
@@ -57,7 +57,7 @@ const main = async () => {
         }),
       ),
     ).then((manifests) => {
-      const result: Record<string, ServerManifest> = {};
+      const result: Record<string, EntryManifest> = {};
 
       manifests.forEach((manifest) => {
         result[manifest.name] = manifest;
@@ -93,7 +93,7 @@ const processClientEntries = async ({
   entryName: string;
   version: string;
   manifestPromise: Promise<ViteManifest>;
-}): Promise<ServerManifest> => {
+}): Promise<EntryManifest> => {
   const manifest = await manifestPromise;
 
   const jsPath: string = manifest[entrySrc].file;
@@ -103,7 +103,7 @@ const processClientEntries = async ({
     throw new Error('css.length > 1');
   }
 
-  const serverManifest: ServerManifest = {
+  const serverManifest: EntryManifest = {
     name: entryName,
     version,
     basePath: process.env.BASE_PATH || '/',

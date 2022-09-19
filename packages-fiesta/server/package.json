@@ -4,7 +4,7 @@
   "description": "",
   "scripts": {
     "start": "ts-node -T src/main.ts",
-    "watch": "nodemon --watch src --exec ts-node -T src/main.ts",
+    "watch": "nodemon --signal SIGINT --watch src --exec ts-node -T src/main.ts",
     "tsc": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -13,6 +13,7 @@
   "dependencies": {
     "@-/directus-fiesta": "workspace:*",
     "@-/fiesta-site": "workspace:*",
+    "@-/fiesta-types": "workspace:*",
     "@-/types": "workspace:*",
     "@-/util": "workspace:*",
     "dotenv": "16.0.1",

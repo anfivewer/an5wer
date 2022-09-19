@@ -77,6 +77,8 @@ const shutdownServer = async () => {
     publicPath: directusPublicPath,
   });
 
+  context.directusUrlInternal = `http://127.0.0.1:${directusPort}/`;
+
   shutdownCallbacks.push(shutdown);
   shutdownCallbacks.push(() => runningDirectusPromise);
 

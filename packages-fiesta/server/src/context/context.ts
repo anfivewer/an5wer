@@ -1,6 +1,9 @@
+import {Database} from '@-/fiesta-types/src/database/database';
 import {DependenciesGraph} from '@-/util/src/async/dependencies-graph';
 import {HttpServer} from '@-/util/src/http-server/http-server';
 import {Logger} from '@-/util/src/logging/types';
+import {GetComponentFn} from '@-/types/src/app/component';
+import {DirectusDatabase} from '../database/directus/database';
 import {SiteVersion} from '../site-version/site-version';
 import {SiteRendererProd} from '../site/renderer';
 import {SiteRenderer} from '../site/types';
@@ -15,18 +18,20 @@ type NotFilledContext = {
 
 export const createContext = ({
   config,
-  logger,
-  getSiteRenderer = () => new SiteRendererProd(),
+  logger: mainLogger,
+  getSiteRenderer = (options) => new SiteRendererProd(options),
+  getDatabase = (options) => new DirectusDatabase(options),
 }: {
   config: Config;
   logger: Logger;
-  getSiteRenderer?: () => SiteRenderer;
+  getSiteRenderer?: GetComponentFn<SiteRenderer, Context>;
+  getDatabase?: GetComponentFn<Database, Context>;
 }): Context => {
   let isInitialized = false;
   const initTasks: (() => Promise<void>)[] = [];
 
   const context: NotFilledContext = {
-    mainLogger: logger,
+    mainLogger,
     config,
     httpServer: notFilled,
     siteVersion: notFilled,
@@ -40,14 +45,21 @@ export const createContext = ({
       initTasks.push(fn);
     },
     init: notFilled,
+    directusUrlInternal: '',
+    database: notFilled,
   };
 
   const unsafeContext = context as Context;
 
-  const siteVersion = new SiteVersion({logger: logger.fork('site-ver')});
+  const database = getDatabase({logger: mainLogger.fork('db')});
+  context.database = database;
+
+  const siteVersion = new SiteVersion({logger: mainLogger.fork('site-ver')});
   context.siteVersion = siteVersion;
 
-  const siteRenderer = getSiteRenderer();
+  const siteRenderer = getSiteRenderer({
+    logger: mainLogger.fork('site-render'),
+  });
   context.siteRenderer = siteRenderer;
 
   context.httpServer = new HttpServer();
@@ -61,8 +73,9 @@ export const createContext = ({
 
     await Promise.all([
       ...initTasks.map((task) => task()),
-      siteVersion.init({context: unsafeContext}),
-      siteRenderer.init({context: unsafeContext}),
+      ...[database, siteVersion, siteRenderer].map((component) =>
+        component.init({context: unsafeContext}),
+      ),
     ]);
     initTasks.splice(0, initTasks.length);
   };

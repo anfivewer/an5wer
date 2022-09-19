@@ -1,7 +1,7 @@
+import {FiestaRenderFun} from '@-/fiesta-types/src/site/render';
 import {IncomingMessage, ServerResponse} from 'http';
 import {resolve} from 'path';
 import {createServer as createViteServer} from 'vite';
-import {FiestaRenderFun} from '../entries/types';
 
 export type ViteMiddleware = (
   req: IncomingMessage,
@@ -15,20 +15,16 @@ export const createViteDevServer = async () => {
     server: {middlewareMode: 'ssr'},
   });
 
-  const viteRender: FiestaRenderFun = async ({page, request}) => {
-    const {url} = request;
+  const viteRender: FiestaRenderFun = async (options) => {
+    const {
+      request: {url},
+    } = options;
 
     try {
       const ssrModule = await vite.ssrLoadModule('/src/entries/server.tsx');
       const render: FiestaRenderFun = ssrModule.render;
 
-      const appHtml = await render({
-        manifest: undefined,
-        page,
-        request,
-        stylesCache: new Map(),
-        clientBuildPath: '',
-      });
+      const appHtml = await render(options);
 
       const html = await vite.transformIndexHtml(url, appHtml);
       return html;

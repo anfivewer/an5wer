@@ -7,3 +7,11 @@ export class BaseComponent {
     this.logger = logger;
   }
 }
+
+export type InitableComponent<T, C> = T & {
+  init: (options: {context: C}) => Promise<void>;
+};
+
+export type GetComponentFn<T, C> = (options: {
+  logger: Logger;
+}) => InitableComponent<T, C>;
