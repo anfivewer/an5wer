@@ -1,22 +1,28 @@
+import {FiestaRenderPage} from '@-/fiesta-types/src/site/pages';
+import {
+  FiestaRenderFun,
+  FiestaRenderOptions,
+} from '@-/fiesta-types/src/site/render';
 import {readFile} from 'fs/promises';
 import {join} from 'path';
 import React, {ComponentType, FC} from 'react';
 import ReactDOMServer from 'react-dom/server';
 import {Fiesta} from '../components/pages/fiesta/fiesta';
+import {getRootPageState} from '../state/root/root';
+import {GetStateFn} from '../state/types';
 import {STATE_KEY} from './constants';
-import {FiestaRenderFun, FiestaRenderOptions, FiestaRenderPage} from './types';
 
 const NoSsrComponent: FC<{state: {rootId: string}}> = () => null;
 
 const rootId = 'root-63d16db3597b7e71';
 
 const createEntry = <T,>(options: {
-  component: ComponentType<{state: T}>;
-  getState: () => Promise<T>;
+  component: ComponentType<{rootId: string; state: T}>;
+  getState: GetStateFn<T>;
   devClient: string;
 }): {
-  component: ComponentType<{state: T}>;
-  getState: () => Promise<T>;
+  component: ComponentType<{rootId: string; state: T}>;
+  getState: GetStateFn<T>;
   devClient: string;
 } => {
   return options;
@@ -25,7 +31,7 @@ const createEntry = <T,>(options: {
 const entryPages = {
   [FiestaRenderPage.root]: createEntry({
     component: Fiesta,
-    getState: () => Promise.resolve({rootId, answer: 42}),
+    getState: getRootPageState,
     devClient: '/src/entries/main-client.tsx',
   }),
   [FiestaRenderPage.admin]: createEntry({
@@ -35,21 +41,20 @@ const entryPages = {
   }),
 };
 
-export const render: FiestaRenderFun = async ({
-  page,
-  manifest,
-  clientBuildPath,
-  stylesCache,
-}) => {
+export const render: FiestaRenderFun = async (options) => {
+  const {page, manifest, clientBuildPath, stylesCache} = options;
   const {component, getState, devClient} = entryPages[page];
 
-  const Component = component as ComponentType<{state: unknown}>;
+  const Component = component as ComponentType<{
+    rootId: string;
+    state: unknown;
+  }>;
   const [state, styles] = await Promise.all([
-    getState(),
+    getState(options),
     renderStyles({manifest, clientBuildPath, stylesCache}),
   ]);
 
-  const stateScript = `window.${STATE_KEY}=${JSON.stringify(state)};`;
+  const stateScript = `window.${STATE_KEY}=${JSON.stringify({rootId, state})};`;
 
   const content = ReactDOMServer.renderToString(
     <>
@@ -77,8 +82,8 @@ export const render: FiestaRenderFun = async ({
         </head>
 
         <body>
-          <div id={state.rootId}>
-            {!manifest ? null : <Component state={state} />}
+          <div id={rootId}>
+            {!manifest ? null : <Component rootId={rootId} state={state} />}
           </div>
           <script dangerouslySetInnerHTML={{__html: stateScript}} />
           {!manifest ? (

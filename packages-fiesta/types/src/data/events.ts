@@ -1,13 +1,13 @@
 import {
   number,
   object,
-  optional,
   string,
   enum as zodEnum,
   infer as Infer,
+  array,
 } from 'zod';
 
-export const CarEventType = zodEnum([
+export const CarEventTypeEnum = zodEnum([
   'fuel',
   'accident',
   'service',
@@ -15,18 +15,20 @@ export const CarEventType = zodEnum([
   'custom',
   'planned',
 ]);
-export const CarEventTypeEnum = CarEventType.enum;
-export type CarEventType = Infer<typeof CarEventType>;
+export const CarEventType = CarEventTypeEnum.enum;
+export type CarEventType = Infer<typeof CarEventTypeEnum>;
 
 export const CarEvent = object({
   id: string(),
-  type: CarEventType,
+  type: CarEventTypeEnum,
   title: string(),
-  date: optional(string()),
-  mileageKm: optional(number()),
-  description: optional(string()),
-  addFuelLiters: optional(number()),
-  priceByn: optional(number()),
-  usdToByn: optional(number()),
+  date: string().nullish(),
+  mileageKm: number().nullish(),
+  description: string().nullish(),
+  addFuelLiters: number().nullish(),
+  priceByn: number().nullish(),
+  usdToByn: number().nullish(),
 });
 export type CarEvent = Infer<typeof CarEvent>;
+
+export const CarEvents = array(CarEvent);

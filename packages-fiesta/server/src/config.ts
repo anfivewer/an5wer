@@ -30,6 +30,8 @@ export const getConfig = ({logger}: {logger: Logger}): Config => {
     buildsPath: path.join(dataPath, 'builds'),
     siteVersionPath: path.join(dataPath, 'site-version.json'),
     directusPublicPath: '/_directus/',
+    directusAdminEmail: getNonEmptyString('FIESTA_DIRECTUS_ADMIN_EMAIL'),
+    directusAdminPassword: getNonEmptyString('FIESTA_DIRECTUS_ADMIN_PASSWORD'),
   };
 
   if (error) {

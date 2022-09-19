@@ -1,15 +1,16 @@
 import React, {FC} from 'react';
 import cn from 'classnames';
-import {FiestaState} from '../../../entries/types';
+import {RootPageState} from '@-/fiesta-types/src/site/state/root';
 import '../../../globals/style.css';
 import fiestaUrl from './images/fiesta.jpg';
 import styles from './fiesta.module.css';
 import {TelegramIcon} from '../../icons/telegram';
 import {Link} from '../../basic/link/link';
 import {EventsSection} from '../../events-section/events-section';
-import {fiestaData} from '../../../data/data';
 
-export const Fiesta: FC<{state: FiestaState}> = () => {
+export const Fiesta: FC<{state: RootPageState}> = ({
+  state: {events, plannedEvents},
+}) => {
   return (
     <div className={(cn(styles.page), '_flex _flex-col _p-8')}>
       <div className={cn('_flex _flex-row')}>
@@ -48,12 +49,12 @@ export const Fiesta: FC<{state: FiestaState}> = () => {
         <EventsSection
           className="_grow"
           title="Последние события"
-          events={fiestaData.events}
+          events={events}
         />
         <EventsSection
           className="_grow"
           title="Ближайшие обслуживания"
-          events={fiestaData.scheduledService}
+          events={plannedEvents}
         />
       </div>
     </div>

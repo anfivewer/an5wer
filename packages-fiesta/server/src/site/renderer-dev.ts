@@ -1,18 +1,19 @@
 import {Context} from '../types/context';
 import {siteRendererDependency} from '../context/dependencies';
-import {
-  FiestaRenderFun,
-  FiestaRenderPage,
-  RequestData,
-} from '@-/fiesta-site/src/entries/types';
 import {createViteDevServer} from '@-/fiesta-site/src/server/dev-server';
 import {SiteRenderer} from './types';
+import {FiestaRenderFun, RequestData} from '@-/fiesta-types/src/site/render';
+import {FiestaRenderPage} from '@-/fiesta-types/src/site/pages';
+import {Database} from '@-/fiesta-types/src/database/database';
 
 export class SiteRendererDev implements SiteRenderer {
+  private database!: Database;
   private _render?: FiestaRenderFun;
 
   async init({context}: {context: Context}) {
-    const {httpServer, dependenciesGraph} = context;
+    const {httpServer, dependenciesGraph, database} = context;
+
+    this.database = database;
 
     const {middleware, render} = await createViteDevServer();
 
@@ -36,6 +37,7 @@ export class SiteRendererDev implements SiteRenderer {
       request,
       clientBuildPath: '',
       stylesCache: new Map(),
+      database: this.database,
     });
   }
 }

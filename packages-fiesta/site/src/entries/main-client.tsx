@@ -1,12 +1,17 @@
+import {RootPageState} from '@-/fiesta-types/src/site/state/root';
 import React from 'react';
 import {hydrateRoot, createRoot} from 'react-dom/client';
 import {Fiesta} from '../components/pages/fiesta/fiesta';
 import {STATE_KEY} from './constants';
+import {SiteServerState} from './types';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const state = (window as any)[STATE_KEY];
+const {rootId, state: rawState} = SiteServerState.parse(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (window as any)[STATE_KEY],
+);
+const state = RootPageState.parse(rawState);
 
-const rootEl = document.getElementById(state.rootId);
+const rootEl = document.getElementById(rootId);
 
 if (rootEl) {
   const app = <Fiesta state={state} />;

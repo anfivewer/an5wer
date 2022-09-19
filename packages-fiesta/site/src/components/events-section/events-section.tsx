@@ -1,20 +1,20 @@
 import React, {FC} from 'react';
 import cn from 'classnames';
-import {MileageTimeEvent} from '../../types/data/car-events';
 import {dateToStr, mileageToStr} from './utils';
+import {CarEvent} from '@-/fiesta-types/src/data/events';
 
 type EventsSectionProps = {
   className?: string;
   title: string;
-  events: MileageTimeEvent[];
+  events: CarEvent[];
 };
 
 const EventRow: FC<{
-  event: MileageTimeEvent;
+  event: CarEvent;
 }> = ({event}) => {
   const {mileageKm, title, date} = event;
 
-  const mileageStr = mileageToStr(mileageKm);
+  const mileageStr = mileageToStr(mileageKm || undefined);
   const dateStr = dateToStr(date);
 
   return (

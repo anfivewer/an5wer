@@ -4,5 +4,7 @@ export type Config = {
   dataPath: string;
   buildsPath: string;
   siteVersionPath: string;
+  directusAdminEmail: string;
+  directusAdminPassword: string;
   directusPublicPath: string;
 };

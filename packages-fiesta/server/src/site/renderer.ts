@@ -5,14 +5,15 @@ import {
   siteRendererDependency,
   siteVersionDependency,
 } from '../context/dependencies';
-import {
-  FiestaRenderFun,
-  FiestaRenderPage,
-  RequestData,
-} from '@-/fiesta-site/src/entries/types';
-import {SiteManifest, SiteRenderer} from './types';
+import {SiteRenderer} from './types';
+import {SiteManifest} from '@-/fiesta-types/src/server/manifest';
+import {FiestaRenderFun, RequestData} from '@-/fiesta-types/src/site/render';
+import {FiestaRenderPage} from '@-/fiesta-types/src/site/pages';
+import {Database} from '@-/fiesta-types/src/database/database';
+import {BaseComponent} from '@-/types/src/app/component';
 
-export class SiteRendererProd implements SiteRenderer {
+export class SiteRendererProd extends BaseComponent implements SiteRenderer {
+  private database!: Database;
   private manifest: SiteManifest | undefined;
   private renderFn: FiestaRenderFun | undefined;
   private clientBuildPath: string | undefined;
@@ -23,7 +24,10 @@ export class SiteRendererProd implements SiteRenderer {
       config: {buildsPath},
       siteVersion,
       dependenciesGraph,
+      database,
     } = context;
+
+    this.database = database;
 
     await dependenciesGraph.onCompleted([siteVersionDependency]);
 
@@ -67,6 +71,7 @@ export class SiteRendererProd implements SiteRenderer {
       request,
       clientBuildPath: this.clientBuildPath,
       stylesCache: this.stylesCache,
+      database: this.database,
     });
   }
 }

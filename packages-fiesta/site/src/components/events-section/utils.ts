@@ -1,4 +1,4 @@
-import {MileageTimeEvent} from '../../types/data/car-events';
+import {CarEvent} from '@-/fiesta-types/src/data/events';
 import {getCurrentDayDate} from '../../utils/date/current-day';
 
 export const mileageToStr = (
@@ -41,12 +41,18 @@ const monthsWithDay = [
   'декабря',
 ];
 
-export const dateToStr = (date: MileageTimeEvent['date']): string | null => {
+export const dateToStr = (date: CarEvent['date']): string | null => {
   if (!date) {
     return null;
   }
 
-  const {year, month, day} = date;
+  const match = /^(\d\d\d\d)-(\d\d)(?:-(\d\d))?$/.exec(date);
+  if (!match) {
+    console.error(`Invalid date format: ${date}`);
+    return null;
+  }
+
+  const [year, month, day] = match.slice(1).map((x) => parseInt(x, 10));
 
   const currentDayDate = getCurrentDayDate();
 
