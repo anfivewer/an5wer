@@ -12,7 +12,7 @@ export const Fiesta: FC<{state: RootPageState}> = ({
   state: {events, plannedEvents},
 }) => {
   return (
-    <div className={(cn(styles.page), '_flex _flex-col _p-8')}>
+    <div className={cn(styles.page, '_flex _flex-col _p-8')}>
       <div className={cn('_flex _flex-row')}>
         <div className={cn(styles.photo, '_shrink-0', '_mr-8')}>
           <img src={fiestaUrl} />

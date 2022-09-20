@@ -7,8 +7,14 @@ import {setupPermissions} from './setup/permissions';
 import {resolve} from 'path';
 import {setupMockData} from './setup/mock-data';
 
-export const startDirectus = async ({publicPath}: {publicPath: string}) => {
-  const {fiestaDataPath, env, directusEnv} = await prepareDirectus();
+export const startDirectus = async ({
+  publicPath,
+  port,
+}: {
+  publicPath: string;
+  port: number;
+}) => {
+  const {fiestaDataPath, env} = await prepareDirectus();
 
   const adminEmail = env.FIESTA_DIRECTUS_ADMIN_EMAIL || 'admin@example.org';
   const adminPassword = env.FIESTA_DIRECTUS_ADMIN_PASSWORD || '123';
@@ -43,10 +49,11 @@ export const startDirectus = async ({publicPath}: {publicPath: string}) => {
     fiestaDataPath,
     publicUrl: publicPath,
     stdio: ['inherit', 'pipe', 'inherit'],
-    env,
+    env: {
+      ...env,
+      PORT: String(port),
+    },
   });
-
-  const directusPort = parseInt(directusEnv.PORT, 10);
 
   if (!childProcess.stdout) {
     throw new Error('Directus child process has no stdout');
@@ -88,7 +95,7 @@ export const startDirectus = async ({publicPath}: {publicPath: string}) => {
 
   await defer.promise;
 
-  const directus = createDirectus(`http://127.0.0.1:${directusPort}/`);
+  const directus = createDirectus(`http://127.0.0.1:${port}/`);
 
   await directus.auth.login({
     email: adminEmail,
@@ -110,7 +117,7 @@ export const startDirectus = async ({publicPath}: {publicPath: string}) => {
   };
 
   return {
-    port: directusPort,
+    port,
     runningDirectusPromise: runningPromise,
     shutdown,
   };
@@ -120,7 +127,7 @@ if (require.main === module) {
   let shutdownHandler = () => Promise.resolve();
   let runningPromise: Promise<void> = Promise.resolve();
 
-  startDirectus({publicPath: '/'})
+  startDirectus({publicPath: '/', port: 3002})
     .then(async ({runningDirectusPromise, shutdown}) => {
       shutdownHandler = shutdown;
       runningPromise = runningDirectusPromise;

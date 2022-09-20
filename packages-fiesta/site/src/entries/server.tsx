@@ -65,7 +65,7 @@ export const render: FiestaRenderFun = async (options) => {
             name="viewport"
             content="width=device-width, initial-scale=1.0"
           />
-          <title>Vite App</title>
+          <title>Ford Fiesta 5609 MP-1</title>
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link
             rel="preconnect"

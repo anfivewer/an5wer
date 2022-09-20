@@ -1,0 +1,9 @@
+domain: fiesta-test.an5wer.com
+fiesta_home: /home/fiesta
+fiesta_data_path: /home/fiesta/fiesta-data
+release_branch: develop
+certbot_admin_email: admin@example.org
+directus_admin_email: admin@example.org
+directus_admin_password: 123
+directus_key: df929add77175a8da50ec42f1dfbebed
+directus_secret: d4b0de7cb58fb51812c166f0140768bc
