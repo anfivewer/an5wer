@@ -83,10 +83,10 @@
         dest: "{{ next_repo_path }}/.env"
         mode: 0744
 
-    - name: check if initial build exists
-      stat:
-        path: "{{ fiesta_data_path }}/builds/site-0.0.1"
-      register: initial_build
+    # - name: check if initial build exists
+    #   stat:
+    #     path: "{{ fiesta_data_path }}/builds/site-0.0.1"
+    #   register: initial_build
 
     - name: create initial build
       block:
@@ -100,7 +100,8 @@
               npm run build:prod &&
               rsync -r dist/client/ /var/www/an5wer-static/fiesta/ &&
               mkdir -p {{ fiesta_data_path }}/builds &&
-              mv dist {{ fiesta_data_path }}/builds/site-0.0.1
+              rsync -r dist/ {{ fiesta_data_path }}/builds/site-0.0.1/ &&
+              rm -rf dist
             executable: /bin/bash
       # FIXME: there should be other deploy script that updates client/SSR builds
       # when: initial_build.stat.exists == False
