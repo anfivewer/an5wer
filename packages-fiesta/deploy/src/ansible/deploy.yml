@@ -1,0 +1,166 @@
+- hosts: "{{ lookup('ansible.builtin.env', 'DEPLOY_HOSTS') }}"
+  gather_facts: no
+  become: yes
+  become_user: fiesta
+  become_method: su
+
+  tasks:
+    - name: load vars
+      include_vars: vars.yml
+
+    - name: update latest repo
+      git:
+        repo: https://github.com/anfivewer/an5wer.git
+        dest: "{{ fiesta_home }}/an5wer-latest"
+        version: "{{ release_branch }}"
+
+    # FIXME: add as a condition
+    # - name: sync repo
+    #   synchronize:
+    #     mode: push
+    #     src: /home/ruliov/projects/an5wer/
+    #     dest: "{{ fiesta_home }}/an5wer-latest/"
+    #     rsync_opts:
+    #       - "--exclude=node_modules"
+
+    - name: install node and pnpm, fetch dependencies
+      shell:
+        cmd: >
+          . {{ fiesta_home }}/nvm/nvm.sh &&
+          cd {{ fiesta_home }}/an5wer-latest &&
+          nvm install &&
+          (npm list -g pnpm@7.12.1 || npm install -g pnpm@7.12.1) &&
+          pnpm install
+        executable: /bin/bash
+
+    - name: run ansible-prepare
+      shell:
+        cmd: >
+          . {{ fiesta_home }}/nvm/nvm.sh &&
+          ./node_modules/.bin/ts-node -T src/scripts/ansible-prepare.ts
+        chdir: "{{ fiesta_home }}/an5wer-latest/packages-fiesta/deploy"
+        executable: /bin/bash
+      environment:
+        FIESTA_EXECUTION_CONFIG_PATH: "{{ fiesta_home }}/fiesta.json"
+      register: result
+
+    - name: save facts
+      set_fact:
+        start_data: "{{ (result.stdout | from_json) }}"
+
+    - name: save facts
+      set_fact:
+        next_repo_path: "{{ fiesta_home }}/fiesta-{{ start_data.nextExecution.id }}"
+        next_pm2_name: "fiesta-{{ start_data.nextExecution.id }}"
+        next_pm2_log_file: "{{ fiesta_home }}/fiesta-logs/fiesta-{{ start_data.nextExecution.id }}.log"
+
+    - name: update next repo
+      git:
+        repo: "{{ fiesta_home }}/an5wer-latest"
+        dest: "{{ next_repo_path }}"
+        version: "{{ release_branch }}"
+
+    # - name: update next repo
+    #   synchronize:
+    #     mode: push
+    #     src: /home/ruliov/projects/an5wer/
+    #     dest: "{{ next_repo_path }}"
+    #     rsync_opts:
+    #       - "--exclude=node_modules"
+
+    - name: fetch dependencies
+      shell:
+        cmd: >
+          . {{ fiesta_home }}/nvm/nvm.sh &&
+          cd {{ next_repo_path }}/packages-fiesta/server &&
+          nvm use &&
+          pnpm install
+        executable: /bin/bash
+
+    - name: dotenv
+      template:
+        src: "templates/dotenv.j2"
+        dest: "{{ next_repo_path }}/.env"
+        mode: 0744
+
+    - name: check if initial build exists
+      stat:
+        path: "{{ fiesta_data_path }}/builds/site-0.0.1"
+      register: initial_build
+
+    - name: create initial build
+      block:
+        - name: build
+          shell:
+            cmd: >
+              . {{ fiesta_home }}/nvm/nvm.sh &&
+              cd {{ next_repo_path }}/packages-fiesta/site &&
+              nvm use &&
+              rm -rf dist &&
+              npm run build:prod &&
+              rsync -r dist/client/ /var/www/an5wer-static/fiesta/ &&
+              mkdir -p {{ fiesta_data_path }}/builds &&
+              mv dist {{ fiesta_data_path }}/builds/site-0.0.1
+            executable: /bin/bash
+      # FIXME: there should be other deploy script that updates client/SSR builds
+      # when: initial_build.stat.exists == False
+
+    - name: start server
+      shell:
+        cmd: >
+          . {{ fiesta_home }}/nvm/nvm.sh &&
+          cd {{ next_repo_path }}/packages-fiesta/server &&
+          nvm use &&
+          pnpm install &&
+          npm run start:pm2:prod
+        executable: /bin/bash
+      environment:
+        FIESTA_PORT: "{{ start_data.nextExecution.port }}"
+        FIESTA_DIRECTUS_PORT: "{{ start_data.nextExecution.directusPort }}"
+        FIESTA_PM2_NAME: "{{ next_pm2_name }}"
+        FIESTA_PM2_LOG_FILE: "{{ next_pm2_log_file }} "
+
+    - name: run ansible-nginx
+      shell:
+        cmd: >
+          . {{ fiesta_home }}/nvm/nvm.sh &&
+          ./node_modules/.bin/ts-node -T src/scripts/ansible-nginx.ts
+        chdir: "{{ fiesta_home }}/an5wer-latest/packages-fiesta/deploy"
+        executable: /bin/bash
+      become_user: root
+      environment:
+        FIESTA_EXECUTION_CONFIG_PATH: "{{ fiesta_home }}/fiesta.json"
+        FIESTA_NGINX_SITE_CONF: "/etc/nginx/sites-enabled/{{ domain }}"
+
+    - name: reload nginx config
+      shell: nginx -s reload
+      become_user: root
+
+    - name: stop prev server
+      block:
+        - name: save facts
+          set_fact:
+            curr_repo_path: "{{ fiesta_home }}/fiesta-{{ start_data.currentExecution.id }}"
+            curr_pm2_name: "fiesta-{{ start_data.currentExecution.id }}"
+
+        - name: stop
+          shell:
+            cmd: >
+              . {{ fiesta_home }}/nvm/nvm.sh &&
+              cd {{ next_repo_path }}/packages-fiesta/server &&
+              nvm use &&
+              npm run stop:pm2:prod
+            executable: /bin/bash
+          environment:
+            FIESTA_PM2_NAME: "{{ curr_pm2_name }}"
+      when: start_data.currentExecution is defined
+
+    - name: run ansible-started
+      shell:
+        cmd: >
+          . {{ fiesta_home }}/nvm/nvm.sh &&
+          ./node_modules/.bin/ts-node -T src/scripts/ansible-started.ts
+        chdir: "{{ fiesta_home }}/an5wer-latest/packages-fiesta/deploy"
+        executable: /bin/bash
+      environment:
+        FIESTA_EXECUTION_CONFIG_PATH: "{{ fiesta_home }}/fiesta.json"

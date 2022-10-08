@@ -27,6 +27,8 @@ export const getConfig = ({logger}: {logger: Logger}): Config => {
     // sets logger to not escape \n in stack traces
     isDebug: process.env.IS_DEBUG === '1',
     dataPath,
+    serverPort: parseInt(getNonEmptyString('FIESTA_PORT'), 10),
+    directusPort: parseInt(getNonEmptyString('FIESTA_DIRECTUS_PORT'), 10),
     buildsPath: path.join(dataPath, 'builds'),
     siteVersionPath: path.join(dataPath, 'site-version.json'),
     directusPublicPath: '/_directus/',

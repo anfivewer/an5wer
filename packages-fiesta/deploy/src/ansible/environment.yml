@@ -1,0 +1,73 @@
+- hosts: "{{ lookup('ansible.builtin.env', 'DEPLOY_HOSTS') }}"
+  gather_facts: no
+  become_user: fiesta
+  become_method: su
+
+  tasks:
+    - name: load vars
+      include_vars: vars.yml
+
+    - name: install apt packages
+      apt:
+        name:
+          - git
+          - rsync
+          - nginx
+          - certbot=1.21.0-*
+          - python3-certbot-nginx=1.21.0-*
+        state: present
+
+    - name: create fiesta user
+      user:
+        name: fiesta
+
+    - name: set fiesta authorized_keys
+      authorized_key:
+        user: fiesta
+        state: present
+        key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+
+    - name: clone nvm
+      git:
+        repo: 'https://github.com/nvm-sh/nvm.git'
+        dest: /home/fiesta/nvm
+        version: a82edf40ba72a15b1d40822735942141547f38e2
+      become: yes
+
+    - name: create statics dir
+      file:
+        path: /var/www/an5wer-static/fiesta
+        state: directory
+        owner: fiesta
+        group: fiesta
+
+    - name: start nginx
+      service:
+        name: nginx
+        state: started
+        enabled: yes
+        use: service
+
+    - name: check if nginx site config exists
+      stat:
+        path: "/etc/nginx/sites-enabled/{{ domain }}"
+      register: nginx_site_conf
+
+    - name: initial nginx config
+      block:
+        - name: create initial site config
+          template:
+            src: "templates/nginx-site.j2"
+            dest: "/etc/nginx/sites-enabled/{{ domain }}"
+            mode: 0744
+
+        - name: reload nginx config
+          shell: nginx -s reload
+
+        # - name: register certbot
+        #   shell: certbot register --email {{ certbot_admin_email }} --non-interactive --agree-tos
+        #   timeout: 5
+
+        - name: acquire certificate
+          shell: "certbot --nginx --no-redirect -d {{ domain }}"
+      when: nginx_site_conf.stat.exists == False

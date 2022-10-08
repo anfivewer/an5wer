@@ -4,6 +4,8 @@
   "description": "",
   "scripts": {
     "start": "ts-node -T src/main.ts",
+    "start:pm2:prod": "NODE_ENV=production pm2 start --name $FIESTA_PM2_NAME -l $FIESTA_PM2_LOG_FILE --wait-ready --listen-timeout 10000 --interpreter `which ts-node` src/main.ts",
+    "stop:pm2:prod": "pm2 stop $FIESTA_PM2_NAME",
     "watch": "nodemon --signal SIGINT --watch src --exec ts-node -T src/main.ts",
     "tsc": "tsc",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -18,6 +20,7 @@
     "@-/util": "workspace:*",
     "dotenv": "16.0.1",
     "http-proxy": "1.18.1",
+    "pm2": "5.2.0",
     "ts-node": "10.8.1",
     "typescript": "4.8.3",
     "zod": "3.17.3"

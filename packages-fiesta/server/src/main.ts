@@ -12,8 +12,6 @@ import {mkdir, stat as fsStat} from 'fs/promises';
 import {Stats} from 'fs';
 import {registerDirectusRoute} from './routes/directus';
 
-const PORT = 3001;
-
 const mainLogger = new Logger('main');
 mainLogger.info('helloWorld');
 
@@ -55,7 +53,7 @@ const shutdownServer = async () => {
 
 (async () => {
   config = getConfig({logger: mainLogger.fork('config')});
-  const {isDev, isDebug, directusPublicPath} = config;
+  const {isDev, isDebug, serverPort, directusPort, directusPublicPath} = config;
 
   mainLogger.setDebug(isDebug);
 
@@ -69,12 +67,9 @@ const shutdownServer = async () => {
 
   const {httpServer: server} = context;
 
-  const {
-    port: directusPort,
-    runningDirectusPromise,
-    shutdown,
-  } = await startDirectus({
+  const {runningDirectusPromise, shutdown} = await startDirectus({
     publicPath: directusPublicPath,
+    port: directusPort,
   });
 
   context.directusUrlInternal = `http://127.0.0.1:${directusPort}/`;
@@ -97,9 +92,11 @@ const shutdownServer = async () => {
   await context.init();
 
   shutdownCallbacks.push(server.stop.bind(server));
-  await server.listen(PORT);
+  await server.listen(serverPort);
 
-  mainLogger.info('started', {port: PORT});
+  mainLogger.info('started', {port: serverPort});
+
+  process.send?.('ready');
 
   await runningDirectusPromise;
 })().catch(async (error) => {
