@@ -50,15 +50,15 @@
 
     - name: check if nginx site config exists
       stat:
-        path: "/etc/nginx/sites-enabled/{{ domain }}"
+        path: '/etc/nginx/sites-enabled/{{ domain }}'
       register: nginx_site_conf
 
     - name: initial nginx config
       block:
         - name: create initial site config
           template:
-            src: "templates/nginx-site.j2"
-            dest: "/etc/nginx/sites-enabled/{{ domain }}"
+            src: 'templates/nginx-site.j2'
+            dest: '/etc/nginx/sites-enabled/{{ domain }}'
             mode: 0744
 
         - name: reload nginx config
@@ -69,5 +69,5 @@
         #   timeout: 5
 
         - name: acquire certificate
-          shell: "certbot --nginx --no-redirect -d {{ domain }}"
+          shell: 'certbot --nginx --no-redirect -d {{ domain }}'
       when: nginx_site_conf.stat.exists == False

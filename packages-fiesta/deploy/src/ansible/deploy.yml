@@ -11,8 +11,8 @@
     - name: update latest repo
       git:
         repo: https://github.com/anfivewer/an5wer.git
-        dest: "{{ fiesta_home }}/an5wer-latest"
-        version: "{{ release_branch }}"
+        dest: '{{ fiesta_home }}/an5wer-latest'
+        version: '{{ release_branch }}'
 
     # FIXME: add as a condition
     # - name: sync repo
@@ -38,27 +38,27 @@
         cmd: >
           . {{ fiesta_home }}/nvm/nvm.sh &&
           ./node_modules/.bin/ts-node -T src/scripts/ansible-prepare.ts
-        chdir: "{{ fiesta_home }}/an5wer-latest/packages-fiesta/deploy"
+        chdir: '{{ fiesta_home }}/an5wer-latest/packages-fiesta/deploy'
         executable: /bin/bash
       environment:
-        FIESTA_EXECUTION_CONFIG_PATH: "{{ fiesta_home }}/fiesta.json"
+        FIESTA_EXECUTION_CONFIG_PATH: '{{ fiesta_home }}/fiesta.json'
       register: result
 
     - name: save facts
       set_fact:
-        start_data: "{{ (result.stdout | from_json) }}"
+        start_data: '{{ (result.stdout | from_json) }}'
 
     - name: save facts
       set_fact:
-        next_repo_path: "{{ fiesta_home }}/fiesta-{{ start_data.nextExecution.id }}"
-        next_pm2_name: "fiesta-{{ start_data.nextExecution.id }}"
-        next_pm2_log_file: "{{ fiesta_home }}/fiesta-logs/fiesta-{{ start_data.nextExecution.id }}.log"
+        next_repo_path: '{{ fiesta_home }}/fiesta-{{ start_data.nextExecution.id }}'
+        next_pm2_name: 'fiesta-{{ start_data.nextExecution.id }}'
+        next_pm2_log_file: '{{ fiesta_home }}/fiesta-logs/fiesta-{{ start_data.nextExecution.id }}.log'
 
     - name: update next repo
       git:
-        repo: "{{ fiesta_home }}/an5wer-latest"
-        dest: "{{ next_repo_path }}"
-        version: "{{ release_branch }}"
+        repo: '{{ fiesta_home }}/an5wer-latest'
+        dest: '{{ next_repo_path }}'
+        version: '{{ release_branch }}'
 
     # - name: update next repo
     #   synchronize:
@@ -79,15 +79,14 @@
 
     - name: dotenv
       template:
-        src: "templates/dotenv.j2"
-        dest: "{{ next_repo_path }}/.env"
+        src: 'templates/dotenv.j2'
+        dest: '{{ next_repo_path }}/.env'
         mode: 0744
 
     # - name: check if initial build exists
     #   stat:
     #     path: "{{ fiesta_data_path }}/builds/site-0.0.1"
     #   register: initial_build
-
     - name: create initial build
       block:
         - name: build
@@ -116,22 +115,22 @@
           npm run start:pm2:prod
         executable: /bin/bash
       environment:
-        FIESTA_PORT: "{{ start_data.nextExecution.port }}"
-        FIESTA_DIRECTUS_PORT: "{{ start_data.nextExecution.directusPort }}"
-        FIESTA_PM2_NAME: "{{ next_pm2_name }}"
-        FIESTA_PM2_LOG_FILE: "{{ next_pm2_log_file }} "
+        FIESTA_PORT: '{{ start_data.nextExecution.port }}'
+        FIESTA_DIRECTUS_PORT: '{{ start_data.nextExecution.directusPort }}'
+        FIESTA_PM2_NAME: '{{ next_pm2_name }}'
+        FIESTA_PM2_LOG_FILE: '{{ next_pm2_log_file }} '
 
     - name: run ansible-nginx
       shell:
         cmd: >
           . {{ fiesta_home }}/nvm/nvm.sh &&
           ./node_modules/.bin/ts-node -T src/scripts/ansible-nginx.ts
-        chdir: "{{ fiesta_home }}/an5wer-latest/packages-fiesta/deploy"
+        chdir: '{{ fiesta_home }}/an5wer-latest/packages-fiesta/deploy'
         executable: /bin/bash
       become_user: root
       environment:
-        FIESTA_EXECUTION_CONFIG_PATH: "{{ fiesta_home }}/fiesta.json"
-        FIESTA_NGINX_SITE_CONF: "/etc/nginx/sites-enabled/{{ domain }}"
+        FIESTA_EXECUTION_CONFIG_PATH: '{{ fiesta_home }}/fiesta.json'
+        FIESTA_NGINX_SITE_CONF: '/etc/nginx/sites-enabled/{{ domain }}'
 
     - name: reload nginx config
       shell: nginx -s reload
@@ -141,8 +140,8 @@
       block:
         - name: save facts
           set_fact:
-            curr_repo_path: "{{ fiesta_home }}/fiesta-{{ start_data.currentExecution.id }}"
-            curr_pm2_name: "fiesta-{{ start_data.currentExecution.id }}"
+            curr_repo_path: '{{ fiesta_home }}/fiesta-{{ start_data.currentExecution.id }}'
+            curr_pm2_name: 'fiesta-{{ start_data.currentExecution.id }}'
 
         - name: stop
           shell:
@@ -153,7 +152,7 @@
               npm run stop:pm2:prod
             executable: /bin/bash
           environment:
-            FIESTA_PM2_NAME: "{{ curr_pm2_name }}"
+            FIESTA_PM2_NAME: '{{ curr_pm2_name }}'
       when: start_data.currentExecution is defined
 
     - name: run ansible-started
@@ -161,7 +160,7 @@
         cmd: >
           . {{ fiesta_home }}/nvm/nvm.sh &&
           ./node_modules/.bin/ts-node -T src/scripts/ansible-started.ts
-        chdir: "{{ fiesta_home }}/an5wer-latest/packages-fiesta/deploy"
+        chdir: '{{ fiesta_home }}/an5wer-latest/packages-fiesta/deploy'
         executable: /bin/bash
       environment:
-        FIESTA_EXECUTION_CONFIG_PATH: "{{ fiesta_home }}/fiesta.json"
+        FIESTA_EXECUTION_CONFIG_PATH: '{{ fiesta_home }}/fiesta.json'
