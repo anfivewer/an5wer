@@ -13,6 +13,7 @@ export type AppOptions<Logger extends LoggerInterface, Config, Context> = {
   setupLoggerByConfig?: (options: {config: Config; logger: Logger}) => void;
   getInitialContext: GetInitialContextFn<Config, Context>;
   preInit?: (options: {
+    app: App<Context>;
     logger: LoggerInterface;
     config: Config;
   }) => Promise<void>;

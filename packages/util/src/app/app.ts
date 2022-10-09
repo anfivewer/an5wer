@@ -84,6 +84,7 @@ class App<Logger extends LoggerInterface, Config, Context>
     this.logger.info('helloWorld');
 
     await this.preInit?.({
+      app: this,
       logger: this.logger.fork('preInit'),
       config: this.config,
     });

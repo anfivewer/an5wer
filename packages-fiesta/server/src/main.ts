@@ -1,6 +1,6 @@
-import {Logger} from '@-/util/src/logging/logger';
 import {IOError} from '@-/types/src/errors/io';
 import {createApp} from '@-/util/src/app/app';
+import {runApp} from '@-/util/src/app/run';
 import './config';
 import {getConfig} from './config';
 import {
@@ -12,8 +12,6 @@ import {Config} from './types/config';
 import {mkdir, stat as fsStat} from 'fs/promises';
 import {Stats} from 'fs';
 import {registerDirectusRoute} from './routes/directus';
-import {App} from '@-/types/src/app/app';
-import {Context} from './types/context';
 import {DirectusComponent} from '@-/directus-fiesta/src/component';
 import {HttpServer} from '@-/util/src/http-server/http-server';
 import {createInitialContext} from './context/context';
@@ -22,119 +20,77 @@ import {SiteVersion} from './site-version/site-version';
 import {SiteRendererProd} from './site/renderer';
 import {SiteRendererDev} from './site/renderer-dev';
 
-const mainLogger = new Logger('main');
-let appGlobal: App<Context> | undefined;
-
-const shutdown = (app: App<Context>) => {
-  const context = app.getContext();
-
-  app
-    .stop({
-      printHandlesOnTimeout: context?.config.isDebug,
-    })
-    .then(
-      () => {
-        process.exit(0);
+runApp({
+  createApp: ({logger}) =>
+    createApp({
+      getLogger: () => logger,
+      getConfig: ({logger}) => Promise.resolve(getConfig({logger})),
+      setupLoggerByConfig: ({logger, config}) => {
+        logger.setDebug(config.isDebug);
       },
-      (error) => {
-        mainLogger.error('stop', undefined, {error});
-        process.exit(1);
-      },
-    );
-};
+      getInitialContext: createInitialContext,
+      preInit: async ({app, config}) => {
+        const {isDev, serverPort, directusPort, directusPublicPath} = config;
 
-(async () => {
-  const app = await createApp({
-    getLogger: () => mainLogger,
-    getConfig: ({logger}) => Promise.resolve(getConfig({logger})),
-    setupLoggerByConfig: ({logger, config}) => {
-      logger.setDebug(config.isDebug);
-    },
-    getInitialContext: createInitialContext,
-    preInit: async ({config}) => {
-      const {isDev, serverPort, directusPort, directusPublicPath} = config;
+        await ensureDataFolderExists({config});
 
-      await ensureDataFolderExists({config});
-
-      app.registerComponent({
-        name: 'database',
-        loggerKey: 'db',
-        getComponent: ({logger}) => new DirectusDatabase({logger}),
-      });
-
-      app.registerComponent({
-        name: 'siteVersion',
-        loggerKey: 'site-ver',
-        getComponent: ({logger}) => new SiteVersion({logger}),
-      });
-
-      app.registerComponent({
-        name: 'siteRenderer',
-        loggerKey: 'site-render',
-        getComponent: ({logger}) =>
-          isDev ? new SiteRendererDev() : new SiteRendererProd({logger}),
-      });
-
-      app.registerComponent({
-        name: 'httpServer',
-        loggerKey: 'http',
-        getComponent: ({logger}) => new HttpServer({port: serverPort, logger}),
-      });
-
-      app.registerComponent({
-        name: 'directus',
-        getComponent: () =>
-          new DirectusComponent({
-            publicPath: directusPublicPath,
-            port: directusPort,
-            onInit: ({context}) => {
-              context.directusUrlInternal = `http://127.0.0.1:${directusPort}/`;
-              return Promise.resolve();
-            },
-          }),
-        afterInit: ({context}) => {
-          context.dependenciesGraph.markCompleted(directusDependency);
-          return Promise.resolve();
-        },
-      });
-
-      app.registerOnInit(async ({context}) => {
-        registerDirectusRoute({
-          context,
-          logger: mainLogger.fork('directus'),
-          directusPort,
+        app.registerComponent({
+          name: 'database',
+          loggerKey: 'db',
+          getComponent: ({logger}) => new DirectusDatabase({logger}),
         });
 
-        await context.dependenciesGraph.onCompleted([siteRendererDependency]);
+        app.registerComponent({
+          name: 'siteVersion',
+          loggerKey: 'site-ver',
+          getComponent: ({logger}) => new SiteVersion({logger}),
+        });
 
-        registerRootRoute({context, logger: mainLogger.fork('/')});
-      });
-    },
-  });
+        app.registerComponent({
+          name: 'siteRenderer',
+          loggerKey: 'site-render',
+          getComponent: ({logger}) =>
+            isDev ? new SiteRendererDev() : new SiteRendererProd({logger}),
+        });
 
-  appGlobal = app;
+        app.registerComponent({
+          name: 'httpServer',
+          loggerKey: 'http',
+          getComponent: ({logger}) =>
+            new HttpServer({port: serverPort, logger}),
+        });
 
-  const context = await app.init();
+        app.registerComponent({
+          name: 'directus',
+          getComponent: () =>
+            new DirectusComponent({
+              publicPath: directusPublicPath,
+              port: directusPort,
+              onInit: ({context}) => {
+                context.directusUrlInternal = `http://127.0.0.1:${directusPort}/`;
+                return Promise.resolve();
+              },
+            }),
+          afterInit: ({context}) => {
+            context.dependenciesGraph.markCompleted(directusDependency);
+            return Promise.resolve();
+          },
+        });
 
-  mainLogger.info('started');
+        app.registerOnInit(async ({context}) => {
+          registerDirectusRoute({
+            context,
+            logger: logger.fork('directus'),
+            directusPort,
+          });
 
-  process.send?.('ready');
+          await context.dependenciesGraph.onCompleted([siteRendererDependency]);
 
-  await context.directus.getRunningDirectusPromise();
-})().catch((error) => {
-  mainLogger.error('start', undefined, {error});
-
-  if (appGlobal) {
-    shutdown(appGlobal);
-  }
-});
-
-process.on('SIGINT', () => {
-  if (appGlobal) {
-    shutdown(appGlobal);
-  } else {
-    process.exit(0);
-  }
+          registerRootRoute({context, logger: logger.fork('/')});
+        });
+      },
+    }),
+  afterReady: ({context}) => context.directus.getRunningDirectusPromise(),
 });
 
 async function ensureDataFolderExists({config}: {config: Config}) {
