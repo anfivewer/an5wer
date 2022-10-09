@@ -5,6 +5,7 @@ import {SiteVersion} from '../site-version/site-version';
 import {Config} from './config';
 import {SiteRenderer} from '../site/types';
 import {Database} from '@-/fiesta-types/src/database/database';
+import {DirectusComponent} from '@-/directus-fiesta/src/component';
 
 export type Context = {
   mainLogger: Logger;
@@ -15,8 +16,6 @@ export type Context = {
   dependenciesGraph: DependenciesGraph;
   database: Database;
 
+  directus: DirectusComponent<Context>;
   directusUrlInternal: string;
-
-  registerOnInit: (fun: () => Promise<void>) => void;
-  init: () => Promise<void>;
 };

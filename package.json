@@ -5,7 +5,7 @@
   "scripts": {
     "start:fiesta": "cd packages-fiesta/server && npm run start",
     "lint": "eslint '**/*.+(t|j)s+(x|)'",
-    "tsc": "cd packages/types && npm run tsc && cd ../util && npm run tsc && cd ../statics && npm run tsc && cd ../../packages-fiesta/types && npm run tsc && cd ../site && npm run tsc && cd ../server && npm run tsc && cd ../directus-fiesta && npm run tsc",
+    "tsc": "cd packages/types && npm run tsc && cd ../util && npm run tsc && cd ../statics && npm run tsc && cd ../diffbelt && npm run tsc && cd ../../packages-fiesta/types && npm run tsc && cd ../site && npm run tsc && cd ../server && npm run tsc && cd ../directus-fiesta && npm run tsc && cd ../deploy && npm run tsc",
     "prettier": "prettier --check .",
     "prettier:write": "prettier --write .",
     "check": "npm run prettier && npm run lint && npm run tsc",

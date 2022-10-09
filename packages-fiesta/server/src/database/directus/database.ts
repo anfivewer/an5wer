@@ -2,19 +2,24 @@ import {createDirectus, FiestaDirectus} from '@-/directus-fiesta/src/types';
 import {CarEvents, CarEventType} from '@-/fiesta-types/src/data/events';
 import {Database} from '@-/fiesta-types/src/database/database';
 import {BaseComponent} from '@-/types/src/app/component';
+import {directusDependency} from '../../context/dependencies';
 import {Context} from '../../types/context';
 
 export class DirectusDatabase extends BaseComponent implements Database {
   private directus!: FiestaDirectus;
 
-  init({context}: {context: Context}) {
-    if (!context.directusUrlInternal) {
+  async init({context}: {context: Context}) {
+    const {dependenciesGraph} = context;
+
+    await dependenciesGraph.onCompleted([directusDependency]);
+
+    const {directusUrlInternal} = context;
+
+    if (!directusUrlInternal) {
       throw new Error('no context.directusUrlInternal');
     }
 
-    this.directus = createDirectus(context.directusUrlInternal);
-
-    return Promise.resolve();
+    this.directus = createDirectus(directusUrlInternal);
   }
 
   async getFiestaEvents(): ReturnType<Database['getFiestaEvents']> {

@@ -1,3 +1,5 @@
+import {Component} from '@-/types/src/app/component';
+import {Logger} from '@-/types/src/logging/logging';
 import http from 'http';
 import {createHttpTerminator, HttpTerminator} from 'http-terminator';
 import {Routing} from './routing';
@@ -8,7 +10,9 @@ import {
   HttpResultType,
 } from './types';
 
-export class HttpServer {
+export class HttpServer implements Component<unknown> {
+  private logger: Logger;
+  private port: number;
   private server: http.Server;
   private serverTerminator: HttpTerminator;
   private rawMiddlewares: HttpRawMiddleware[] = [];
@@ -17,7 +21,9 @@ export class HttpServer {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   readonly routesPost: Routing<HttpHandler<any>> = new Routing();
 
-  constructor() {
+  constructor({port = 0, logger}: {port?: number; logger: Logger}) {
+    this.logger = logger;
+    this.port = port;
     this.server = http.createServer(this.handleRequest.bind(this));
     this.serverTerminator = createHttpTerminator({server: this.server});
   }
@@ -91,8 +97,8 @@ export class HttpServer {
           throw new Error('unknown result type');
         }
       }
-    })().catch((e) => {
-      console.error(e);
+    })().catch((error) => {
+      this.logger.error('500', {url: req.url}, {error});
       res.statusCode = 500;
       res.end('500');
     });
@@ -114,18 +120,24 @@ export class HttpServer {
       await runAsync(middleware);
     }
 
-    console.log('404', req.url, this.rawMiddlewares);
+    this.logger.trace('404', {url: req.url});
 
     res.statusCode = 404;
     res.end('404');
   }
 
   listen(port: number): Promise<void> {
+    this.port = port;
+
     return new Promise((resolve) => {
       this.server.listen(port, () => {
         resolve();
       });
     });
+  }
+
+  init(): Promise<void> {
+    return this.listen(this.port);
   }
 
   stop(): Promise<void> {

@@ -40,7 +40,7 @@ export const createContext = ({
 
   const unsafeContext = context as Context;
 
-  context.httpServer = new HttpServer();
+  context.httpServer = new HttpServer({logger: logger.fork('http')});
 
   context.init = async () => {
     if (isInitialized) {
