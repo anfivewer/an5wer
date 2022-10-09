@@ -13,11 +13,11 @@ export const Fiesta: FC<{state: RootPageState}> = ({
 }) => {
   return (
     <div className={cn(styles.page, '_flex _flex-col _p-8')}>
-      <div className={cn('_flex _flex-row')}>
-        <div className={cn(styles.photo, '_shrink-0', '_mr-8')}>
+      <div className="_flex lg:_flex-row _flex-col-reverse">
+        <div className="_shrink-0 _mr-8 _w-full _h-auto sm:_w-512px sm:_h-512px">
           <img src={fiestaUrl} />
         </div>
-        <div className="_grow">
+        <div className="_grow _mb-8 lg:_mb-0">
           <h1 className="_font-header-32-32">Ford Fiesta VI 2015</h1>
           <div
             className={cn(
@@ -45,14 +45,14 @@ export const Fiesta: FC<{state: RootPageState}> = ({
         </div>
       </div>
 
-      <div className="_flex _flex-row _mt-8">
+      <div className="_flex _mt-8 _flex-col md:_flex-row">
         <EventsSection
-          className="_grow"
+          className="_grow md:_mr-4"
           title="Последние события"
           events={events}
         />
         <EventsSection
-          className="_grow"
+          className="_grow _mt-8 md:_mt-0"
           title="Ближайшие обслуживания"
           events={plannedEvents}
         />
