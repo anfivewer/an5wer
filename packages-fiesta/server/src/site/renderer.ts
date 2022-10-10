@@ -11,6 +11,9 @@ import {FiestaRenderFun, RequestData} from '@-/fiesta-types/src/site/render';
 import {FiestaRenderPage} from '@-/fiesta-types/src/site/pages';
 import {Database} from '@-/fiesta-types/src/database/database';
 import {BaseComponent} from '@-/types/src/app/component';
+import {IOError} from '@-/types/src/errors/io';
+
+class VersionNotExistsError extends Error {}
 
 export class SiteRendererProd extends BaseComponent implements SiteRenderer {
   private database!: Database;
@@ -20,24 +23,88 @@ export class SiteRendererProd extends BaseComponent implements SiteRenderer {
   private stylesCache = new Map<string, string>();
 
   async init({context}: {context: Context}) {
-    const {
-      config: {buildsPath},
-      siteVersion,
-      dependenciesGraph,
-      database,
-    } = context;
+    const {siteVersion, dependenciesGraph, database} = context;
 
     this.database = database;
 
     await dependenciesGraph.onCompleted([siteVersionDependency]);
 
     const version = siteVersion.getVersion();
+    await this.useVersionSafe({context, version});
+
+    dependenciesGraph.markCompleted(siteRendererDependency);
+
+    (async () => {
+      for await (const version of siteVersion.getVersionStream()) {
+        this.logger.info('siteVersion:start', {version});
+
+        let success = false;
+
+        try {
+          await this.useVersion({context, version});
+          success = true;
+        } catch (error) {
+          this.logger.error('siteVersion', {version}, {error});
+        }
+
+        if (success) {
+          this.logger.info('siteVersion:success', {version});
+        }
+      }
+    })().catch((error) => {
+      this.logger.error('versionStream', undefined, {error});
+    });
+  }
+
+  private async useVersionSafe(options: {context: Context; version: string}) {
+    try {
+      return await this.useVersion(options);
+    } catch (error) {
+      if (
+        options.version !== '0.0.1' &&
+        error instanceof VersionNotExistsError
+      ) {
+        return await this.useVersion({
+          ...options,
+          version: '0.0.1',
+        });
+      }
+    }
+  }
+
+  private async useVersion({
+    context,
+    version,
+  }: {
+    context: Context;
+    version: string;
+  }) {
+    const {
+      config: {buildsPath},
+    } = context;
+
     const buildName = `site-${version}`;
 
-    const manifestStr = await readFile(
-      path.join(buildsPath, buildName, 'server/manifest.json'),
-      {encoding: 'utf8'},
+    const manifestPath = path.join(
+      buildsPath,
+      buildName,
+      'server/manifest.json',
     );
+
+    const manifestStr = await (async () => {
+      try {
+        return await readFile(manifestPath, {encoding: 'utf8'});
+      } catch (error) {
+        const ioError = IOError.safeParse(error);
+        if (ioError.success && ioError.data.code === 'ENOENT') {
+          throw new VersionNotExistsError(
+            `build ${buildName} does not exists, manifest path ${manifestPath}`,
+          );
+        }
+
+        throw error;
+      }
+    })();
     const manifestJson = JSON.parse(manifestStr);
 
     const manifest = SiteManifest.parse(manifestJson);
@@ -50,8 +117,6 @@ export class SiteRendererProd extends BaseComponent implements SiteRenderer {
     this.manifest = manifest;
     this.clientBuildPath = path.join(buildsPath, buildName, 'client');
     this.stylesCache = new Map();
-
-    dependenciesGraph.markCompleted(siteRendererDependency);
   }
 
   render({

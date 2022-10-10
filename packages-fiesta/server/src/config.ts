@@ -30,7 +30,6 @@ export const getConfig = ({logger}: {logger: Logger}): Config => {
     serverPort: parseInt(getNonEmptyString('FIESTA_PORT'), 10),
     directusPort: parseInt(getNonEmptyString('FIESTA_DIRECTUS_PORT'), 10),
     buildsPath: path.join(dataPath, 'builds'),
-    siteVersionPath: path.join(dataPath, 'site-version.json'),
     directusPublicPath: '/_directus/',
     directusAdminEmail: getNonEmptyString('FIESTA_DIRECTUS_ADMIN_EMAIL'),
     directusAdminPassword: getNonEmptyString('FIESTA_DIRECTUS_ADMIN_PASSWORD'),

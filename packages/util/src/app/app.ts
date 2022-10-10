@@ -166,12 +166,12 @@ class App<Logger extends LoggerInterface, Config, Context>
       timeoutDefer.reject(new Error('shutdown:timeout'));
     }, timeoutMs);
 
-    const shutdownCallbacks: (() => Promise<void>)[] = [];
+    const shutdownPromises: Promise<void>[] = [];
 
     this.components.forEach(({name, component}) => {
       if (component.stop) {
         const stop = component.stop.bind(component);
-        shutdownCallbacks.push(() =>
+        shutdownPromises.push(
           stop().catch((error) => {
             logger.error('shutdown', {componentName: String(name)}, {error});
           }),
@@ -179,7 +179,7 @@ class App<Logger extends LoggerInterface, Config, Context>
       }
     });
 
-    await Promise.race([Promise.all(shutdownCallbacks), timeoutDefer.promise]);
+    await Promise.race([Promise.all(shutdownPromises), timeoutDefer.promise]);
 
     clearTimeout(timeoutId);
   }

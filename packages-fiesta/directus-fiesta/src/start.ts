@@ -6,6 +6,7 @@ import {setupFolders} from './setup/folders';
 import {setupPermissions} from './setup/permissions';
 import {resolve} from 'path';
 import {setupMockData} from './setup/mock-data';
+import {setupKv} from './setup/kv';
 
 export type DirectusStartOptions = {
   publicPath: string;
@@ -107,7 +108,7 @@ export const startDirectus = async ({
   const setupOptions = {directus};
 
   await Promise.all(
-    [setupFolders, setupPermissions, setupMockData].map((fun) =>
+    [setupFolders, setupPermissions, setupMockData, setupKv].map((fun) =>
       fun(setupOptions),
     ),
   );

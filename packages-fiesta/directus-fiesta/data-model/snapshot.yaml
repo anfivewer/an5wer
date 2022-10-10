@@ -24,12 +24,12 @@ collections:
     schema:
       name: events
       sql: >-
-        CREATE TABLE "events" (`addFuelLiters` integer NULL DEFAULT null, `date`
-        varchar(255) NULL DEFAULT null, `description` text NULL DEFAULT null,
-        `id` varchar(255) NOT NULL DEFAULT null, `mileageKm` integer NULL
-        DEFAULT null, `title` varchar(255) NOT NULL DEFAULT null, `type`
-        varchar(255) NULL DEFAULT null, `usdToByn` float NULL DEFAULT null,
-        `priceByn` float null, PRIMARY KEY (`id`))
+        CREATE TABLE `events` (`addFuelLiters` integer null default null, `date`
+        varchar(255) null default null, `description` text null default null,
+        `id` varchar(255) not null default null, `mileageKm` integer null
+        default null, `priceByn` float null default null, `title` varchar(255)
+        not null default null, `type` varchar(255) null default null, `usdToByn`
+        float null default null, primary key (`id`))
   - collection: events_directus_files
     meta:
       accountability: all
@@ -60,6 +60,31 @@ collections:
         (`directus_files_id`) REFERENCES `directus_files` (`id`) ON DELETE SET
         NULL, CONSTRAINT `events_directus_files_events_id_foreign` FOREIGN KEY
         (`events_id`) REFERENCES `events` (`id`) ON DELETE SET NULL)
+  - collection: kv
+    meta:
+      accountability: all
+      archive_app_filter: true
+      archive_field: null
+      archive_value: null
+      collapse: open
+      collection: kv
+      color: null
+      display_template: null
+      group: null
+      hidden: false
+      icon: null
+      item_duplication_fields: null
+      note: null
+      singleton: false
+      sort: null
+      sort_field: null
+      translations: null
+      unarchive_value: null
+    schema:
+      name: kv
+      sql: >-
+        CREATE TABLE `kv` (`key` varchar(255) not null, `value` text null,
+        primary key (`key`))
 fields:
   - collection: events
     field: addFuelLiters
@@ -554,6 +579,82 @@ fields:
       numeric_scale: null
       table: events_directus_files
     type: integer
+  - collection: kv
+    field: key
+    meta:
+      collection: kv
+      conditions: null
+      display: null
+      display_options: null
+      field: key
+      group: null
+      hidden: false
+      interface: input
+      note: null
+      options: null
+      readonly: false
+      required: false
+      sort: null
+      special: null
+      translations: null
+      validation: null
+      validation_message: null
+      width: full
+    schema:
+      data_type: varchar
+      default_value: null
+      foreign_key_column: null
+      foreign_key_table: null
+      generation_expression: null
+      has_auto_increment: false
+      is_generated: false
+      is_nullable: false
+      is_primary_key: true
+      is_unique: true
+      max_length: 255
+      name: key
+      numeric_precision: null
+      numeric_scale: null
+      table: kv
+    type: string
+  - collection: kv
+    field: value
+    meta:
+      collection: kv
+      conditions: null
+      display: null
+      display_options: null
+      field: value
+      group: null
+      hidden: false
+      interface: input-multiline
+      note: null
+      options: null
+      readonly: false
+      required: false
+      sort: null
+      special: null
+      translations: null
+      validation: null
+      validation_message: null
+      width: full
+    schema:
+      data_type: text
+      default_value: null
+      foreign_key_column: null
+      foreign_key_table: null
+      generation_expression: null
+      has_auto_increment: false
+      is_generated: false
+      is_nullable: true
+      is_primary_key: false
+      is_unique: false
+      max_length: null
+      name: value
+      numeric_precision: null
+      numeric_scale: null
+      table: kv
+    type: text
 relations:
   - collection: events_directus_files
     field: directus_files_id
