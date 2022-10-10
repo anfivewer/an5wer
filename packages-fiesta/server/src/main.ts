@@ -1,112 +1,96 @@
-import {Logger} from '@-/util/src/logging/logger';
 import {IOError} from '@-/types/src/errors/io';
-import {startDirectus} from '@-/directus-fiesta/src/start';
+import {createApp} from '@-/util/src/app/app';
+import {runApp} from '@-/util/src/app/run';
 import './config';
-import {createContext} from './context/context';
 import {getConfig} from './config';
-import {siteRendererDependency} from './context/dependencies';
+import {
+  directusDependency,
+  siteRendererDependency,
+} from './context/dependencies';
 import {registerRootRoute} from './routes/root';
-import {SiteRendererDev} from './site/renderer-dev';
 import {Config} from './types/config';
 import {mkdir, stat as fsStat} from 'fs/promises';
 import {Stats} from 'fs';
 import {registerDirectusRoute} from './routes/directus';
+import {DirectusComponent} from '@-/directus-fiesta/src/component';
+import {HttpServer} from '@-/util/src/http-server/http-server';
+import {createInitialContext} from './context/context';
+import {DirectusDatabase} from './database/directus/database';
+import {SiteVersion} from './site-version/site-version';
+import {SiteRendererProd} from './site/renderer';
+import {SiteRendererDev} from './site/renderer-dev';
 
-const mainLogger = new Logger('main');
-mainLogger.info('helloWorld');
+runApp({
+  createApp: ({logger}) =>
+    createApp({
+      getLogger: () => logger,
+      getConfig: ({logger}) => Promise.resolve(getConfig({logger})),
+      setupLoggerByConfig: ({logger, config}) => {
+        logger.setDebug(config.isDebug);
+      },
+      getInitialContext: createInitialContext,
+      preInit: async ({app, config}) => {
+        const {isDev, serverPort, directusPort, directusPublicPath} = config;
 
-let config: Config | undefined;
-const shutdownCallbacks: (() => Promise<void>)[] = [];
+        await ensureDataFolderExists({config});
 
-const shutdownServer = async () => {
-  const timeoutId = setTimeout(() => {
-    mainLogger.error('shutdown:timeout');
+        app.registerComponent({
+          name: 'database',
+          loggerKey: 'db',
+          getComponent: ({logger}) => new DirectusDatabase({logger}),
+        });
 
-    if (config?.isDev || config?.isDebug) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const requests = (process as any)._getActiveRequests();
-        console.error(requests);
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const handles = (process as any)._getActiveHandles();
-        console.error(handles);
-      } catch (error) {
-        //
-      }
-    }
+        app.registerComponent({
+          name: 'siteVersion',
+          loggerKey: 'site-ver',
+          getComponent: ({logger}) => new SiteVersion({logger}),
+        });
 
-    process.exit(1);
-  }, 3000);
+        app.registerComponent({
+          name: 'siteRenderer',
+          loggerKey: 'site-render',
+          getComponent: ({logger}) =>
+            isDev ? new SiteRendererDev() : new SiteRendererProd({logger}),
+        });
 
-  await Promise.all(
-    shutdownCallbacks.map((fun) =>
-      fun().catch((error) => {
-        mainLogger.error('shutdown', undefined, {error});
-      }),
-    ),
-  );
+        app.registerComponent({
+          name: 'httpServer',
+          loggerKey: 'http',
+          getComponent: ({logger}) =>
+            new HttpServer({port: serverPort, logger}),
+        });
 
-  clearTimeout(timeoutId);
+        app.registerComponent({
+          name: 'directus',
+          getComponent: () =>
+            new DirectusComponent({
+              publicPath: directusPublicPath,
+              port: directusPort,
+              onInit: ({context}) => {
+                context.directusUrlInternal = `http://127.0.0.1:${directusPort}/`;
+                return Promise.resolve();
+              },
+            }),
+          afterInit: ({context}) => {
+            context.dependenciesGraph.markCompleted(directusDependency);
+            return Promise.resolve();
+          },
+        });
 
-  process.exit(0);
-};
+        app.registerOnInit(async ({context}) => {
+          registerDirectusRoute({
+            context,
+            logger: logger.fork('directus'),
+            directusPort,
+          });
 
-(async () => {
-  config = getConfig({logger: mainLogger.fork('config')});
-  const {isDev, isDebug, serverPort, directusPort, directusPublicPath} = config;
+          await context.dependenciesGraph.onCompleted([siteRendererDependency]);
 
-  mainLogger.setDebug(isDebug);
-
-  const context = createContext({
-    config,
-    logger: mainLogger,
-    getSiteRenderer: isDev ? () => new SiteRendererDev() : undefined,
-  });
-
-  await ensureDataFolderExists({config});
-
-  const {httpServer: server} = context;
-
-  const {runningDirectusPromise, shutdown} = await startDirectus({
-    publicPath: directusPublicPath,
-    port: directusPort,
-  });
-
-  context.directusUrlInternal = `http://127.0.0.1:${directusPort}/`;
-
-  shutdownCallbacks.push(shutdown);
-  shutdownCallbacks.push(() => runningDirectusPromise);
-
-  context.registerOnInit(async () => {
-    registerDirectusRoute({
-      context,
-      logger: mainLogger.fork('directus'),
-      directusPort,
-    });
-
-    await context.dependenciesGraph.onCompleted([siteRendererDependency]);
-
-    registerRootRoute({context, logger: mainLogger.fork('/')});
-  });
-
-  await context.init();
-
-  shutdownCallbacks.push(server.stop.bind(server));
-  await server.listen(serverPort);
-
-  mainLogger.info('started', {port: serverPort});
-
-  process.send?.('ready');
-
-  await runningDirectusPromise;
-})().catch(async (error) => {
-  mainLogger.error('start', undefined, {error});
-
-  await shutdownServer();
-});
-
-process.on('SIGINT', () => {
-  shutdownServer();
+          registerRootRoute({context, logger: logger.fork('/')});
+        });
+      },
+    }),
+  afterReady: ({context}) => context.directus.getRunningDirectusPromise(),
 });
 
 async function ensureDataFolderExists({config}: {config: Config}) {

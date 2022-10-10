@@ -7,13 +7,15 @@ import {setupPermissions} from './setup/permissions';
 import {resolve} from 'path';
 import {setupMockData} from './setup/mock-data';
 
+export type DirectusStartOptions = {
+  publicPath: string;
+  port: number;
+};
+
 export const startDirectus = async ({
   publicPath,
   port,
-}: {
-  publicPath: string;
-  port: number;
-}) => {
+}: DirectusStartOptions) => {
   const {fiestaDataPath, env} = await prepareDirectus();
 
   const adminEmail = env.FIESTA_DIRECTUS_ADMIN_EMAIL || 'admin@example.org';

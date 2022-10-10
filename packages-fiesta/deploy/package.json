@@ -2,7 +2,9 @@
   "name": "@-/fiesta-deploy",
   "version": "0.0.1",
   "description": "",
-  "scripts": {},
+  "scripts": {
+    "tsc": "tsc"
+  },
   "author": "Alexander Ruliov <alexander.rulov@gmail.com>",
   "license": "ISC",
   "dependencies": {

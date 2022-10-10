@@ -8,10 +8,20 @@ export class BaseComponent {
   }
 }
 
-export type InitableComponent<T, C> = T & {
+export type InitableComponent<C> = {
   init: (options: {context: C}) => Promise<void>;
 };
 
+export type StoppableComponent = {
+  stop: () => Promise<void>;
+};
+
+export type MaybeStoppableComponent = {
+  stop?: () => Promise<void>;
+};
+
+export type Component<C> = InitableComponent<C> & MaybeStoppableComponent;
+
 export type GetComponentFn<T, C> = (options: {
   logger: Logger;
-}) => InitableComponent<T, C>;
+}) => T & Component<C>;

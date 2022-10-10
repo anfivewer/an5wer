@@ -148,6 +148,44 @@ importers:
       typescript: 4.8.3
       zod: 3.17.3
 
+  packages/app-template:
+    specifiers:
+      '@-/types': workspace:*
+      '@-/util': workspace:*
+      '@types/node': 17.0.42
+      dotenv: 16.0.1
+      nodemon: 2.0.18
+      ts-node: 10.8.1
+      typescript: 4.8.3
+    dependencies:
+      '@-/types': link:../types
+      '@-/util': link:../util
+      dotenv: 16.0.1
+      ts-node: 10.8.1_7elzlgvrtu6xx6s2d4lb477dqa
+      typescript: 4.8.3
+    devDependencies:
+      '@types/node': 17.0.42
+      nodemon: 2.0.18
+
+  packages/diffbelt:
+    specifiers:
+      '@-/types': workspace:*
+      '@-/util': workspace:*
+      '@types/node': 17.0.42
+      dotenv: 16.0.1
+      nodemon: 2.0.18
+      ts-node: 10.8.1
+      typescript: 4.8.3
+    dependencies:
+      '@-/types': link:../types
+      '@-/util': link:../util
+      dotenv: 16.0.1
+      ts-node: 10.8.1_7elzlgvrtu6xx6s2d4lb477dqa
+      typescript: 4.8.3
+    devDependencies:
+      '@types/node': 17.0.42
+      nodemon: 2.0.18
+
   packages/statics:
     specifiers:
       '@-/types': 0.0.1
@@ -3756,7 +3794,7 @@ packages:
   /axios/0.27.2:
     resolution: {integrity: sha512-t+yRIyySRTp/wua5xEr+z1q60QmLq8ABsS5O9Me1AsE5dfKqgnCFzwiCZZ/cGNd1lq4/7akDWMxdhVlucjmnOQ==}
     dependencies:
-      follow-redirects: 1.15.2_debug@4.3.4
+      follow-redirects: 1.15.2
       form-data: 4.0.0
     transitivePeerDependencies:
       - debug
@@ -4594,7 +4632,7 @@ packages:
     dev: false
 
   /concat-map/0.0.1:
-    resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
+    resolution: {integrity: sha1-2Klr13/Wjfd5OnMDajug1UBdR3s=}
 
   /concat-stream/1.5.2:
     resolution: {integrity: sha512-H6xsIBfQ94aESBG8jGHXQ7i5AEpy5ZeVaLDOisDICiTCKpqEfr34/KmTrspKQNoLKNu9gTkovlpQcUi630AKiQ==}
@@ -7233,7 +7271,7 @@ packages:
     engines: {node: '>=8.0.0'}
     dependencies:
       eventemitter3: 4.0.7
-      follow-redirects: 1.15.2_debug@4.3.4
+      follow-redirects: 1.15.2
       requires-port: 1.0.0
     transitivePeerDependencies:
       - debug
@@ -8494,7 +8532,7 @@ packages:
     dev: false
 
   /json-buffer/3.0.0:
-    resolution: {integrity: sha1-Wx85evx11ne96Lz8Dkfh+aPZqJg=}
+    resolution: {integrity: sha512-CuUqjv0FUZIdXkHPI8MezCnFCdaTAacej1TZYulLoAg1h/PhwkdXFN4V/gzY4g+fMBCOV2xF+rp7t2XD2ns/NQ==}
     dev: true
 
   /json-buffer/3.0.1:
