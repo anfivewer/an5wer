@@ -3,6 +3,7 @@ import {CarEvent} from '@-/fiesta-types/src/data/events';
 
 type FiestaDirectusType = {
   events: CarEvent;
+  kv: {key: string; value: string};
 };
 
 export type FiestaDirectus = Directus<FiestaDirectusType>;

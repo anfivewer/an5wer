@@ -8,6 +8,7 @@
   "author": "Alexander Ruliov <alexander.rulov@gmail.com>",
   "license": "ISC",
   "dependencies": {
+    "@-/types": "workspace:*",
     "typescript": "4.8.3",
     "zod": "3.17.3"
   }

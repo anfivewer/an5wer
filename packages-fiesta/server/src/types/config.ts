@@ -5,7 +5,6 @@ export type Config = {
   serverPort: number;
   directusPort: number;
   buildsPath: string;
-  siteVersionPath: string;
   directusAdminEmail: string;
   directusAdminPassword: string;
   directusPublicPath: string;

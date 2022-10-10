@@ -13,7 +13,13 @@ export const runApp = <Context extends {config: {isDebug: boolean}}>({
   const mainLogger = new Logger(rootLoggerKey);
   let appGlobal: App<Context> | undefined;
 
-  const shutdown = (app: App<Context>) => {
+  const shutdown = ({
+    app,
+    exitCode = 0,
+  }: {
+    app: App<Context>;
+    exitCode?: number;
+  }) => {
     const context = app.getContext();
 
     app
@@ -22,7 +28,7 @@ export const runApp = <Context extends {config: {isDebug: boolean}}>({
       })
       .then(
         () => {
-          process.exit(0);
+          process.exit(exitCode);
         },
         (error) => {
           mainLogger.error('stop', undefined, {error});
@@ -47,13 +53,13 @@ export const runApp = <Context extends {config: {isDebug: boolean}}>({
     mainLogger.error('start', undefined, {error});
 
     if (appGlobal) {
-      shutdown(appGlobal);
+      shutdown({app: appGlobal, exitCode: 1});
     }
   });
 
   process.on('SIGINT', () => {
     if (appGlobal) {
-      shutdown(appGlobal);
+      shutdown({app: appGlobal});
     } else {
       process.exit(0);
     }

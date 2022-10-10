@@ -1,4 +1,4 @@
-import {ZodInfer} from '@-/fiesta-types/src/zod/zod';
+import {ZodInfer} from '@-/types/src/zod/zod';
 import {literal, number, object, union} from 'zod';
 
 export const Execution = object({

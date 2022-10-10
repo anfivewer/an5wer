@@ -1,51 +1,30 @@
-import {readFile, writeFile} from 'fs/promises';
 import {Context} from '../types/context';
-import {object, string} from 'zod';
 import {Logger} from '@-/util/src/logging/types';
-import {SingletonAsyncTask} from '@-/util/src/async/singleton';
-import {siteVersionDependency} from '../context/dependencies';
-
-const versionSchema = object({
-  version: string(),
-});
+import {
+  databaseDependency,
+  siteVersionDependency,
+} from '../context/dependencies';
+import {Database} from '@-/fiesta-types/src/database/database';
+import {createEventsStream} from '@-/util/src/stream/events-stream';
 
 export class SiteVersion {
   private version!: string;
-  private siteVersionPath!: string;
+  private database!: Database;
   private logger: Logger;
-  private singleton = new SingletonAsyncTask();
+  private versionStream = createEventsStream<string>();
 
   constructor({logger}: {logger: Logger}) {
     this.logger = logger;
   }
 
   async init({context}: {context: Context}) {
-    const {
-      config: {siteVersionPath},
-      dependenciesGraph,
-    } = context;
+    const {dependenciesGraph, database} = context;
 
-    this.siteVersionPath = siteVersionPath;
+    this.database = database;
 
-    const data = await (async () => {
-      let content: string;
+    await dependenciesGraph.onCompleted([databaseDependency]);
 
-      try {
-        content = await readFile(siteVersionPath, {encoding: 'utf8'});
-      } catch (error) {
-        const data = {version: '0.0.1'};
-        content = JSON.stringify(data);
-
-        await writeFile(siteVersionPath, content, {encoding: 'utf8'});
-
-        return data;
-      }
-
-      const json = JSON.parse(content);
-      return versionSchema.parse(json);
-    })();
-
-    this.version = data.version;
+    await this.readVersion();
 
     dependenciesGraph.markCompleted(siteVersionDependency);
   }
@@ -54,17 +33,23 @@ export class SiteVersion {
     return this.version;
   }
 
-  setVersion(version: string): void {
-    this.version = version;
+  getVersionStream(): AsyncGenerator<string, void, void> {
+    return this.versionStream.getGenerator();
+  }
 
-    this.singleton
-      .schedule(async () => {
-        await writeFile(this.siteVersionPath, JSON.stringify({version}), {
-          encoding: 'utf8',
-        });
-      })
-      .catch((error) => {
-        this.logger.error('set', undefined, {error});
-      });
+  private async readVersion() {
+    const version = await this.database.getSiteVersion();
+    if (version === this.version) {
+      return;
+    }
+
+    this.version = version;
+    this.versionStream.push(version);
+  }
+
+  onVersionUpdated(): void {
+    this.readVersion().catch((error) => {
+      this.logger.error('readVersion', undefined, {error});
+    });
   }
 }

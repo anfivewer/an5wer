@@ -1,0 +1,61 @@
+- hosts: "{{ lookup('ansible.builtin.env', 'DEPLOY_HOSTS') }}"
+  gather_facts: no
+  become: yes
+  become_user: fiesta
+  become_method: su
+
+  tasks:
+    - name: load vars
+      include_vars: vars.yml
+
+    - name: update latest repo
+      git:
+        repo: https://github.com/anfivewer/an5wer.git
+        dest: '{{ fiesta_home }}/an5wer-latest'
+        version: '{{ release_branch }}'
+
+    - name: fetch dependencies
+      shell:
+        cmd: >
+          . {{ fiesta_home }}/nvm/nvm.sh &&
+          cd {{ fiesta_home }}/an5wer-latest &&
+          nvm use &&
+          pnpm install
+        executable: /bin/bash
+
+    - name: run release-prepare
+      shell:
+        cmd: >
+          . {{ fiesta_home }}/nvm/nvm.sh &&
+          ./node_modules/.bin/ts-node -T src/scripts/release-prepare.ts
+        chdir: '{{ fiesta_home }}/an5wer-latest/packages-fiesta/deploy'
+        executable: /bin/bash
+      register: result
+
+    - name: save facts
+      set_fact:
+        release_data: '{{ (result.stdout | from_json) }}'
+
+    - name: save facts
+      set_fact:
+        site_version: '{{ release_data.version }}'
+
+    - name: check if build exists
+      stat:
+        path: '{{ fiesta_data_path }}/builds/site-{{ site_version }}'
+      register: build_stat
+
+    - name: build and deploy
+      block:
+        - name: build
+          shell:
+            cmd: >
+              . {{ fiesta_home }}/nvm/nvm.sh &&
+              cd {{ fiesta_home }}/an5wer-latest/packages-fiesta/site &&
+              nvm use &&
+              rm -rf dist &&
+              npm run build:prod &&
+              rsync -r dist/client/ /var/www/an5wer-static/fiesta/ &&
+              rsync -r dist/ {{ fiesta_data_path }}/builds/site-{{ site_version }}/
+            executable: /bin/bash
+      when: build_stat.stat.exists == False

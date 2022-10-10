@@ -29,6 +29,14 @@ export const registerDirectusRoute = ({
       return;
     }
 
+    if (req.method === 'POST' || req.method === 'PATCH') {
+      const subUrl = req.url.slice(directusPublicPath.length);
+
+      if (/^items\/kv\/site-version(?:\?.*|$)/.test(subUrl)) {
+        context.siteVersion.onVersionUpdated();
+      }
+    }
+
     proxy.web(req, res, {target: `http://127.0.0.1:${directusPort}`});
   });
 };
