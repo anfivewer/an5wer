@@ -9,7 +9,7 @@ import {Link} from '../../basic/link/link';
 import {EventsSection} from '../../events-section/events-section';
 
 export const Fiesta: FC<{state: RootPageState}> = ({
-  state: {events, plannedEvents},
+  state: {events, plannedEvents, totalConsumption},
 }) => {
   return (
     <div className={cn(styles.page, '_flex _flex-col _p-8')}>
@@ -41,6 +41,24 @@ export const Fiesta: FC<{state: RootPageState}> = ({
               <TelegramIcon className="_mr-1" size={24} />
               @ruliov
             </Link>
+            {totalConsumption &&
+              [
+                ['Проехано:', `${totalConsumption.totalDistance}км`],
+                ['Бензина сожжено:', `${totalConsumption.totalLiters}л`],
+                [
+                  'Расход:',
+                  `${
+                    Math.round(totalConsumption.consumptionPer100km * 100) / 100
+                  }л/100км`,
+                ],
+              ].map(([title, text], i) => (
+                <div key={i}>
+                  <span className="_font-regular-24-24 _text-text-secondary">
+                    {title}
+                  </span>{' '}
+                  <span className="_font-regular-24-24">{text}</span>
+                </div>
+              ))}
           </div>
         </div>
       </div>
