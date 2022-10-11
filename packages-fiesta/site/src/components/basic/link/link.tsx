@@ -1,5 +1,6 @@
 import React, {FC, ReactNode} from 'react';
 import cn from 'classnames';
+import styles from './link.module.css';
 
 type LinkProps = {
   className: string;
@@ -9,7 +10,7 @@ type LinkProps = {
 
 export const Link: FC<LinkProps> = ({className, href, children}) => {
   return (
-    <a className={cn(className, 'hover:_underline')} href={href}>
+    <a className={cn(className, styles.link)} href={href}>
       {children}
     </a>
   );

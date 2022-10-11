@@ -1,0 +1,11 @@
+@import '../../../css/variables.css';
+
+.link {
+  color: var(--color-text-primary);
+  text-decoration: none;
+
+  &:hover,
+  &:focus {
+    text-decoration: underline;
+  }
+}

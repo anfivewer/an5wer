@@ -2,6 +2,8 @@ import React, {FC} from 'react';
 import cn from 'classnames';
 import {dateToStr, mileageToStr} from './utils';
 import {CarEvent} from '@-/fiesta-types/src/data/events';
+import typoStyles from '../../css/typography.module.css';
+import utilStyles from '../../css/utility.module.css';
 
 type EventsSectionProps = {
   className?: string;
@@ -18,11 +20,13 @@ const EventRow: FC<{
   const dateStr = dateToStr(date);
 
   return (
-    <div className="_font-regular-24-24 _mt-4">
+    <div className={cn(typoStyles.regular24_24, utilStyles.marginTop4)}>
       {mileageStr}
-      {mileageStr ? <span className="_text-text-secondary"> — </span> : null}
+      {mileageStr ? (
+        <span className={utilStyles.colorTextSecondary}> — </span>
+      ) : null}
       {dateStr && (
-        <span className="_text-text-secondary">
+        <span className={utilStyles.colorTextSecondary}>
           {dateStr}
           {title ? ', ' : null}
         </span>
@@ -42,8 +46,8 @@ export const EventsSection: FC<EventsSectionProps> = ({
   }
 
   return (
-    <div className={cn(className, '_flex _flex-col')}>
-      <h2 className="_font-header-32-32">{title}</h2>
+    <div className={cn(className, utilStyles.flexCol)}>
+      <h2 className={typoStyles.header32_32}>{title}</h2>
       <div>
         {events.map((event, i) => (
           <EventRow key={i} event={event} />

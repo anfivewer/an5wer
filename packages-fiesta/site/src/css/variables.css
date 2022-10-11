@@ -1,0 +1,20 @@
+:root {
+  --size-1: 4px;
+  --size-2: 8px;
+  --size-3: 12px;
+  --size-4: 16px;
+  --size-5: 20px;
+  --size-6: 24px;
+  --size-7: 28px;
+  --size-8: 32px;
+
+  --size-mobile-element-width: 300px;
+
+  --color-ev-plate: #259c3f;
+  --color-text-primary: rgb(0, 0, 0);
+  --color-text-secondary: rgba(0, 0, 0, 0.5);
+}
+
+@custom-media --mobile-screen screen and (max-width: 390px);
+@custom-media --small-screen screen and (max-width: 700px);
+@custom-media --medium-screen screen and (max-width: 840px);
