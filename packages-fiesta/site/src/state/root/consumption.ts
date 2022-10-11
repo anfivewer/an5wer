@@ -8,21 +8,23 @@ export const calculateConsumption = ({
 }: {
   events: CarEvent[];
 }): TotalConsumption | undefined => {
-  const pos =
-    events.findIndex((event) => {
-      if (!event.date) {
+  const startFromPos =
+    events.findIndex(({date}) => {
+      if (!date) {
         return false;
       }
 
-      return event.date < CALCULATE_CONSUMPTION_FROM;
+      return date < CALCULATE_CONSUMPTION_FROM;
     }) - 1;
 
-  if (pos < 0) {
+  const lastMileagePos = events.findIndex(({mileageKm}) => Boolean(mileageKm));
+
+  if (startFromPos < 0 || lastMileagePos < 0) {
     return;
   }
 
   const initialMileage = (() => {
-    for (let i = pos; i >= 0; i--) {
+    for (let i = startFromPos; i >= 0; i--) {
       const {mileageKm} = events[i];
 
       if (typeof mileageKm === 'number') {
@@ -37,14 +39,14 @@ export const calculateConsumption = ({
     return;
   }
 
-  const lastMileage = events.find(({mileageKm}) => Boolean(mileageKm))!
-    .mileageKm!;
+  const lastMileage = events[lastMileagePos].mileageKm!;
 
   const totalDistance = lastMileage - initialMileage;
 
   let totalLiters = 0;
 
-  for (let i = 0; i <= pos; i++) {
+  // do not calculate latest fillings without mileage, it will raise consumption
+  for (let i = lastMileagePos; i <= startFromPos; i++) {
     const {addFuelLiters} = events[i];
 
     if (addFuelLiters) {
