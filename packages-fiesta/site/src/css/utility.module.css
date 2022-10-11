@@ -16,3 +16,8 @@
   display: flex;
   flex-direction: column;
 }
+
+.inlineFlexAlignItemsCenter {
+  display: inline-flex;
+  align-items: center;
+}

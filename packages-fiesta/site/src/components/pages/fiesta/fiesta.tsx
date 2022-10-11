@@ -28,7 +28,10 @@ export const Fiesta: FC<{state: RootPageState}> = ({
           <div className={styles.infoList}>
             <div className={typoStyles.regular24_24}>Александр</div>
             <Link
-              className={typoStyles.regular24_24}
+              className={cn(
+                utilStyles.inlineFlexAlignItemsCenter,
+                typoStyles.regular24_24,
+              )}
               href="https://t.me/ruliov"
             >
               <TelegramIcon className={utilStyles.marginRight1} size={24} />
