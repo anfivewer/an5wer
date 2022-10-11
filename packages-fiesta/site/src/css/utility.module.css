@@ -1,0 +1,18 @@
+@import './variables.css';
+
+.marginRight1 {
+  margin-right: var(--size-1);
+}
+
+.marginTop4 {
+  margin-top: var(--size-4);
+}
+
+.colorTextSecondary {
+  color: var(--color-text-secondary);
+}
+
+.flexCol {
+  display: flex;
+  flex-direction: column;
+}

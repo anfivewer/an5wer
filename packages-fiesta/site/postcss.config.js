@@ -1,7 +1,8 @@
-const {resolve} = require('path');
-
 module.exports = {
   plugins: {
-    tailwindcss: resolve(__dirname, 'tailwind.config.js'),
+    'postcss-mixins': {},
+    'postcss-custom-properties': {},
+    'postcss-nesting': {},
+    'postcss-custom-media': {},
   },
 };
