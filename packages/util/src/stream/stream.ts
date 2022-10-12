@@ -5,22 +5,30 @@ type List<T> = {
   next: List<T> | null;
 } | null;
 
-export const createEventsStream = <T>(): {
+export const createStream = <T>(): {
   getGenerator: () => AsyncGenerator<T, void, void>;
   push: (item: T) => void;
+  replace: (item: T) => void;
   destroyWithError: (error: unknown) => void;
   destroy: () => void;
 } => {
   let destroyed = false;
   let error: unknown = null;
   let head: List<T> = null;
+  let replaceId = 0;
   let itemsAvailableDefer = new Defer();
 
   function getGenerator(): AsyncGenerator<T, void, void> {
     let listItem = head;
+    let currentReplaceId = replaceId;
 
     return {
       next: async () => {
+        if (replaceId !== currentReplaceId) {
+          currentReplaceId = replaceId;
+          listItem = head;
+        }
+
         // eslint-disable-next-line no-unmodified-loop-condition
         while (!listItem) {
           itemsAvailableDefer = new Defer();
@@ -75,6 +83,11 @@ export const createEventsStream = <T>(): {
       }
 
       head = nextHead;
+      itemsAvailableDefer.resolve();
+    },
+    replace: (item: T): void => {
+      replaceId++;
+      head = {value: item, next: null};
       itemsAvailableDefer.resolve();
     },
     destroyWithError: (err: unknown): void => {

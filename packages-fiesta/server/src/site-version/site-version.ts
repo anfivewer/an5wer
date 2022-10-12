@@ -1,17 +1,18 @@
 import {Context} from '../types/context';
 import {Logger} from '@-/util/src/logging/types';
+import {ReadOnlyStream} from '@-/types/src/stream/stream';
 import {
   databaseDependency,
   siteVersionDependency,
 } from '../context/dependencies';
 import {Database} from '@-/fiesta-types/src/database/database';
-import {createEventsStream} from '@-/util/src/stream/events-stream';
+import {createStream} from '@-/util/src/stream/stream';
 
 export class SiteVersion {
   private version!: string;
   private database!: Database;
   private logger: Logger;
-  private versionStream = createEventsStream<string>();
+  private versionStream = createStream<string>();
 
   constructor({logger}: {logger: Logger}) {
     this.logger = logger;
@@ -33,7 +34,7 @@ export class SiteVersion {
     return this.version;
   }
 
-  getVersionStream(): AsyncGenerator<string, void, void> {
+  getVersionStream(): ReadOnlyStream<string> {
     return this.versionStream.getGenerator();
   }
 
@@ -44,7 +45,7 @@ export class SiteVersion {
     }
 
     this.version = version;
-    this.versionStream.push(version);
+    this.versionStream.replace(version);
   }
 
   onVersionUpdated(): void {

@@ -47,6 +47,16 @@ importers:
       '@types/node': 17.0.42
       nodemon: 2.0.18
 
+  packages-diffbelt/types:
+    specifiers:
+      '@-/types': workspace:*
+      typescript: 4.8.3
+      zod: 3.17.3
+    dependencies:
+      '@-/types': link:../../packages/types
+      typescript: 4.8.3
+      zod: 3.17.3
+
   packages-fiesta/deploy:
     specifiers:
       '@-/fiesta-types': workspace:*
