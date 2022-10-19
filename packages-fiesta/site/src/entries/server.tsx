@@ -8,11 +8,12 @@ import {join} from 'path';
 import React, {ComponentType, FC} from 'react';
 import ReactDOMServer from 'react-dom/server';
 import {Fiesta} from '../components/pages/fiesta/fiesta';
+import {getAdminPageState} from '../state/admin/admin';
 import {getRootPageState} from '../state/root/root';
 import {GetStateFn} from '../state/types';
 import {STATE_KEY} from './constants';
 
-const NoSsrComponent: FC<{state: {rootId: string}}> = () => null;
+const NoSsrComponent: FC<{state: unknown}> = () => null;
 
 const rootId = 'root-63d16db3597b7e71';
 
@@ -36,7 +37,7 @@ const entryPages = {
   }),
   [FiestaRenderPage.admin]: createEntry({
     component: NoSsrComponent,
-    getState: () => Promise.resolve({rootId}),
+    getState: getAdminPageState,
     devClient: '/src/entries/admin-client.tsx',
   }),
 };

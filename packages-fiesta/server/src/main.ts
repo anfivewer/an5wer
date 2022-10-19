@@ -8,7 +8,7 @@ import {
   siteRendererDependency,
 } from './context/dependencies';
 import {registerRootRoute} from './routes/root';
-import {Config} from './types/config';
+import {Config} from '@-/fiesta-types/src/server/config';
 import {mkdir, stat as fsStat} from 'fs/promises';
 import {Stats} from 'fs';
 import {registerDirectusRoute} from './routes/directus';
@@ -19,18 +19,19 @@ import {DirectusDatabase} from './database/directus/database';
 import {SiteVersion} from './site-version/site-version';
 import {SiteRendererProd} from './site/renderer';
 import {SiteRendererDev} from './site/renderer-dev';
+import {registerAdminRoute} from './routes/admin';
 
 runApp({
   createApp: ({logger}) =>
     createApp({
       getLogger: () => logger,
-      getConfig: ({logger}) => Promise.resolve(getConfig({logger})),
+      getConfig: ({logger}) => getConfig({logger}),
       setupLoggerByConfig: ({logger, config}) => {
         logger.setDebug(config.isDebug);
       },
       getInitialContext: createInitialContext,
       preInit: async ({app, config}) => {
-        const {isDev, serverPort, directusPort, directusPublicPath} = config;
+        const {isDev, serverPort, directusPort, directusPath} = config;
 
         await ensureDataFolderExists({config});
 
@@ -64,7 +65,7 @@ runApp({
           name: 'directus',
           getComponent: () =>
             new DirectusComponent({
-              publicPath: directusPublicPath,
+              publicPath: `${directusPath}/`,
               port: directusPort,
               onInit: ({context}) => {
                 context.directusUrlInternal = `http://127.0.0.1:${directusPort}/`;
@@ -78,6 +79,16 @@ runApp({
         });
 
         app.registerOnInit(async ({context}) => {
+          await context.dependenciesGraph.onCompleted([directusDependency]);
+
+          registerDirectusRoute({
+            context,
+            logger: logger.fork('directus'),
+            directusPort,
+          });
+        });
+
+        app.registerOnInit(async ({context}) => {
           registerDirectusRoute({
             context,
             logger: logger.fork('directus'),
@@ -87,6 +98,7 @@ runApp({
           await context.dependenciesGraph.onCompleted([siteRendererDependency]);
 
           registerRootRoute({context, logger: logger.fork('/')});
+          registerAdminRoute({context, logger: logger.fork('/admin/')});
         });
       },
     }),

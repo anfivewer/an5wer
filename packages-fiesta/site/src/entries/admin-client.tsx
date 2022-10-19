@@ -1,21 +1,20 @@
-// import React from 'react';
-// import {hydrateRoot, createRoot} from 'react-dom/client';
-// import {Fiesta} from '../components/pages/fiesta/fiesta';
-// import {STATE_KEY} from './constants';
+import {AdminPageState} from '@-/fiesta-types/src/site/state/admin';
+import {AdminPage} from '../components/pages/admin/admin';
+import {AdminMstContext} from '../contexts/admin-mst';
+import {AdminMst} from '../state/admin/mst';
+import {renderRootMst} from './util/render-root-mst';
 
-// const state = (window as any)[STATE_KEY];
+renderRootMst({
+  stateParser: AdminPageState,
+  Component: AdminPage,
+  MstContext: AdminMstContext,
+  getMstStore: ({state: {directusUrl}}) => {
+    const store = AdminMst.create({
+      directusUrl,
+    });
 
-// const rootEl = document.getElementById('root');
+    store.init();
 
-// if (rootEl) {
-//   const app = <Fiesta state={state} />;
-
-//   if (rootEl.firstChild) {
-//     hydrateRoot(rootEl, app);
-//   } else {
-//     const root = createRoot(rootEl);
-//     root.render(app);
-//   }
-// }
-
-console.log(42);
+    return store;
+  },
+});
