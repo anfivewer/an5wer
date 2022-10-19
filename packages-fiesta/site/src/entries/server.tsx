@@ -94,7 +94,7 @@ export const render: FiestaRenderFun = async (options) => {
               const {basePath} = manifest;
 
               return manifest.js.map((path, index) => (
-                <script key={index} src={`${basePath}${path}`} />
+                <script type="module" key={index} src={`${basePath}${path}`} />
               ));
             })()
           )}
