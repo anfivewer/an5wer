@@ -4,7 +4,9 @@ import {CarEvent} from '../../data/events';
 export const TotalConsumption = object({
   totalDistance: number(),
   totalLiters: number(),
+  notCalculatedLiters: number(),
   consumptionPer100km: number(),
+  pessimisticConsumptionPer100km: number(),
 });
 export type TotalConsumption = Infer<typeof TotalConsumption>;
 
