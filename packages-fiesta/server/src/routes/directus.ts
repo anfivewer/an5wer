@@ -12,25 +12,26 @@ export const registerDirectusRoute = ({
 }) => {
   const {
     httpServer,
-    config: {directusPublicPath},
+    config: {directusPath: directusPathRaw},
   } = context;
 
   const proxy = createProxyServer();
 
-  const pathRegexp = new RegExp(`^${directusPublicPath}`);
+  const directusPath = `${directusPathRaw}/`;
+  const pathRegexp = new RegExp(`^${directusPath}`);
 
   proxy.on('proxyReq', function (proxyReq) {
     proxyReq.path = proxyReq.path.replace(pathRegexp, '/');
   });
 
   httpServer.addRawMiddleware((req, res, next) => {
-    if (!req.url?.startsWith(directusPublicPath)) {
+    if (!req.url?.startsWith(directusPath)) {
       next();
       return;
     }
 
     if (req.method === 'POST' || req.method === 'PATCH') {
-      const subUrl = req.url.slice(directusPublicPath.length);
+      const subUrl = req.url.slice(directusPath.length);
 
       if (/^items\/kv\/site-version(?:\?.*|$)/.test(subUrl)) {
         context.siteVersion.onVersionUpdated();

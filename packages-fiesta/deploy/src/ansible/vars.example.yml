@@ -1,6 +1,8 @@
 domain: fiesta-test.an5wer.com
 fiesta_home: /home/fiesta
 fiesta_data_path: /home/fiesta/fiesta-data
+fiesta_admin_path: /admin
+fiesta_directus_path: /_directus
 release_branch: develop
 certbot_admin_email: admin@example.org
 directus_admin_email: admin@example.org

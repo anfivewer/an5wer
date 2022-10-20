@@ -5,7 +5,7 @@ export const createGetConfig = <T>(
     logger: Logger;
     getBoolean: (name: string, defaultValue?: boolean) => boolean;
     getInteger: (name: string) => number;
-    getNonEmptyString: (name: string) => string;
+    getNonEmptyString: (name: string, defaultValue?: string) => string;
   }) => Promise<T>,
 ): ((options: {logger: Logger}) => Promise<T>) => {
   return async ({logger}) => {
@@ -53,9 +53,13 @@ export const createGetConfig = <T>(
       return num;
     };
 
-    const getNonEmptyString = (name: string): string => {
+    const getNonEmptyString = (name: string, defaultValue?: string): string => {
       const value = process.env[name];
       if (!value) {
+        if (defaultValue) {
+          return defaultValue;
+        }
+
         error = new Error(`process.env.${name} should be present`);
         logger.error('noValue', {name}, {error});
         return '';
