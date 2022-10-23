@@ -2,7 +2,7 @@ import {HttpServer} from '@-/util/src/http-server/http-server';
 import {Logger} from '@-/util/src/logging/types';
 import {DependenciesGraph} from '@-/util/src/async/dependencies-graph';
 import {SiteVersion} from '../site-version/site-version';
-import {Config} from './config';
+import {Config} from '@-/fiesta-types/src/server/config';
 import {SiteRenderer} from '../site/types';
 import {Database} from '@-/fiesta-types/src/database/database';
 import {DirectusComponent} from '@-/directus-fiesta/src/component';

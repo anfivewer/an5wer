@@ -141,12 +141,18 @@ importers:
   packages-fiesta/site:
     specifiers:
       '@-/fiesta-types': workspace:*
+      '@-/types': workspace:*
+      '@-/util': workspace:*
+      '@-/util-react': workspace:*
       '@fortawesome/free-solid-svg-icons': 6.1.1
       '@types/node': 17.0.42
       '@types/react': 18.0.15
       '@types/react-dom': 18.0.6
       '@vitejs/plugin-react': 1.3.0
       classnames: 2.3.1
+      mobx: 6.6.2
+      mobx-react-lite: 3.4.0
+      mobx-state-tree: 5.1.6
       postcss: 8.4.14
       postcss-custom-media: 8.0.2
       postcss-custom-properties: 12.1.9
@@ -163,9 +169,15 @@ importers:
       zod: 3.17.3
     dependencies:
       '@-/fiesta-types': link:../types
+      '@-/types': link:../../packages/types
+      '@-/util': link:../../packages/util
+      '@-/util-react': link:../../packages/util-react
       '@fortawesome/free-solid-svg-icons': 6.1.1
       '@vitejs/plugin-react': 1.3.0
       classnames: 2.3.1
+      mobx: 6.6.2
+      mobx-react-lite: 3.4.0_hnlgfutfykjo7655p5bdldryma
+      mobx-state-tree: 5.1.6_mobx@6.6.2
       postcss: 8.4.14
       postcss-custom-media: 8.0.2_postcss@8.4.14
       postcss-custom-properties: 12.1.9_postcss@8.4.14
@@ -233,6 +245,14 @@ importers:
       nodemon: 2.0.18
       ts-node: 10.8.1_7elzlgvrtu6xx6s2d4lb477dqa
 
+  packages/tests:
+    specifiers:
+      '@-/types': workspace:*
+      typescript: 4.8.3
+    dependencies:
+      '@-/types': link:../types
+      typescript: 4.8.3
+
   packages/types:
     specifiers:
       typescript: 4.8.3
@@ -261,6 +281,21 @@ importers:
       '@types/jest': 28.1.3
       '@types/node': 17.0.42
       jest: 28.1.3_ulrz5zuh5kppsvny26pjrk2deu
+
+  packages/util-react:
+    specifiers:
+      '@-/types': 0.0.1
+      '@types/node': 17.0.42
+      '@types/react': 18.0.15
+      react: 18.1.0
+      typescript: 4.8.3
+    dependencies:
+      '@-/types': link:../types
+      react: 18.1.0
+      typescript: 4.8.3
+    devDependencies:
+      '@types/node': 17.0.42
+      '@types/react': 18.0.15
 
 packages:
 
@@ -4662,7 +4697,7 @@ packages:
     dev: false
 
   /concat-map/0.0.1:
-    resolution: {integrity: sha1-2Klr13/Wjfd5OnMDajug1UBdR3s=}
+    resolution: {integrity: sha512-/Srv4dswyQNBfohGpz9o6Yb3Gz3SrUDqBH5rTuhGR7ahtlbYKnVxw2bCFMRljaA7EXHaXZ8wsHdodFvbkhKmqg==}
 
   /concat-stream/1.5.2:
     resolution: {integrity: sha512-H6xsIBfQ94aESBG8jGHXQ7i5AEpy5ZeVaLDOisDICiTCKpqEfr34/KmTrspKQNoLKNu9gTkovlpQcUi630AKiQ==}
@@ -9357,6 +9392,36 @@ packages:
     resolution: {integrity: sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==}
     engines: {node: '>=10'}
     hasBin: true
+    dev: false
+
+  /mobx-react-lite/3.4.0_hnlgfutfykjo7655p5bdldryma:
+    resolution: {integrity: sha512-bRuZp3C0itgLKHu/VNxi66DN/XVkQG7xtoBVWxpvC5FhAqbOCP21+nPhULjnzEqd7xBMybp6KwytdUpZKEgpIQ==}
+    peerDependencies:
+      mobx: ^6.1.0
+      react: ^16.8.0 || ^17 || ^18
+      react-dom: '*'
+      react-native: '*'
+    peerDependenciesMeta:
+      react-dom:
+        optional: true
+      react-native:
+        optional: true
+    dependencies:
+      mobx: 6.6.2
+      react: 18.1.0
+      react-dom: 18.1.0_react@18.1.0
+    dev: false
+
+  /mobx-state-tree/5.1.6_mobx@6.6.2:
+    resolution: {integrity: sha512-t4YNI3taTvDTMCyjA/bmX90HpPUMJEHX1OvyJqbfR6iOIWkJk+JbWc1aozIZxh2M5VA8xtHGnzu/2YGzSPUpJQ==}
+    peerDependencies:
+      mobx: ^6.3.0
+    dependencies:
+      mobx: 6.6.2
+    dev: false
+
+  /mobx/6.6.2:
+    resolution: {integrity: sha512-IOpS0bf3+hXIhDIy+CmlNMBfFpAbHS0aVHcNC+xH/TFYEKIIVDKNYRh9eKlXuVfJ1iRKAp0cRVmO145CyJAMVQ==}
     dev: false
 
   /module-details-from-path/1.0.3:

@@ -54,7 +54,25 @@ export const calculateConsumption = ({
     }
   }
 
-  const consumptionPer100km = (totalLiters / totalDistance) * 100;
+  let extraLiters = 0;
 
-  return {totalDistance, totalLiters, consumptionPer100km};
+  for (let i = 0; i < lastMileagePos; i++) {
+    const {addFuelLiters} = events[i];
+
+    if (addFuelLiters) {
+      extraLiters += addFuelLiters;
+    }
+  }
+
+  const consumptionPer100km = (totalLiters / totalDistance) * 100;
+  const pessimisticConsumptionPer100km =
+    ((totalLiters + extraLiters) / totalDistance) * 100;
+
+  return {
+    totalDistance,
+    totalLiters,
+    notCalculatedLiters: extraLiters,
+    consumptionPer100km,
+    pessimisticConsumptionPer100km,
+  };
 };

@@ -7,15 +7,21 @@ import {
 } from '../context/dependencies';
 import {SiteRenderer} from './types';
 import {SiteManifest} from '@-/fiesta-types/src/server/manifest';
-import {FiestaRenderFun, RequestData} from '@-/fiesta-types/src/site/render';
+import {
+  FiestaRenderConfig,
+  FiestaRenderFun,
+  RequestData,
+} from '@-/fiesta-types/src/site/render';
 import {FiestaRenderPage} from '@-/fiesta-types/src/site/pages';
 import {Database} from '@-/fiesta-types/src/database/database';
 import {BaseComponent} from '@-/types/src/app/component';
 import {IOError} from '@-/types/src/errors/io';
+import {pickConfig} from './config';
 
 class VersionNotExistsError extends Error {}
 
 export class SiteRendererProd extends BaseComponent implements SiteRenderer {
+  private config!: FiestaRenderConfig;
   private database!: Database;
   private manifest: SiteManifest | undefined;
   private renderFn: FiestaRenderFun | undefined;
@@ -23,8 +29,9 @@ export class SiteRendererProd extends BaseComponent implements SiteRenderer {
   private stylesCache = new Map<string, string>();
 
   async init({context}: {context: Context}) {
-    const {siteVersion, dependenciesGraph, database} = context;
+    const {siteVersion, dependenciesGraph, database, config} = context;
 
+    this.config = pickConfig(config);
     this.database = database;
 
     await dependenciesGraph.onCompleted([siteVersionDependency]);
@@ -137,6 +144,7 @@ export class SiteRendererProd extends BaseComponent implements SiteRenderer {
       clientBuildPath: this.clientBuildPath,
       stylesCache: this.stylesCache,
       database: this.database,
+      config: this.config,
     });
   }
 }

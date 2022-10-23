@@ -13,6 +13,53 @@ import utilStyles from '../../../css/utility.module.css';
 export const Fiesta: FC<{state: RootPageState}> = ({
   state: {events, plannedEvents, totalConsumption},
 }) => {
+  const consumptionFields = (() => {
+    if (!totalConsumption) {
+      return null;
+    }
+
+    const {
+      totalDistance,
+      totalLiters,
+      notCalculatedLiters,
+      consumptionPer100km,
+      pessimisticConsumptionPer100km,
+    } = totalConsumption;
+
+    const consumption = Math.round(consumptionPer100km * 100) / 100;
+    const pessimisticConsumption =
+      Math.round(pessimisticConsumptionPer100km * 100) / 100;
+
+    return [
+      ['Проехано:', `${totalDistance}км`],
+      [
+        'Бензина сожжено:',
+        notCalculatedLiters ? (
+          <>
+            {`${totalLiters}л`}
+            <span
+              className={cn(
+                typoStyles.regular24_24,
+                utilStyles.colorTextSecondary,
+              )}
+            >
+              {' + ≈'}
+              {notCalculatedLiters}л?
+            </span>
+          </>
+        ) : (
+          `${totalLiters}л`
+        ),
+      ],
+      ...(consumption === pessimisticConsumption
+        ? [['Расход:', `${consumption}л/100км`]]
+        : [
+            ['🤗 расход:', `${consumption}л/100км`],
+            ['😢 расход:', `${pessimisticConsumption}л/100км`],
+          ]),
+    ];
+  })();
+
   return (
     <div className={styles.page}>
       <div className={styles.head}>
@@ -37,29 +84,19 @@ export const Fiesta: FC<{state: RootPageState}> = ({
               <TelegramIcon className={utilStyles.marginRight1} size={24} />
               @ruliov
             </Link>
-            {totalConsumption &&
-              [
-                ['Проехано:', `${totalConsumption.totalDistance}км`],
-                ['Бензина сожжено:', `${totalConsumption.totalLiters}л`],
-                [
-                  'Расход:',
-                  `${
-                    Math.round(totalConsumption.consumptionPer100km * 100) / 100
-                  }л/100км`,
-                ],
-              ].map(([title, text], i) => (
-                <div key={i}>
-                  <span
-                    className={cn(
-                      typoStyles.regular24_24,
-                      utilStyles.colorTextSecondary,
-                    )}
-                  >
-                    {title}
-                  </span>{' '}
-                  <span className={typoStyles.regular24_24}>{text}</span>
-                </div>
-              ))}
+            {consumptionFields?.map(([title, text], i) => (
+              <div key={i}>
+                <span
+                  className={cn(
+                    typoStyles.regular24_24,
+                    utilStyles.colorTextSecondary,
+                  )}
+                >
+                  {title}
+                </span>{' '}
+                <span className={typoStyles.regular24_24}>{text}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
