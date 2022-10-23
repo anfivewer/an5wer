@@ -6,6 +6,8 @@ export const DirectusItemsErrorResponse = object({
       extensions: union([
         object({code: literal('RECORD_NOT_UNIQUE')}),
         object({code: literal('FORBIDDEN')}),
+        object({code: literal('TOKEN_EXPIRED')}),
+        object({code: literal('INVALID_CREDENTIALS')}),
       ]),
     }),
   ),

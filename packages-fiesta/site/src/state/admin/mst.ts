@@ -1,10 +1,10 @@
-import {types, Instance, flow} from 'mobx-state-tree';
+import {autorun} from 'mobx';
+import {types, Instance, flow, addDisposer, applyAction} from 'mobx-state-tree';
 import {getLocalStorageProperty} from '@-/util/src/storage/local-storage';
-import {DirectusLoginResponse} from '@-/types/src/directus/auth/login';
 import {CarEvent} from '@-/fiesta-types/src/data/events';
-import {assertNonNullable} from '@-/types/src/assert/runtime';
-import {DirectusItemsErrorResponse} from '@-/types/src/directus/items/errors';
-import {AuthError, CreateEventIdNotUniqueError} from './errors';
+import {AuthError} from './errors';
+import {DirectusApi} from './api/api';
+import {DirectusLoginResponse} from '@-/types/src/directus/auth/login';
 
 export const AuthMst = types.model({
   accessToken: types.string,
@@ -42,6 +42,38 @@ export const AdminMst = types
       refreshTokenProperty.set(null);
     };
 
+    const _afterLogin = ({
+      data: {accessToken, refreshToken},
+    }: DirectusLoginResponse) => {
+      self.auth = AuthMst.create({
+        accessToken,
+        refreshToken,
+      });
+
+      accessTokenProperty.set(accessToken);
+      refreshTokenProperty.set(refreshToken);
+    };
+
+    const api = new DirectusApi({
+      directusUrl: self.directusUrl,
+      onTokenRefreshed: (loginData) => {
+        applyAction(self, {
+          name: '_afterLogin',
+          args: [loginData],
+        });
+      },
+    });
+
+    const dispose = autorun(() => {
+      const {directusUrl, auth} = self;
+      const {accessToken, refreshToken} = auth || {};
+
+      api.setDirectusUrl(directusUrl);
+      api.setAccessToken(accessToken);
+      api.setRefreshToken(refreshToken);
+    });
+    addDisposer(self, dispose);
+
     return {
       init: () => {
         if (self.auth) {
@@ -72,79 +104,31 @@ export const AdminMst = types
 
         self.isLoginActive = true;
 
-        const response: Awaited<ReturnType<typeof fetch>> = yield fetch(
-          `${self.directusUrl}/auth/login`,
-          {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-              email,
-              password,
-            }),
-          },
+        const response: Awaited<ReturnType<typeof api.login>> = yield api.login(
+          {email, password},
         );
-        const data: unknown = yield response.json();
 
-        const {
-          data: {accessToken, refreshToken},
-        } = DirectusLoginResponse.parse(data);
+        _afterLogin(response);
 
-        self.auth = AuthMst.create({
-          accessToken,
-          refreshToken,
-        });
         self.isLoginActive = false;
         self.page = RootPageMst.create({name: 'root'});
-
-        accessTokenProperty.set(accessToken);
-        refreshTokenProperty.set(refreshToken);
       }),
+
+      _afterLogin,
 
       logout,
 
       createEvent: flow(function* (event: CarEvent) {
-        const {directusUrl, auth} = self;
-
-        assertNonNullable(auth, 'createEvent: no auth');
-
         self.isActionCreationActive = true;
 
         try {
-          const response: Awaited<ReturnType<typeof fetch>> = yield fetch(
-            `${directusUrl}/items/events`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${auth.accessToken}`,
-              },
-              body: JSON.stringify(event),
-            },
-          );
-          const data: unknown = yield response.json();
-
-          if (response.status !== 200) {
-            const parsedResponse = DirectusItemsErrorResponse.safeParse(data);
-            if (parsedResponse.success) {
-              const isNonUniqueId = parsedResponse.data.errors.some(
-                (error) => error.extensions.code === 'RECORD_NOT_UNIQUE',
-              );
-              if (isNonUniqueId) {
-                throw new CreateEventIdNotUniqueError();
-              }
-
-              const isAuthProblem = parsedResponse.data.errors.some(
-                (error) => error.extensions.code === 'FORBIDDEN',
-              );
-              if (isAuthProblem) {
-                logout();
-                throw new AuthError();
-              }
-            }
-
-            console.error('createEvent', response.status, data);
-            throw new Error();
+          yield api.createEvent(event);
+        } catch (error) {
+          if (error instanceof AuthError) {
+            logout();
           }
+
+          throw error;
         } finally {
           self.isActionCreationActive = false;
         }
