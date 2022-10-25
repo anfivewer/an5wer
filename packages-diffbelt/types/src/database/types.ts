@@ -10,13 +10,18 @@ type QueryResult = {
   cursorId?: string;
 };
 
+export type DiffResultItems = {key: string; values: (string | null)[]}[];
+
 type DiffResult = {
+  fromGenerationId: string;
   generationId: string;
-  items: {key: string; values: (string | null)[]}[];
+  items: DiffResultItems;
   cursorId?: string;
 };
 
 export type Collection = {
+  getName: () => string;
+
   getGeneration: () => Promise<string>;
   getGenerationStream: () => ReadOnlyStream<string>;
 
@@ -25,17 +30,22 @@ export type Collection = {
     generationId?: string;
     transactionId?: string;
   }) => Promise<{generationId: string; item: KeyValue | null}>;
-  query: (options: {generationId?: string}) => Promise<QueryResult>;
+  query: (options?: {generationId?: string}) => Promise<QueryResult>;
   readQueryCursor: (options: {cursorId: string}) => Promise<QueryResult>;
 
   put: (
-    options: KeyValueUpdate & {transactionId?: string},
+    options: KeyValueUpdate & {transactionId?: string; generationId?: string},
   ) => Promise<PutResult>;
-  putMany: (options: {items: KeyValueUpdate[]}) => Promise<PutResult>;
-  diff: (options: {
-    fromGeneration: string;
-    toGeneration?: string;
-  }) => Promise<DiffResult>;
+  putMany: (options: {
+    items: KeyValueUpdate[];
+    transactionId?: string;
+    generationId?: string;
+  }) => Promise<PutResult>;
+  diff: (
+    options: ({fromGeneration: string} | {readerId: string}) & {
+      toGeneration?: string;
+    },
+  ) => Promise<DiffResult>;
   readDiffCursor: (options: {cursorId: string}) => Promise<DiffResult>;
 
   closeCursor: (options: {cursorId: string}) => Promise<void>;
@@ -48,7 +58,21 @@ export type Collection = {
     transactionId: string;
     generationId: string;
   }>;
-  commitTransaction: (options: {transactionId: string}) => Promise<void>;
+  commitTransaction: (options: {
+    transactionId: string;
+  }) => Promise<{generationId: string}>;
+  abortTransaction: (options: {transactionId: string}) => Promise<void>;
+
+  startGeneration: (options: {generationId: string}) => Promise<void>;
+  commitGeneration: (options: {
+    generationId: string;
+    updateReaders?: {
+      collectionName: string;
+      readerId: string;
+      generationId: string;
+    }[];
+  }) => Promise<void>;
+  abortGeneration: (options: {generationId: string}) => Promise<void>;
 };
 
 export type Database = {
