@@ -22,13 +22,6 @@ export const testDatabase = async ({database}: {database: Database}) => {
     expect(collections.sort()).toStrictEqual(['colA', 'colB']);
   }
 
-  const colC = await database.getCollection('colC', {createIfAbsent: true});
-
-  {
-    const {collections} = await database.listCollections();
-    expect(collections.sort()).toStrictEqual(['colA', 'colB', 'colC']);
-  }
-
   {
     let thrown: unknown;
 
@@ -49,12 +42,13 @@ export const testDatabase = async ({database}: {database: Database}) => {
   const initialDumps = await Promise.all([
     dumpCollection(colA),
     dumpCollection(colB),
-    dumpCollection(colC),
   ]);
 
   initialDumps.forEach(({items}) => {
     expect(items).toStrictEqual([]);
   });
+
+  const initialColAGenerationId = await colA.getGeneration();
 
   // Let `colA` contain `timestamp -> number`
   // Then we'll group it to `colB` -- `timestamp(every 60 seconds) -> sum of numbers from colA`
@@ -85,21 +79,37 @@ export const testDatabase = async ({database}: {database: Database}) => {
     expect(items).toStrictEqual(initialItems);
   }
 
-  await colA.createReader({id: 'aToB'});
+  await colB.createReader({
+    readerId: 'aToB',
+    generationId: initialColAGenerationId,
+    collectionName: 'colA',
+  });
 
   const {generationId: firstTransformGenerationId} = await doTransformFromAtoB({
     colA,
     colB,
     expectedItems: [
-      /*TODO*/
+      {key: makeId(3), values: [null, '2']},
+      {key: makeId(65), values: [null, '5']},
+      {key: makeId(69), values: [null, '11']},
+      {key: makeId(70), values: [null, '8']},
+      {key: makeId(249), values: [null, '13']},
+      {key: makeId(270), values: [null, '15']},
+      {key: makeId(300), values: [null, '42']},
     ],
+    expectedFromGenerationId: initialColAGenerationId,
+  });
+
+  await waitForGeneration({
+    collection: colB,
+    generationId: firstTransformGenerationId,
   });
 
   expect(firstTransformGenerationId).toBe(firstPutGenerationId);
 
   {
-    const {items, generationId} = await dumpCollection(colA);
-    expect(generationId >= firstTransformGenerationId).toBe(true);
+    const {items, generationId} = await dumpCollection(colB);
+    expect(generationId).toBe(firstTransformGenerationId);
 
     expect(items).toStrictEqual([
       {key: makeId(0), value: String(2)},
@@ -144,15 +154,18 @@ export const testDatabase = async ({database}: {database: Database}) => {
       colA,
       colB,
       expectedItems: [
-        /*TODO*/
+        {key: makeId(3), values: ['2', null]},
+        {key: makeId(66), values: [null, '7']},
+        {key: makeId(270), values: ['15', '12']},
       ],
+      expectedFromGenerationId: firstTransformGenerationId,
     },
   );
 
   expect(secondTransformGenerationId).toBe(updateValueGenerationId);
 
   {
-    const {items, generationId} = await dumpCollection(colA);
+    const {items, generationId} = await dumpCollection(colB);
     expect(generationId >= secondTransformGenerationId).toBe(true);
 
     expect(items).toStrictEqual([
@@ -170,16 +183,23 @@ const doTransformFromAtoB = async ({
   colA,
   colB,
   expectedItems,
+  expectedFromGenerationId,
 }: {
   colA: Collection;
   colB: Collection;
   expectedItems: DiffResultItems;
+  expectedFromGenerationId: string;
 }) => {
   const {
+    fromGenerationId,
     generationId: toGenerationId,
     items,
     cursorId: initialCursorId,
-  } = await colA.diff({readerId: 'aToB'});
+  } = await colA.diff({readerId: 'aToB', readerCollectionName: 'colB'});
+
+  expect(fromGenerationId).toBe(expectedFromGenerationId);
+
+  const dumpedBeforeGeneration = await dumpCollection(colB);
 
   await colB.startGeneration({generationId: toGenerationId});
 
@@ -213,6 +233,9 @@ const doTransformFromAtoB = async ({
         generationId: toGenerationId,
       });
     }
+
+    prevTs = -1;
+    prevTsDiff = 0;
   };
 
   const processItems = async (items: DiffResultItems) => {
@@ -254,11 +277,14 @@ const doTransformFromAtoB = async ({
 
   await save();
 
+  const dumpedBeforeCommit = await dumpCollection(colB);
+
+  expect(dumpedBeforeCommit).toStrictEqual(dumpedBeforeGeneration);
+
   await colB.commitGeneration({
     generationId: toGenerationId,
     updateReaders: [
       {
-        collectionName: colA.getName(),
         readerId: 'aToB',
         generationId: toGenerationId,
       },

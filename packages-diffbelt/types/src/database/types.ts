@@ -1,22 +1,46 @@
 import {ReadOnlyStream} from '@-/types/src/stream/stream';
 
 type KeyValueUpdate = {key: string; value: string | null};
-type KeyValue = {key: string; value: string};
+export type KeyValue = {key: string; value: string};
 type PutResult = {generationId: string};
 
-type QueryResult = {
+export type KeyValueRecord = {
+  key: string;
+  value: string | null;
+  generationId: string;
+};
+
+export type QueryResult = {
   generationId: string;
   items: KeyValue[];
   cursorId?: string;
 };
 
-export type DiffResultItems = {key: string; values: (string | null)[]}[];
+export type DiffResultValues = (string | null)[];
+export type DiffResultItems = {key: string; values: DiffResultValues}[];
 
-type DiffResult = {
+export type DiffResult = {
   fromGenerationId: string;
   generationId: string;
   items: DiffResultItems;
   cursorId?: string;
+};
+
+type DiffOptionsFromGenerationInputProvided = {fromGenerationId: string};
+type DiffOptionsFromGenerationInputFromReader = {
+  readerId: string;
+  readerCollectionName: string | undefined;
+};
+type DiffOptionsFromGenerationInput =
+  | DiffOptionsFromGenerationInputProvided
+  | DiffOptionsFromGenerationInputFromReader;
+
+export const isGenerationProvidedByReader = (
+  value: DiffOptionsFromGenerationInput,
+): value is DiffOptionsFromGenerationInputFromReader => {
+  return Boolean(
+    (value as Partial<DiffOptionsFromGenerationInputFromReader>).readerId,
+  );
 };
 
 export type Collection = {
@@ -42,17 +66,31 @@ export type Collection = {
     generationId?: string;
   }) => Promise<PutResult>;
   diff: (
-    options: ({fromGeneration: string} | {readerId: string}) & {
-      toGeneration?: string;
+    options: DiffOptionsFromGenerationInput & {
+      toGenerationId?: string;
     },
   ) => Promise<DiffResult>;
   readDiffCursor: (options: {cursorId: string}) => Promise<DiffResult>;
 
   closeCursor: (options: {cursorId: string}) => Promise<void>;
 
-  createReader: (options: {id: string}) => Promise<{generationId: string}>;
-  updateReader: (options: {id: string; generationId: string}) => Promise<void>;
-  deleteReader: (options: {id: string}) => Promise<void>;
+  listReaders: () => Promise<
+    {
+      readerId: string;
+      generationId: string;
+      collectionName: string | undefined;
+    }[]
+  >;
+  createReader: (options: {
+    readerId: string;
+    generationId: string;
+    collectionName: string | undefined;
+  }) => Promise<void>;
+  updateReader: (options: {
+    readerId: string;
+    generationId: string;
+  }) => Promise<void>;
+  deleteReader: (options: {readerId: string}) => Promise<void>;
 
   startTransaction: () => Promise<{
     transactionId: string;
@@ -67,7 +105,6 @@ export type Collection = {
   commitGeneration: (options: {
     generationId: string;
     updateReaders?: {
-      collectionName: string;
       readerId: string;
       generationId: string;
     }[];
@@ -76,10 +113,10 @@ export type Collection = {
 };
 
 export type Database = {
-  createCollection: (name: string) => Promise<void>;
-  getCollection: (
+  createCollection: (
     name: string,
-    options?: {createIfAbsent?: boolean},
-  ) => Promise<Collection>;
+    options?: {generationId?: string},
+  ) => Promise<void>;
+  getCollection: (name: string) => Promise<Collection>;
   listCollections: () => Promise<{collections: string[]}>;
 };

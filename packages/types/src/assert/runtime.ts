@@ -1,3 +1,7 @@
+class NonNullableAssertionError extends Error {
+  name = 'NonNullableAssertionError';
+}
+
 export function assertNonNullable<T>(
   value: T,
   errorMessage?: string,
@@ -6,5 +10,5 @@ export function assertNonNullable<T>(
     return;
   }
 
-  throw new Error(errorMessage);
+  throw new NonNullableAssertionError(errorMessage);
 }
