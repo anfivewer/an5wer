@@ -5,6 +5,7 @@ import {
 } from '@-/diffbelt-types/src/database/types';
 import {NoSuchCollectionError} from '@-/diffbelt-types/src/database/errors';
 import {waitForGeneration} from '../../util/database/wait-for-generation';
+import {dumpCollection as dumpCollectionUtil} from '../../util/database/queries/dump';
 
 export const testDatabase = async ({database}: {database: Database}) => {
   {
@@ -296,29 +297,15 @@ const doTransformFromAtoB = async ({
   return {generationId: toGenerationId};
 };
 
-const dumpCollection = async (collection: Collection) => {
-  const {
-    generationId: initialGenerationId,
-    items,
-    cursorId,
-  } = await collection.query();
+const dumpCollection = (collection: Collection) => {
+  let initialGenerationId = '';
 
-  const allItems = items.slice();
-  let currentCursor = cursorId;
-
-  while (currentCursor) {
-    const {generationId, items, cursorId} = await collection.readQueryCursor({
-      cursorId: currentCursor,
-    });
-
-    items.forEach((item) => {
-      allItems.push(item);
-    });
-
-    expect(generationId).toBe(initialGenerationId);
-
-    currentCursor = cursorId;
-  }
-
-  return {items: allItems, generationId: initialGenerationId};
+  return dumpCollectionUtil(collection, {
+    onInitialQuery({generationId}) {
+      initialGenerationId = generationId;
+    },
+    onReadCursor({generationId}) {
+      expect(generationId).toBe(initialGenerationId);
+    },
+  });
 };

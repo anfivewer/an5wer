@@ -45,6 +45,7 @@ export const isGenerationProvidedByReader = (
 
 export type Collection = {
   getName: () => string;
+  isManual: () => boolean;
 
   getGeneration: () => Promise<string>;
   getGenerationStream: () => ReadOnlyStream<string>;
@@ -119,4 +120,5 @@ export type Database = {
   ) => Promise<void>;
   getCollection: (name: string) => Promise<Collection>;
   listCollections: () => Promise<{collections: string[]}>;
+  deleteCollection: (name: string) => Promise<void>;
 };

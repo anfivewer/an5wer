@@ -6,7 +6,7 @@
     "start": "ts-node -T src/main.ts",
     "watch": "nodemon --signal SIGINT --watch src --exec ts-node -T src/main.ts",
     "tsc": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "author": "Alexander Ruliov <alexander.rulov@gmail.com>",
   "license": "ISC",

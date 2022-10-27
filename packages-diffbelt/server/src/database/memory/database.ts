@@ -2,6 +2,7 @@ import {
   CollectionAlreadyExistsError,
   NoSuchCollectionError,
 } from '@-/diffbelt-types/src/database/errors';
+import {PersistCollection} from '@-/diffbelt-types/src/database/persist/parts';
 import {Database} from '@-/diffbelt-types/src/database/types';
 import {MemoryDatabaseCollection} from './collection';
 
@@ -11,6 +12,10 @@ export class MemoryDatabase implements Database {
 
   constructor({maxItemsInPack = 100}: {maxItemsInPack?: number}) {
     this.maxItemsInPack = maxItemsInPack;
+  }
+
+  _getCollections() {
+    return this.collections;
   }
 
   private getReaderGenerationId({
@@ -26,6 +31,25 @@ export class MemoryDatabase implements Database {
     }
 
     return collection._getReaderGenerationId(readerId);
+  }
+
+  _restoreCollection(collectionDef: PersistCollection) {
+    const {name, generationId, nextGenerationId, nextGenerationKeys, isManual} =
+      collectionDef;
+
+    const collection = new MemoryDatabaseCollection({
+      name,
+      generationId,
+      isManual,
+      maxItemsInPack: this.maxItemsInPack,
+      getReaderGenerationId: this.getReaderGenerationId.bind(this),
+      _restore: {
+        nextGenerationId,
+        nextGenerationKeys,
+      },
+    });
+
+    this.collections.set(name, collection);
   }
 
   createCollection: Database['createCollection'] = (
@@ -49,6 +73,10 @@ export class MemoryDatabase implements Database {
     return Promise.resolve();
   };
 
+  _getCollection(name: string): MemoryDatabaseCollection | undefined {
+    return this.collections.get(name);
+  }
+
   getCollection: Database['getCollection'] = (name) => {
     const collection = this.collections.get(name);
     if (!collection) {
@@ -66,5 +94,10 @@ export class MemoryDatabase implements Database {
     });
 
     return Promise.resolve({collections: names});
+  };
+
+  deleteCollection: Database['deleteCollection'] = (name) => {
+    this.collections.delete(name);
+    return Promise.resolve();
   };
 }

@@ -28,12 +28,17 @@ import {
   TraverserInitialItemNotFoundError,
 } from './storage';
 import {StorageTraverser} from '../../util/database/traverse/storage';
+import {
+  PersistCollection,
+  PersistCollectionItems,
+  PersistDatabasePart,
+} from '@-/diffbelt-types/src/database/persist/parts';
 
 export class MemoryDatabaseCollection implements Collection {
   private name: string;
   private generationId: string;
   private generationIdStream = createStream<string>();
-  private isManual: boolean;
+  private _isManual: boolean;
   private isGenerationAborting = false;
   private plannedNextGenerationId: string | undefined;
   private nextGenerationKeys = new Set<string>();
@@ -60,6 +65,7 @@ export class MemoryDatabaseCollection implements Collection {
     isManual = false,
     maxItemsInPack,
     getReaderGenerationId,
+    _restore,
   }: {
     name: string;
     generationId?: string;
@@ -69,20 +75,37 @@ export class MemoryDatabaseCollection implements Collection {
       readerId: string;
       collectionName: string;
     }) => string;
+    _restore?: Pick<
+      PersistCollection,
+      'nextGenerationId' | 'nextGenerationKeys'
+    >;
   }) {
     this.name = name;
     this.generationId = generationId;
     this.maxItemsInPack = maxItemsInPack;
-    this.isManual = isManual;
+    this._isManual = isManual;
     this.getReaderGenerationId = getReaderGenerationId;
 
-    this.plannedNextGenerationId = isManual
-      ? undefined
-      : generateNextId(generationId);
+    if (_restore) {
+      const {nextGenerationId, nextGenerationKeys} = _restore;
+      this.plannedNextGenerationId = nextGenerationId;
+
+      nextGenerationKeys.forEach((key) => {
+        this.nextGenerationKeys.add(key);
+      });
+    } else {
+      this.plannedNextGenerationId = isManual
+        ? undefined
+        : generateNextId(generationId);
+    }
   }
 
   getName() {
     return this.name;
+  }
+
+  isManual() {
+    return this._isManual;
   }
 
   getGeneration() {
@@ -160,7 +183,7 @@ export class MemoryDatabaseCollection implements Collection {
   };
 
   private scheduleNonManualCommit() {
-    if (this.isManual) {
+    if (this._isManual) {
       return;
     }
 
@@ -194,7 +217,7 @@ export class MemoryDatabaseCollection implements Collection {
       if (this.isGenerationAborting) {
         throw new GenerationIsAbortingError();
       }
-    } else if (this.isManual) {
+    } else if (this._isManual) {
       throw new CannotPutInManualCollectionError();
     } else if (!this.plannedNextGenerationId) {
       throw new NextGenerationIsNotStartedError();
@@ -463,4 +486,62 @@ export class MemoryDatabaseCollection implements Collection {
 
     return Promise.resolve();
   };
+
+  async _dump({
+    pushDumpPart,
+    isClosed,
+    onNotFull,
+  }: {
+    pushDumpPart: (part: PersistDatabasePart) => void;
+    isClosed: () => boolean;
+    onNotFull: () => Promise<void>;
+  }): Promise<void> {
+    pushDumpPart({
+      type: 'collection',
+      name: this.name,
+      generationId: this.generationId,
+      nextGenerationId: this.plannedNextGenerationId,
+      nextGenerationKeys: Array.from(this.nextGenerationKeys),
+      isManual: this._isManual,
+    });
+
+    let processedSize = 0;
+
+    let items: PersistCollectionItems['items'] = [];
+    const pushItems = () => {
+      if (!items.length) {
+        return;
+      }
+
+      pushDumpPart({
+        type: 'items',
+        collectionName: this.name,
+        items,
+      });
+
+      items = [];
+    };
+
+    for (const {key, value, generationId} of this.storage) {
+      items.push({key, value, generationId});
+
+      processedSize += key.length + (value?.length ?? 0) + generationId.length;
+      if (processedSize >= 256) {
+        if (isClosed()) {
+          return;
+        }
+
+        pushItems();
+        await onNotFull();
+      }
+    }
+
+    pushItems();
+  }
+
+  _restoreItems({items}: PersistCollectionItems): void {
+    items.forEach((item) => {
+      this.storage.push(item);
+    });
+  }
 }
