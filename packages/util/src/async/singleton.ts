@@ -5,6 +5,10 @@ export class SingletonAsyncTask {
   private scheduledTask: (() => Promise<void>) | null = null;
   private scheduledDefers: Defer[] = [];
 
+  hasScheduledTask() {
+    return Boolean(this.scheduledTask);
+  }
+
   private run(task: () => Promise<void>): Promise<void> {
     this.isRunning = true;
 

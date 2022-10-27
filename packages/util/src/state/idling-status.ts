@@ -1,42 +1,27 @@
-export enum IdlingStatusOnIdleResult {
-  sync = 'sync',
-  async = 'async',
-}
+import {ReadOnlyStream} from '@-/types/src/stream/stream';
+import {createStream} from '../stream/stream';
 
-const DEBUG = false;
+const DEBUG: boolean = false as boolean;
 
 export class IdlingStatus {
   private runningTasksCount = 0;
-  private notifyPromise!: Promise<void>;
-  private resolve!: () => void;
-  private runningStacks: Set<Error> = new Set();
+  private runningStacks = DEBUG ? new Set<Error>() : undefined;
+  private idleStream = createStream<boolean>();
 
-  constructor() {
-    this.createNotifyPromise();
+  getActiveTasksCount() {
+    return this.runningTasksCount;
   }
-
-  private createNotifyPromise = (): void => {
-    this.notifyPromise = new Promise((resolve) => {
-      this.resolve = resolve;
-    });
-  };
-
-  private notify = () => {
-    const prevResolve = this.resolve;
-    this.createNotifyPromise();
-    prevResolve();
-  };
 
   startTask = (): (() => void) => {
     this.runningTasksCount++;
 
     const stack = DEBUG && new Error();
-    if (DEBUG && stack) {
+    if (DEBUG && stack && this.runningStacks) {
       this.runningStacks.add(stack);
     }
 
     if (this.runningTasksCount === 1) {
-      this.notify();
+      this.idleStream.replace(false);
     }
 
     let finished = false;
@@ -46,7 +31,7 @@ export class IdlingStatus {
       finished = true;
       this.runningTasksCount--;
 
-      if (DEBUG && stack) {
+      if (DEBUG && stack && this.runningStacks) {
         this.runningStacks.delete(stack);
         if (this.runningTasksCount === 0) {
           console.log(stack);
@@ -58,7 +43,7 @@ export class IdlingStatus {
       }
 
       if (this.runningTasksCount === 0) {
-        this.notify();
+        this.idleStream.replace(true);
       }
     };
   };
@@ -73,19 +58,69 @@ export class IdlingStatus {
     }
   };
 
+  wrapFn<Args extends unknown[], Result>(
+    fun: (...args: Args) => Result | Promise<Result>,
+  ): (...args: Args) => Promise<Result> {
+    return async (...args) => {
+      const finish = this.startTask();
+
+      try {
+        return await fun(...args);
+      } finally {
+        finish();
+      }
+    };
+  }
+
   isIdle = (): boolean => this.runningTasksCount === 0;
 
-  onIdle = async (): Promise<IdlingStatusOnIdleResult> => {
-    let isIdle = this.isIdle();
-    if (isIdle) {
-      return IdlingStatusOnIdleResult.sync;
+  onIdle = async (): Promise<void> => {
+    if (this.isIdle()) {
+      return;
     }
 
-    while (!isIdle) {
-      await this.notifyPromise;
-      isIdle = this.isIdle();
+    for await (const isIdle of this.idleStream.getGenerator()) {
+      if (isIdle) {
+        return;
+      }
     }
-
-    return IdlingStatusOnIdleResult.async;
   };
+
+  getStream(): ReadOnlyStream<boolean> {
+    return this.idleStream.getGenerator();
+  }
+
+  dependsOnStream(stream: ReadOnlyStream<boolean>): () => void {
+    let isDisposed = false;
+    let dispose = () => {
+      //
+    };
+
+    (async () => {
+      let prevIdle: boolean | undefined;
+
+      for await (const idle of stream) {
+        if (isDisposed) {
+          return;
+        }
+
+        if (prevIdle === idle) {
+          continue;
+        }
+
+        if (idle) {
+          dispose = this.startTask();
+        } else {
+          dispose();
+        }
+
+        prevIdle = idle;
+      }
+    })();
+
+    return () => {
+      isDisposed = true;
+      dispose();
+    };
+  }
 }

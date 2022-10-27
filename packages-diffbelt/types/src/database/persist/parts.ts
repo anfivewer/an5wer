@@ -35,10 +35,26 @@ export const PersistCollectionItems = object({
 });
 export type PersistCollectionItems = ZodInfer<typeof PersistCollectionItems>;
 
+export const PersistCollectionReaders = object({
+  type: literal('readers'),
+  collectionName: string(),
+  readers: array(
+    object({
+      readerId: string(),
+      generationId: string(),
+      collectionName: string().optional(),
+    }),
+  ),
+});
+export type PersistCollectionReaders = ZodInfer<
+  typeof PersistCollectionReaders
+>;
+
 export const PersistDatabasePart = union([
   PersistDatabaseHeader,
   PersistDatabaseFooter,
   PersistCollection,
   PersistCollectionItems,
+  PersistCollectionReaders,
 ]);
 export type PersistDatabasePart = ZodInfer<typeof PersistDatabasePart>;

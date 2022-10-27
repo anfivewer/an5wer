@@ -20,32 +20,34 @@ export const dumpMemoryDatabase = ({
     stream.push(newLineBuffer);
   };
 
-  (async () => {
-    pushDumpPart({type: 'header', version: 1});
+  database
+    .runExclusiveTask(async () => {
+      pushDumpPart({type: 'header', version: 1});
 
-    for (const collection of database._getCollections().values()) {
-      if (stream.isClosed()) {
+      for (const collection of database._getCollections().values()) {
+        if (stream.isClosed()) {
+          return;
+        }
+
+        // eslint-disable-next-line no-loop-func
+        await collection._dump({
+          pushDumpPart,
+          onNotFull: stream.onNotFull.bind(stream),
+          isClosed: stream.isClosed.bind(stream),
+        });
+      }
+
+      pushDumpPart({type: 'end'});
+
+      stream.finish();
+    })
+    .catch((error) => {
+      if (error instanceof StreamIsClosedError) {
         return;
       }
 
-      // eslint-disable-next-line no-loop-func
-      await collection._dump({
-        pushDumpPart,
-        onNotFull: stream.onNotFull.bind(stream),
-        isClosed: stream.isClosed.bind(stream),
-      });
-    }
-
-    pushDumpPart({type: 'end'});
-
-    stream.finish();
-  })().catch((error) => {
-    if (error instanceof StreamIsClosedError) {
-      return;
-    }
-
-    stream.destroyWithError(error);
-  });
+      stream.destroyWithError(error);
+    });
 
   return stream.getGenerator();
 };

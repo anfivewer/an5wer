@@ -31,8 +31,11 @@ import {StorageTraverser} from '../../util/database/traverse/storage';
 import {
   PersistCollection,
   PersistCollectionItems,
+  PersistCollectionReaders,
   PersistDatabasePart,
 } from '@-/diffbelt-types/src/database/persist/parts';
+import {IdlingStatus} from '@-/util/src/state/idling-status';
+import {RwLock} from '@-/util/src/async/rw-lock';
 
 export class MemoryDatabaseCollection implements Collection {
   private name: string;
@@ -55,6 +58,8 @@ export class MemoryDatabaseCollection implements Collection {
     collectionName: string;
   }) => string;
   private nonManualGenerationCommitSingleton = new SingletonAsyncTask();
+  _idling = new IdlingStatus();
+  _rwLock = new RwLock();
 
   // Maybe use real tree? but currently for testing purposes array is good enough too
   private storage: MemoryDatabaseStorage = [];
@@ -115,34 +120,37 @@ export class MemoryDatabaseCollection implements Collection {
     return this.generationIdStream.getGenerator();
   }
 
-  get: Collection['get'] = ({key, generationId: requiredGenerationId}) => {
-    let traverser: StorageTraverser;
+  get: Collection['get'] = this.wrapFn(
+    {},
+    ({key, generationId: requiredGenerationId}) => {
+      let traverser: StorageTraverser;
 
-    try {
-      traverser = createMemoryStorageTraverser({
-        storage: this.storage,
-        key,
-        generationId: requiredGenerationId,
-      }).traverser;
-    } catch (error) {
-      if (error instanceof TraverserInitialItemNotFoundError) {
-        return Promise.resolve({
-          generationId: requiredGenerationId || this.generationId,
-          item: null,
-        });
+      try {
+        traverser = createMemoryStorageTraverser({
+          storage: this.storage,
+          key,
+          generationId: requiredGenerationId,
+        }).traverser;
+      } catch (error) {
+        if (error instanceof TraverserInitialItemNotFoundError) {
+          return Promise.resolve({
+            generationId: requiredGenerationId || this.generationId,
+            item: null,
+          });
+        }
+
+        throw error;
       }
 
-      throw error;
-    }
+      const {value, generationId} = traverser.getItem();
 
-    const {value, generationId} = traverser.getItem();
-
-    return Promise.resolve({
-      generationId,
-      item: value ? {key, value} : null,
-    });
-  };
-  query: Collection['query'] = ({generationId} = {}) => {
+      return Promise.resolve({
+        generationId,
+        item: value ? {key, value} : null,
+      });
+    },
+  );
+  query: Collection['query'] = this.wrapFn({}, ({generationId} = {}) => {
     const createCursor = (
       prevCursorId: string | undefined,
       startKey: CursorStartKey | undefined,
@@ -171,110 +179,131 @@ export class MemoryDatabaseCollection implements Collection {
     const cursor = createCursor(undefined, undefined);
 
     return Promise.resolve(cursor.getCurrentPack());
-  };
+  });
 
-  readQueryCursor: Collection['readQueryCursor'] = ({cursorId}) => {
-    const cursor = this.queryCursors.get(cursorId);
-    if (!cursor) {
-      throw new NoSuchCursorError();
-    }
+  readQueryCursor: Collection['readQueryCursor'] = this.wrapFn(
+    {},
+    ({cursorId}) => {
+      const cursor = this.queryCursors.get(cursorId);
+      if (!cursor) {
+        throw new NoSuchCursorError();
+      }
 
-    return Promise.resolve(cursor.getCurrentPack());
-  };
+      return Promise.resolve(cursor.getCurrentPack());
+    },
+  );
 
+  private nonManualCommitDisposer: (() => void) | undefined;
   private scheduleNonManualCommit() {
     if (this._isManual) {
       return;
     }
 
+    if (!this.nonManualCommitDisposer) {
+      this.nonManualCommitDisposer = this._idling.startTask();
+    }
+
     this.nonManualGenerationCommitSingleton
-      .schedule(async () => {
-        await sleep(50);
+      .schedule(
+        this.wrapFn({isWriter: true}, async () => {
+          await sleep(50);
 
-        if (!this.plannedNextGenerationId) {
-          // Already commited
-          return;
-        }
+          if (!this.plannedNextGenerationId) {
+            // Already commited
+            return;
+          }
 
-        this.generationId = this.plannedNextGenerationId;
-        this.plannedNextGenerationId = generateNextId(this.generationId);
-        this.nextGenerationKeys.clear();
+          this.generationId = this.plannedNextGenerationId;
+          this.plannedNextGenerationId = generateNextId(this.generationId);
+          this.nextGenerationKeys.clear();
 
-        this.generationIdStream.replace(this.generationId);
-      })
+          this.generationIdStream.replace(this.generationId);
+
+          if (!this.nonManualGenerationCommitSingleton.hasScheduledTask()) {
+            this.nonManualCommitDisposer?.();
+            this.nonManualCommitDisposer = undefined;
+          }
+        }),
+      )
       .catch((error) => {
         // FIXME
         console.error(error);
       });
   }
 
-  put: Collection['put'] = ({key, value, generationId}) => {
-    if (generationId) {
-      if (generationId !== this.plannedNextGenerationId) {
-        throw new OutdatedGenerationError();
+  put: Collection['put'] = this.wrapFn(
+    {isWriter: true},
+    ({key, value, generationId}) => {
+      if (generationId) {
+        if (generationId !== this.plannedNextGenerationId) {
+          throw new OutdatedGenerationError();
+        }
+
+        if (this.isGenerationAborting) {
+          throw new GenerationIsAbortingError();
+        }
+      } else if (this._isManual) {
+        throw new CannotPutInManualCollectionError();
+      } else if (!this.plannedNextGenerationId) {
+        throw new NextGenerationIsNotStartedError();
       }
 
+      const recordGenerationId = generationId || this.plannedNextGenerationId;
+      assertNonNullable(recordGenerationId, 'put');
+
+      this.nextGenerationKeys.add(key);
+
+      if (!this.storage.length) {
+        this.scheduleNonManualCommit();
+        this.storage.push({key, value, generationId: recordGenerationId});
+        return Promise.resolve({generationId: recordGenerationId});
+      }
+
+      const {traverser, getIndex} = createMemoryStorageTraverser({
+        storage: this.storage,
+        key,
+        exactKey: false,
+        generationId: recordGenerationId,
+      });
+
+      const place = traverser.goToInsertPosition({
+        key,
+        generationId: recordGenerationId,
+      });
+
+      if (place === 0) {
+        this.storage[getIndex()].value = value;
+      } else {
+        const index = getIndex() + (place < 0 ? 0 : 1);
+        this.storage.splice(index, 0, {
+          key,
+          value,
+          generationId: recordGenerationId,
+        });
+      }
+
+      this.scheduleNonManualCommit();
+
+      return Promise.resolve({generationId: recordGenerationId});
+    },
+  );
+  putMany: Collection['putMany'] = this.wrapFn(
+    {isWriter: true},
+    async ({items, generationId}) => {
       if (this.isGenerationAborting) {
         throw new GenerationIsAbortingError();
       }
-    } else if (this._isManual) {
-      throw new CannotPutInManualCollectionError();
-    } else if (!this.plannedNextGenerationId) {
-      throw new NextGenerationIsNotStartedError();
-    }
 
-    const recordGenerationId = generationId || this.plannedNextGenerationId;
-    assertNonNullable(recordGenerationId, 'put');
+      await Promise.all(
+        items.map(({key, value}) => this.put({key, value, generationId})),
+      );
 
-    this.nextGenerationKeys.add(key);
+      assertNonNullable(this.plannedNextGenerationId, 'putMany');
 
-    if (!this.storage.length) {
-      this.scheduleNonManualCommit();
-      this.storage.push({key, value, generationId: recordGenerationId});
-      return Promise.resolve({generationId: recordGenerationId});
-    }
-
-    const {traverser, getIndex} = createMemoryStorageTraverser({
-      storage: this.storage,
-      key,
-      exactKey: false,
-      generationId: recordGenerationId,
-    });
-
-    const place = traverser.goToInsertPosition({
-      key,
-      generationId: recordGenerationId,
-    });
-
-    if (place === 0) {
-      this.storage[getIndex()].value = value;
-    } else {
-      const index = getIndex() + (place < 0 ? 0 : 1);
-      this.storage.splice(index, 0, {
-        key,
-        value,
-        generationId: recordGenerationId,
-      });
-    }
-
-    this.scheduleNonManualCommit();
-
-    return Promise.resolve({generationId: recordGenerationId});
-  };
-  putMany: Collection['putMany'] = async ({items, generationId}) => {
-    if (this.isGenerationAborting) {
-      throw new GenerationIsAbortingError();
-    }
-
-    await Promise.all(
-      items.map(({key, value}) => this.put({key, value, generationId})),
-    );
-
-    assertNonNullable(this.plannedNextGenerationId, 'putMany');
-
-    return {generationId: this.plannedNextGenerationId};
-  };
-  diff: Collection['diff'] = (options) => {
+      return {generationId: this.plannedNextGenerationId};
+    },
+  );
+  diff: Collection['diff'] = this.wrapFn({}, (options) => {
     const {toGenerationId: toGenerationIdRaw} = options;
 
     const fromGenerationId = (() => {
@@ -330,22 +359,25 @@ export class MemoryDatabaseCollection implements Collection {
     const cursor = createCursor(undefined, undefined);
 
     return Promise.resolve(cursor.getCurrentPack());
-  };
-  readDiffCursor: Collection['readDiffCursor'] = ({cursorId}) => {
-    const cursor = this.diffCursors.get(cursorId);
-    if (!cursor) {
-      throw new NoSuchCursorError();
-    }
+  });
+  readDiffCursor: Collection['readDiffCursor'] = this.wrapFn(
+    {},
+    ({cursorId}) => {
+      const cursor = this.diffCursors.get(cursorId);
+      if (!cursor) {
+        throw new NoSuchCursorError();
+      }
 
-    return Promise.resolve(cursor.getCurrentPack());
-  };
+      return Promise.resolve(cursor.getCurrentPack());
+    },
+  );
 
-  closeCursor: Collection['closeCursor'] = ({cursorId}) => {
+  closeCursor: Collection['closeCursor'] = this.wrapFn({}, ({cursorId}) => {
     this.queryCursors.delete(cursorId);
     this.diffCursors.delete(cursorId);
 
     return Promise.resolve();
-  };
+  });
 
   _getReaderGenerationId(readerId: string) {
     const reader = this.readers.get(readerId);
@@ -356,7 +388,7 @@ export class MemoryDatabaseCollection implements Collection {
     return reader.generationId;
   }
 
-  listReaders: Collection['listReaders'] = () => {
+  listReaders: Collection['listReaders'] = this.wrapFn({}, () => {
     const readers: {
       readerId: string;
       generationId: string;
@@ -368,124 +400,135 @@ export class MemoryDatabaseCollection implements Collection {
     });
 
     return Promise.resolve(readers);
-  };
-  createReader: Collection['createReader'] = ({
-    readerId,
-    generationId,
-    collectionName,
-  }) => {
-    this.readers.set(readerId, {readerId, generationId, collectionName});
-    return Promise.resolve();
-  };
-  updateReader: Collection['updateReader'] = ({readerId, generationId}) => {
-    const reader = this.readers.get(readerId);
-    if (!reader) {
-      throw new NoSuchReaderError();
-    }
-
-    reader.generationId = generationId;
-
-    return Promise.resolve();
-  };
-  deleteReader: Collection['deleteReader'] = ({readerId}) => {
-    this.readers.delete(readerId);
-    return Promise.resolve();
-  };
-
-  startTransaction: Collection['startTransaction'] = () => {
-    throw new Error('not implemented yet');
-  };
-  commitTransaction: Collection['commitTransaction'] = () => {
-    throw new Error('not implemented yet');
-  };
-  abortTransaction: Collection['abortTransaction'] = () => {
-    throw new Error('not implemented yet');
-  };
-
-  startGeneration: Collection['startGeneration'] = ({generationId}) => {
-    if (
-      this.plannedNextGenerationId &&
-      this.plannedNextGenerationId !== generationId
-    ) {
-      throw new OutdatedGenerationError();
-    }
-
-    this.plannedNextGenerationId = generationId;
-
-    return Promise.resolve();
-  };
-  commitGeneration: Collection['commitGeneration'] = ({
-    generationId,
-    updateReaders,
-  }) => {
-    if (this.plannedNextGenerationId !== generationId) {
-      throw new OutdatedGenerationError();
-    }
-    if (this.isGenerationAborting) {
-      throw new GenerationIsAbortingError();
-    }
-
-    updateReaders?.forEach(({readerId}) => {
-      if (!this.readers.has(readerId)) {
+  });
+  createReader: Collection['createReader'] = this.wrapFn(
+    {isWriter: true},
+    ({readerId, generationId, collectionName}) => {
+      this.readers.set(readerId, {readerId, generationId, collectionName});
+      return Promise.resolve();
+    },
+  );
+  updateReader: Collection['updateReader'] = this.wrapFn(
+    {isWriter: true},
+    ({readerId, generationId}) => {
+      const reader = this.readers.get(readerId);
+      if (!reader) {
         throw new NoSuchReaderError();
       }
-    });
 
-    this.generationId = generationId;
-    this.plannedNextGenerationId = undefined;
-    this.nextGenerationKeys.clear();
+      reader.generationId = generationId;
 
-    updateReaders?.forEach(({readerId, generationId}) => {
-      const reader = this.readers.get(readerId);
-      if (reader) {
-        reader.generationId = generationId;
+      return Promise.resolve();
+    },
+  );
+  deleteReader: Collection['deleteReader'] = this.wrapFn(
+    {isWriter: true},
+    ({readerId}) => {
+      this.readers.delete(readerId);
+      return Promise.resolve();
+    },
+  );
+
+  startTransaction: Collection['startTransaction'] = this.wrapFn({}, () => {
+    throw new Error('not implemented yet');
+  });
+  commitTransaction: Collection['commitTransaction'] = this.wrapFn({}, () => {
+    throw new Error('not implemented yet');
+  });
+  abortTransaction: Collection['abortTransaction'] = this.wrapFn({}, () => {
+    throw new Error('not implemented yet');
+  });
+
+  startGeneration: Collection['startGeneration'] = this.wrapFn(
+    {isWriter: true},
+    ({generationId}) => {
+      if (
+        this.plannedNextGenerationId &&
+        this.plannedNextGenerationId !== generationId
+      ) {
+        throw new OutdatedGenerationError();
       }
-    });
 
-    this.generationIdStream.replace(generationId);
+      this.plannedNextGenerationId = generationId;
 
-    return Promise.resolve();
-  };
-  abortGeneration: Collection['abortGeneration'] = ({generationId}) => {
-    if (this.plannedNextGenerationId !== generationId) {
-      throw new OutdatedGenerationError();
-    }
-    if (this.isGenerationAborting) {
-      throw new GenerationIsAbortingError();
-    }
+      return Promise.resolve();
+    },
+  );
+  commitGeneration: Collection['commitGeneration'] = this.wrapFn(
+    {isWriter: true},
+    ({generationId, updateReaders}) => {
+      if (this.plannedNextGenerationId !== generationId) {
+        throw new OutdatedGenerationError();
+      }
+      if (this.isGenerationAborting) {
+        throw new GenerationIsAbortingError();
+      }
 
-    this.isGenerationAborting = true;
-
-    try {
-      this.nextGenerationKeys.forEach((key) => {
-        let traversing: MemoryStorageTraverser;
-
-        try {
-          traversing = createMemoryStorageTraverser({
-            storage: this.storage,
-            key,
-            generationId: this.plannedNextGenerationId,
-            exactGenerationId: true,
-          });
-        } catch (error) {
-          if (error instanceof TraverserInitialItemNotFoundError) {
-            return;
-          }
-
-          throw error;
+      updateReaders?.forEach(({readerId}) => {
+        if (!this.readers.has(readerId)) {
+          throw new NoSuchReaderError();
         }
-
-        this.storage.splice(traversing.getIndex(), 1);
       });
 
-      this.nextGenerationKeys.clear();
+      this.generationId = generationId;
       this.plannedNextGenerationId = undefined;
-    } finally {
-      this.isGenerationAborting = false;
-    }
+      this.nextGenerationKeys.clear();
 
-    return Promise.resolve();
-  };
+      updateReaders?.forEach(({readerId, generationId}) => {
+        const reader = this.readers.get(readerId);
+        if (reader) {
+          reader.generationId = generationId;
+        }
+      });
+
+      this.generationIdStream.replace(generationId);
+
+      return Promise.resolve();
+    },
+  );
+  abortGeneration: Collection['abortGeneration'] = this.wrapFn(
+    {isWriter: true},
+    ({generationId}) => {
+      if (this.plannedNextGenerationId !== generationId) {
+        throw new OutdatedGenerationError();
+      }
+      if (this.isGenerationAborting) {
+        throw new GenerationIsAbortingError();
+      }
+
+      this.isGenerationAborting = true;
+
+      try {
+        this.nextGenerationKeys.forEach((key) => {
+          let traversing: MemoryStorageTraverser;
+
+          try {
+            traversing = createMemoryStorageTraverser({
+              storage: this.storage,
+              key,
+              generationId: this.plannedNextGenerationId,
+              exactGenerationId: true,
+            });
+          } catch (error) {
+            if (error instanceof TraverserInitialItemNotFoundError) {
+              return;
+            }
+
+            throw error;
+          }
+
+          this.storage.splice(traversing.getIndex(), 1);
+        });
+
+        this.nextGenerationKeys.clear();
+        this.plannedNextGenerationId = undefined;
+      } finally {
+        this.isGenerationAborting = false;
+      }
+
+      return Promise.resolve();
+    },
+  );
 
   async _dump({
     pushDumpPart,
@@ -540,8 +583,37 @@ export class MemoryDatabaseCollection implements Collection {
   }
 
   _restoreItems({items}: PersistCollectionItems): void {
+    this.queryCursors.clear();
+    this.diffCursors.clear();
+
+    this.storage = [];
+
     items.forEach((item) => {
       this.storage.push(item);
     });
+  }
+  _restoreReaders({readers}: PersistCollectionReaders): void {
+    this.readers.clear();
+
+    readers.forEach((reader) => {
+      this.readers.set(reader.readerId, {
+        ...reader,
+        collectionName: reader.collectionName,
+      });
+    });
+  }
+
+  private wrapFn<Args extends unknown[], Result>(
+    {isWriter = false}: {isWriter?: boolean},
+    fun: (...args: Args) => Result | Promise<Result>,
+  ): (...args: Args) => Promise<Result> {
+    return async (...args) => {
+      const locksDef = {read: true, write: isWriter};
+      while (this._rwLock.hasLocks(locksDef)) {
+        await this._rwLock.waitLocks(locksDef);
+      }
+
+      return this._idling.wrapTask(() => fun(...args));
+    };
   }
 }
