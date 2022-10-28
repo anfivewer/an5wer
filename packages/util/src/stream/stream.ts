@@ -3,14 +3,19 @@ import {
   StreamIsClosedError,
 } from '@-/types/src/stream/stream';
 import {Defer} from '../async/defer';
+import {CloneableStream, cloneSymbol} from './clone';
+
+type StreamGenerator<T, N> = AsyncGenerator<T, void, N> & CloneableStream<T, N>;
 
 type List<T> =
   | {
       isEmpty?: false;
+      isEnd?: false;
       value: T;
-      next: List<T>;
+      next: List<T> | null;
     }
-  | {isEmpty: true; next: List<T> | null};
+  | {isEmpty: true; isEnd?: false; next: List<T> | null}
+  | {isEnd: true; isEmpty?: false};
 
 export const createStream = <T, N = void>({
   handleInput,
@@ -22,8 +27,8 @@ export const createStream = <T, N = void>({
   fullnessItemsCount?: number;
 } = {}): StreamController<T, N> => {
   let isDestroyed = false;
-  let isFinished = false;
   let error: unknown = null;
+  // FIXME: it calculates wrong because of multiple copies of stream
   let itemsCount = 0;
   let head: List<T> = {isEmpty: true, next: null};
   let tail: List<T> = head;
@@ -39,18 +44,19 @@ export const createStream = <T, N = void>({
   }: {
     listItem: List<T>;
     replaceId: number;
-  }): AsyncGenerator<T, void, N> {
+  }): StreamGenerator<T, N> {
     let listItem = initialListItem;
+    let prevSentListItem: List<T> | null = null;
     let currentReplaceId = initialReplaceId;
 
-    return {
+    const that: StreamGenerator<T, N> = {
       next: async (input: N) => {
         isConsumptionStarted = true;
 
         if (error) {
           throw error;
         }
-        if (isDestroyed) {
+        if (isDestroyed || listItem.isEnd) {
           return {value: undefined, done: true};
         }
 
@@ -65,11 +71,7 @@ export const createStream = <T, N = void>({
           listItem = listItem.next;
         }
 
-        while (!listItem || listItem.isEmpty) {
-          if (isFinished) {
-            return {value: undefined, done: true};
-          }
-
+        while (listItem.isEmpty || listItem == prevSentListItem) {
           notFullnessDefer.resolve();
           onDataRequested?.();
 
@@ -83,11 +85,22 @@ export const createStream = <T, N = void>({
             throw error;
           }
 
-          if (isDestroyed || isFinished) {
+          if (isDestroyed || listItem.isEnd) {
             return {value: undefined, done: true};
           }
 
-          listItem = listItem?.next || head || listItem;
+          if (replaceId !== currentReplaceId) {
+            currentReplaceId = replaceId;
+            listItem = head;
+            prevSentListItem = null;
+            continue;
+          }
+
+          listItem = listItem.next || listItem;
+
+          if (listItem.isEnd) {
+            return {value: undefined, done: true};
+          }
         }
 
         if (error) {
@@ -98,12 +111,20 @@ export const createStream = <T, N = void>({
           return {value: undefined, done: true};
         }
 
-        if (listItem.isEmpty || listItem.next.isEmpty) {
+        if (listItem.isEnd) {
+          return {value: undefined, done: true};
+        }
+
+        if (listItem.isEmpty || !listItem.next) {
           notFullnessDefer.resolve();
         }
 
+        prevSentListItem = listItem;
         const item = listItem.value;
-        listItem = listItem.next;
+
+        if (listItem.next) {
+          listItem = listItem.next;
+        }
 
         return {value: item, done: false};
       },
@@ -114,9 +135,14 @@ export const createStream = <T, N = void>({
         return Promise.resolve({value: undefined, done: true});
       },
       [Symbol.asyncIterator]: () => {
+        return that;
+      },
+      [cloneSymbol]: () => {
         return getGenerator({listItem, replaceId: currentReplaceId});
       },
     };
+
+    return that;
   }
 
   const destroy = () => {
@@ -127,17 +153,17 @@ export const createStream = <T, N = void>({
   return {
     getGenerator: () => getGenerator({listItem: head, replaceId}),
     push: (item: T): void => {
-      if (isFinished || isDestroyed || error) {
+      if (tail.isEnd || isDestroyed || error) {
         throw new StreamIsClosedError(
-          `Stream is finished, cannot push, finished: ${isFinished}, destroyed: ${isDestroyed}, error: ${Boolean(
-            error,
-          )}`,
+          `Stream is finished, cannot push, finished: ${Boolean(
+            tail.isEnd,
+          )}, destroyed: ${isDestroyed}, error: ${Boolean(error)}`,
         );
       }
 
       const nextTail: List<T> = {
         value: item,
-        next: {isEmpty: true, next: null},
+        next: null,
       };
 
       tail.next = nextTail;
@@ -153,11 +179,11 @@ export const createStream = <T, N = void>({
       itemsAvailableDefer.resolve();
     },
     replace: (item: T): void => {
-      if (isFinished || isDestroyed || error) {
+      if (tail.isEnd || isDestroyed || error) {
         throw new StreamIsClosedError(
-          `Stream is finished, cannot replace, finished: ${isFinished}, destroyed: ${isDestroyed}, error: ${Boolean(
-            error,
-          )}`,
+          `Stream is finished, cannot replace, finished: ${Boolean(
+            tail.isEnd,
+          )}, destroyed: ${isDestroyed}, error: ${Boolean(error)}`,
         );
       }
 
@@ -174,10 +200,27 @@ export const createStream = <T, N = void>({
     },
     destroy,
     finish: () => {
-      isFinished = true;
+      if (tail.isEnd) {
+        return;
+      }
+
+      const nextTail: List<T> = {
+        isEnd: true,
+      };
+
+      tail.next = nextTail;
+      tail = nextTail;
+
+      if (isConsumptionStarted) {
+        head = nextTail;
+        itemsCount = 1;
+      } else {
+        itemsCount++;
+      }
+
       itemsAvailableDefer.resolve();
     },
-    isClosed: () => isFinished || isDestroyed || Boolean(error),
+    isClosed: () => Boolean(tail.isEnd || isDestroyed || error),
     isFull: () => itemsCount >= fullnessItemsCount,
     onNotFull: () => {
       if (error) {
@@ -187,7 +230,7 @@ export const createStream = <T, N = void>({
       const isNotFull =
         itemsCount < fullnessItemsCount ||
         !itemsAvailableDefer.isFulfilled() ||
-        isFinished ||
+        tail.isEnd ||
         isDestroyed;
 
       if (isNotFull) {

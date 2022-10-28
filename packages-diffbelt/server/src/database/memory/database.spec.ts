@@ -1,3 +1,4 @@
+import {cloneStream} from '@-/util/src/stream/clone';
 import {waitForGeneration} from '../../util/database/wait-for-generation';
 import {testDatabase} from '../../__tests__/database/database';
 import {MemoryDatabase} from './database';
@@ -14,7 +15,7 @@ describe('MemoryDatabase', () => {
 
     const buffers: Buffer[] = [];
 
-    for await (const buffer of stream) {
+    for await (const buffer of cloneStream(stream)) {
       buffers.push(buffer);
     }
 

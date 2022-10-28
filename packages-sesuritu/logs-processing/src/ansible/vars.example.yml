@@ -1,6 +1,6 @@
 logs_user: shieldy
 logs_an5wer_path: /home/shieldy/an5wer
 logs_nvm_path: /home/shieldy/nvm
-logs_path: /home/shieldy/logs
-logs_pattern: log*.txt
+logs_dir_path: /home/shieldy/logs
+logs_files_pattern: log*.txt
 release_branch: develop

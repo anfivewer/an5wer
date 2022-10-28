@@ -29,3 +29,6 @@
               cd packages-sesuritu/logs-processing &&
               npm run start
             executable: /bin/bash
+            environment:
+              SESURITU_LOGS_LOGS_DIR_PATH: '{{ logs_dir_path }}'
+              SESURITU_LOGS_LOGS_FILES_PATTERN: '{{ logs_files_pattern }}'

@@ -59,7 +59,7 @@ export const createContext = ({
   // Validate that we are not forgot some field
   for (const [key, value] of Object.entries(context)) {
     if (value === notFilled) {
-      throw new Error(`Config ${key} not filled`);
+      throw new Error(`Config key '${key}' not filled`);
     }
   }
 

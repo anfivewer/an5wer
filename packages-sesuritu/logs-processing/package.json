@@ -13,6 +13,8 @@
   "dependencies": {
     "@-/types": "workspace:*",
     "@-/util": "workspace:*",
+    "@-/diffbelt-server": "workspace:*",
+    "@-/diffbelt-types": "workspace:*",
     "dotenv": "16.0.1",
     "ts-node": "10.8.1",
     "typescript": "4.8.3"

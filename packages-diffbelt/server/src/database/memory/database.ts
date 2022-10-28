@@ -7,15 +7,27 @@ import {Database} from '@-/diffbelt-types/src/database/types';
 import {MemoryDatabaseCollection} from './collection';
 import {IdlingStatus} from '@-/util/src/state/idling-status';
 import {RwLock} from '@-/util/src/async/rw-lock';
+import {BaseComponent} from '@-/types/src/app/component';
+import {Logger} from '@-/types/src/logging/logging';
+import {EMPTY_LOGGER} from '@-/util/src/logging/empty-logger';
 
-export class MemoryDatabase implements Database {
+export type MemoryDatabaseOptions = {
+  logger?: Logger;
+  maxItemsInPack?: number;
+};
+
+export class MemoryDatabase extends BaseComponent implements Database {
   private maxItemsInPack: number;
   private collections = new Map<string, MemoryDatabaseCollection>();
   private collectionDisposers = new Map<string, (() => void)[]>();
   private idling = new IdlingStatus();
   private rwLock = new RwLock();
 
-  constructor({maxItemsInPack = 100}: {maxItemsInPack?: number}) {
+  constructor({
+    logger = EMPTY_LOGGER,
+    maxItemsInPack = 100,
+  }: MemoryDatabaseOptions) {
+    super({logger});
     this.maxItemsInPack = maxItemsInPack;
   }
 
