@@ -5,6 +5,7 @@
   "scripts": {
     "tsc": "tsc",
     "monorepo-scripts:run-tsc": "ts-node -T src/monorepo-scripts/run-tsc.ts",
+    "monorepo-scripts:run-test": "ts-node -T src/monorepo-scripts/run-test.ts",
     "test": "node --expose-gc node_modules/jest/bin/jest.js"
   },
   "author": "",

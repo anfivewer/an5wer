@@ -5,8 +5,7 @@
   "scripts": {
     "start": "ts-node -T src/main.ts",
     "watch": "nodemon --watch src --exec ts-node -T src/main.ts",
-    "tsc": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "tsc": "tsc"
   },
   "author": "Alexander Ruliov <alexander.rulov@gmail.com>",
   "license": "ISC",
