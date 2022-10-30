@@ -12,19 +12,27 @@ export class IdlingStatus {
     return this.runningTasksCount;
   }
 
-  startTask = (): (() => void) => {
+  startTask = (meta?: unknown): (() => void) => {
     this.runningTasksCount++;
-
-    const stack = DEBUG && new Error();
-    if (DEBUG && stack && this.runningStacks) {
-      this.runningStacks.add(stack);
-    }
 
     if (this.runningTasksCount === 1) {
       this.idleStream.replace(false);
     }
 
     let finished = false;
+
+    const stack = DEBUG && new Error();
+    if (DEBUG && stack && this.runningStacks) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (stack as any)._idlingStatusMeta = meta;
+      this.runningStacks.add(stack);
+
+      setTimeout(() => {
+        if (!finished) {
+          console.error('too long task', meta, stack.stack);
+        }
+      }, 3000);
+    }
 
     return () => {
       if (finished) return;
@@ -33,13 +41,6 @@ export class IdlingStatus {
 
       if (DEBUG && stack && this.runningStacks) {
         this.runningStacks.delete(stack);
-        if (this.runningTasksCount === 0) {
-          console.log(stack);
-
-          for (const error of this.runningStacks) {
-            console.error(error.stack);
-          }
-        }
       }
 
       if (this.runningTasksCount === 0) {
@@ -108,7 +109,7 @@ export class IdlingStatus {
           continue;
         }
 
-        if (idle) {
+        if (!idle) {
           dispose = this.startTask();
         } else {
           dispose();
@@ -122,5 +123,19 @@ export class IdlingStatus {
       isDisposed = true;
       dispose();
     };
+  }
+
+  _debugPrintStacks() {
+    if (!this.runningStacks) {
+      throw new Error('not in a debug mode');
+    }
+
+    console.log('---');
+    for (const error of this.runningStacks) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const errorMeta = (error as any)._idlingStatusMeta;
+      console.log(errorMeta, error.stack);
+    }
+    console.log('---');
   }
 }

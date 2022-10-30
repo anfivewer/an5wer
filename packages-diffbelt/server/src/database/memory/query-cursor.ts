@@ -85,7 +85,7 @@ export class CollectionQueryCursor {
       const {key, value} = traverser.getItem();
       const hasNextKey = traverser.goNextKey();
 
-      if (value) {
+      if (value !== null) {
         items.push({key, value});
 
         if (items.length >= this.maxItemsInPack) {

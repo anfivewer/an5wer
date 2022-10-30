@@ -6,22 +6,37 @@ import {
 import {NoSuchCollectionError} from '@-/diffbelt-types/src/database/errors';
 import {waitForGeneration} from '../../util/database/wait-for-generation';
 import {dumpCollection as dumpCollectionUtil} from '../../util/database/queries/dump';
+import {testEmptyStringValue} from './empty-string-value';
+import {NonManualCommitRunner} from './non-manual-commit';
 
-export const testDatabase = async ({database}: {database: Database}) => {
+export const testDatabase = async ({
+  database,
+  commitRunner,
+}: {
+  database: Database;
+  commitRunner: NonManualCommitRunner;
+}) => {
   {
     const {collections} = await database.listCollections();
     expect(collections).toStrictEqual([]);
   }
 
-  await Promise.all([
-    database.createCollection('colA'),
-    database.createCollection('colB'),
-  ]);
+  await database.createCollection('colA');
+  const colA = await database.getCollection('colA');
+
+  await database.createCollection('colB', {
+    generationId: await colA.getGeneration(),
+  });
 
   {
     const {collections} = await database.listCollections();
     expect(collections.sort()).toStrictEqual(['colA', 'colB']);
   }
+
+  const emptyStringValueTestPromise = testEmptyStringValue({
+    database,
+    commitRunner,
+  });
 
   {
     let thrown: unknown;
@@ -35,10 +50,7 @@ export const testDatabase = async ({database}: {database: Database}) => {
     expect(thrown).toBeInstanceOf(NoSuchCollectionError);
   }
 
-  const [colA, colB] = await Promise.all([
-    database.getCollection('colA'),
-    database.getCollection('colB'),
-  ]);
+  const colB = await database.getCollection('colB');
 
   const initialDumps = await Promise.all([
     dumpCollection(colA),
@@ -68,6 +80,7 @@ export const testDatabase = async ({database}: {database: Database}) => {
     items: initialItems,
   });
 
+  commitRunner.makeCommits();
   await waitForGeneration({
     collection: colA,
     generationId: firstPutGenerationId,
@@ -101,6 +114,7 @@ export const testDatabase = async ({database}: {database: Database}) => {
     expectedFromGenerationId: initialColAGenerationId,
   });
 
+  commitRunner.makeCommits();
   await waitForGeneration({
     collection: colB,
     generationId: firstTransformGenerationId,
@@ -130,6 +144,7 @@ export const testDatabase = async ({database}: {database: Database}) => {
     value: '12',
   });
 
+  commitRunner.makeCommits();
   await waitForGeneration({
     collection: colA,
     generationId: updateValueGenerationId,
@@ -176,6 +191,8 @@ export const testDatabase = async ({database}: {database: Database}) => {
       {key: makeId(300), value: String(42)},
     ]);
   }
+
+  await emptyStringValueTestPromise;
 };
 
 const makeId = (ts: number) => String(ts).padStart(11, '0');

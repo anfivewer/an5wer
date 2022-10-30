@@ -60,6 +60,7 @@ export class MemoryDatabaseCollection implements Collection {
   private nonManualGenerationCommitSingleton = new SingletonAsyncTask();
   _idling = new IdlingStatus();
   _rwLock = new RwLock();
+  private waitForNonManualGenerationCommit: () => Promise<void>;
 
   // Maybe use real tree? but currently for testing purposes array is good enough too
   private storage: MemoryDatabaseStorage = [];
@@ -70,6 +71,7 @@ export class MemoryDatabaseCollection implements Collection {
     isManual = false,
     maxItemsInPack,
     getReaderGenerationId,
+    waitForNonManualGenerationCommit = () => sleep(50),
     _restore,
   }: {
     name: string;
@@ -80,6 +82,7 @@ export class MemoryDatabaseCollection implements Collection {
       readerId: string;
       collectionName: string;
     }) => string;
+    waitForNonManualGenerationCommit?: () => Promise<void>;
     _restore?: Pick<
       PersistCollection,
       'nextGenerationId' | 'nextGenerationKeys'
@@ -90,6 +93,7 @@ export class MemoryDatabaseCollection implements Collection {
     this.maxItemsInPack = maxItemsInPack;
     this._isManual = isManual;
     this.getReaderGenerationId = getReaderGenerationId;
+    this.waitForNonManualGenerationCommit = waitForNonManualGenerationCommit;
 
     if (_restore) {
       const {nextGenerationId, nextGenerationKeys} = _restore;
@@ -198,19 +202,21 @@ export class MemoryDatabaseCollection implements Collection {
     if (this._isManual) {
       return;
     }
-
-    if (!this.nonManualCommitDisposer) {
-      this.nonManualCommitDisposer = this._idling.startTask();
+    if (this.nonManualCommitDisposer) {
+      return;
     }
+
+    this.nonManualCommitDisposer = this._idling.startTask(this.name);
 
     this.nonManualGenerationCommitSingleton
       .schedule(
         this.wrapFn({isWriter: true}, async () => {
-          await sleep(50);
+          await this.waitForNonManualGenerationCommit();
 
           if (!this.plannedNextGenerationId) {
-            // Already commited
-            return;
+            throw new Error(
+              'impossible: non-manual collections always have planned generation',
+            );
           }
 
           this.generationId = this.plannedNextGenerationId;
@@ -219,10 +225,8 @@ export class MemoryDatabaseCollection implements Collection {
 
           this.generationIdStream.replace(this.generationId);
 
-          if (!this.nonManualGenerationCommitSingleton.hasScheduledTask()) {
-            this.nonManualCommitDisposer?.();
-            this.nonManualCommitDisposer = undefined;
-          }
+          this.nonManualCommitDisposer?.();
+          this.nonManualCommitDisposer = undefined;
         }),
       )
       .catch((error) => {
@@ -463,6 +467,9 @@ export class MemoryDatabaseCollection implements Collection {
       if (this.isGenerationAborting) {
         throw new GenerationIsAbortingError();
       }
+      if (!this._isManual) {
+        throw new CannotPutInManualCollectionError();
+      }
 
       updateReaders?.forEach(({readerId}) => {
         if (!this.readers.has(readerId)) {
@@ -494,6 +501,9 @@ export class MemoryDatabaseCollection implements Collection {
       }
       if (this.isGenerationAborting) {
         throw new GenerationIsAbortingError();
+      }
+      if (!this._isManual) {
+        throw new CannotPutInManualCollectionError();
       }
 
       this.isGenerationAborting = true;

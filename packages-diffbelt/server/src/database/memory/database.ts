@@ -14,6 +14,7 @@ import {EMPTY_LOGGER} from '@-/util/src/logging/empty-logger';
 export type MemoryDatabaseOptions = {
   logger?: Logger;
   maxItemsInPack?: number;
+  waitForNonManualGenerationCommit?: () => Promise<void>;
 };
 
 export class MemoryDatabase extends BaseComponent implements Database {
@@ -22,13 +23,16 @@ export class MemoryDatabase extends BaseComponent implements Database {
   private collectionDisposers = new Map<string, (() => void)[]>();
   private idling = new IdlingStatus();
   private rwLock = new RwLock();
+  private waitForNonManualGenerationCommit?: () => Promise<void>;
 
   constructor({
     logger = EMPTY_LOGGER,
     maxItemsInPack = 100,
+    waitForNonManualGenerationCommit,
   }: MemoryDatabaseOptions) {
     super({logger});
     this.maxItemsInPack = maxItemsInPack;
+    this.waitForNonManualGenerationCommit = waitForNonManualGenerationCommit;
   }
 
   _getCollections() {
@@ -83,6 +87,7 @@ export class MemoryDatabase extends BaseComponent implements Database {
       isManual,
       maxItemsInPack: this.maxItemsInPack,
       getReaderGenerationId: this.getReaderGenerationId.bind(this),
+      waitForNonManualGenerationCommit: this.waitForNonManualGenerationCommit,
       _restore: {
         nextGenerationId,
         nextGenerationKeys,
@@ -114,6 +119,7 @@ export class MemoryDatabase extends BaseComponent implements Database {
       isManual: Boolean(generationId),
       maxItemsInPack: this.maxItemsInPack,
       getReaderGenerationId: this.getReaderGenerationId.bind(this),
+      waitForNonManualGenerationCommit: this.waitForNonManualGenerationCommit,
     });
 
     this.disposeCollection(name);
@@ -164,6 +170,12 @@ export class MemoryDatabase extends BaseComponent implements Database {
 
   async runExclusiveTask<T>(fun: () => Promise<T>) {
     while (this.idling.getActiveTasksCount() > 0) {
+      // setTimeout(() => {
+      //   this.collections.forEach(collection => {
+      //     console.log(collection.getName());
+      //     collection._idling._debugPrintStacks();
+      //   });
+      // });
       await this.idling.onIdle();
     }
 

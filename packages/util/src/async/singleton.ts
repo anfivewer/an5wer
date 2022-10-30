@@ -43,14 +43,15 @@ export class SingletonAsyncTask {
   }
 
   schedule(task: () => Promise<void>): Promise<void> {
-    if (!this.isRunning) {
-      return this.run(task);
-    }
+    this.scheduledTask = task;
 
     const scheduledDefer = new Defer();
     this.scheduledDefers.push(scheduledDefer);
 
-    this.scheduledTask = task;
+    (async () => {
+      await Promise.resolve();
+      this.onTaskFinished();
+    })();
 
     return scheduledDefer.promise;
   }
