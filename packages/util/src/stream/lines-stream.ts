@@ -90,10 +90,7 @@ export const createReadableLinesStream = ({
   bufferSize?: number;
   // Will throw exception if line will exceed this value
   maxLineLength?: number;
-}): {
-  getGenerator: () => AsyncGenerator<string, void, void>;
-  destroy: () => void;
-} => {
+}): FinishableStream<string> => {
   readable.setEncoding('utf8');
 
   const stream = createLinesStream({
@@ -101,10 +98,5 @@ export const createReadableLinesStream = ({
     maxLineLength,
   });
 
-  return {
-    getGenerator: () => stream,
-    destroy: () => {
-      stream.next('finish');
-    },
-  };
+  return stream;
 };

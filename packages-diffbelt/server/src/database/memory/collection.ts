@@ -237,7 +237,7 @@ export class MemoryDatabaseCollection implements Collection {
 
   put: Collection['put'] = this.wrapFn(
     {isWriter: true},
-    ({key, value, generationId}) => {
+    ({key, value, ifNotPresent, generationId}) => {
       if (generationId) {
         if (generationId !== this.plannedNextGenerationId) {
           throw new OutdatedGenerationError();
@@ -252,12 +252,12 @@ export class MemoryDatabaseCollection implements Collection {
         throw new NextGenerationIsNotStartedError();
       }
 
-      const recordGenerationId = generationId || this.plannedNextGenerationId;
+      const recordGenerationId: string =
+        generationId || this.plannedNextGenerationId;
       assertNonNullable(recordGenerationId, 'put');
 
-      this.nextGenerationKeys.add(key);
-
       if (!this.storage.length) {
+        this.nextGenerationKeys.add(key);
         this.scheduleNonManualCommit();
         this.storage.push({key, value, generationId: recordGenerationId});
         return Promise.resolve({generationId: recordGenerationId});
@@ -276,9 +276,43 @@ export class MemoryDatabaseCollection implements Collection {
       });
 
       if (place === 0) {
+        if (ifNotPresent) {
+          const {generationId: itemGenerationId} = this.storage[getIndex()];
+          return Promise.resolve({generationId: itemGenerationId});
+        }
+
+        this.nextGenerationKeys.add(key);
         this.storage[getIndex()].value = value;
       } else {
         const index = getIndex() + (place < 0 ? 0 : 1);
+
+        if (ifNotPresent) {
+          const itemGenerationId = (() => {
+            // Insert position only can be at item itself or be next to it,
+            // so check current index and the previous one
+            const checkItemPresent = (index: number): string | undefined => {
+              const {key: itemKey, generationId: itemGenerationId} =
+                this.storage[index];
+
+              return itemKey === key && itemGenerationId <= recordGenerationId
+                ? itemGenerationId
+                : undefined;
+            };
+
+            return (
+              (index < this.storage.length
+                ? checkItemPresent(index)
+                : undefined) ||
+              (index >= 1 ? checkItemPresent(index - 1) : undefined)
+            );
+          })();
+
+          if (itemGenerationId) {
+            return Promise.resolve({generationId: itemGenerationId});
+          }
+        }
+
+        this.nextGenerationKeys.add(key);
         this.storage.splice(index, 0, {
           key,
           value,
@@ -299,7 +333,9 @@ export class MemoryDatabaseCollection implements Collection {
       }
 
       await Promise.all(
-        items.map(({key, value}) => this.put({key, value, generationId})),
+        items.map((item) =>
+          this.put(generationId ? {...item, generationId} : item),
+        ),
       );
 
       assertNonNullable(this.plannedNextGenerationId, 'putMany');
@@ -584,6 +620,8 @@ export class MemoryDatabaseCollection implements Collection {
           return;
         }
 
+        processedSize = 0;
+
         pushItems();
         await onNotFull();
       }
@@ -593,11 +631,6 @@ export class MemoryDatabaseCollection implements Collection {
   }
 
   _restoreItems({items}: PersistCollectionItems): void {
-    this.queryCursors.clear();
-    this.diffCursors.clear();
-
-    this.storage = [];
-
     items.forEach((item) => {
       this.storage.push(item);
     });

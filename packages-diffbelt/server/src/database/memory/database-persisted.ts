@@ -4,6 +4,10 @@ import {dirname} from 'path';
 import {MemoryDatabase, MemoryDatabaseOptions} from './database';
 import {dumpMemoryDatabase} from './persist/dump';
 import {writeStreamToFile} from '@-/util/src/fs/write-stream-to-file';
+import {isFileExists} from '@-/util/src/fs/is-file-exists';
+import {createReadStream} from 'fs';
+import {readableBuffersToAsyncStream} from '@-/util/src/stream/node-stream-to-async';
+import {restoreMemoryDatabase} from './persist/restore';
 
 type MemoryDatabasePersistedOptions = MemoryDatabaseOptions & {
   dumpPath: string;
@@ -26,13 +30,15 @@ export class MemoryDatabasePersisted
     const dir = dirname(dumpPath);
     await mkdir(dir, {recursive: true});
 
-    // const exists = await isFileExists(dumpPath);
+    const exists = await isFileExists(dumpPath);
 
-    // if (!exists) {
-    //   return;
-    // }
+    if (!exists) {
+      return;
+    }
 
-    // createReadStream(dumpPath, {encoding: 'utf8'});
+    const dump = readableBuffersToAsyncStream(createReadStream(dumpPath));
+
+    await restoreMemoryDatabase({database: this, dump});
   }
 
   async stop() {

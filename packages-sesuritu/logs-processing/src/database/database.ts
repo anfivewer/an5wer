@@ -56,11 +56,14 @@ export class Database extends BaseComponent implements Component<Context> {
 
   private async handleBatch(lines: NormalizedLogLine[]) {
     await this.linesCollection.putMany({
-      items: lines.map((line) => ({key: line, value: ''})),
+      items: lines.map((line) => ({key: line, value: '', ifNotPresent: true})),
     });
   }
 
   async stop() {
+    await this.batcher.onIdle();
+    await this.db.onIdle();
+
     await this.db.stop();
   }
 }

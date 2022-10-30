@@ -1,6 +1,10 @@
 import {ReadOnlyStream} from '@-/types/src/stream/stream';
 
-type KeyValueUpdate = {key: string; value: string | null};
+type KeyValueUpdate = {
+  key: string;
+  value: string | null;
+  ifNotPresent?: boolean;
+};
 export type KeyValue = {key: string; value: string};
 type PutResult = {generationId: string};
 
