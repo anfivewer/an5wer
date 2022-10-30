@@ -219,9 +219,12 @@ importers:
       '@-/diffbelt-types': workspace:*
       '@-/types': workspace:*
       '@-/util': workspace:*
+      '@types/jest': 29.2.0
       '@types/node': 17.0.42
       dotenv: 16.0.1
+      jest: 29.2.2
       nodemon: 2.0.18
+      ts-jest: 29.0.3
       ts-node: 10.8.1
       typescript: 4.8.3
     dependencies:
@@ -233,8 +236,11 @@ importers:
       ts-node: 10.8.1_7elzlgvrtu6xx6s2d4lb477dqa
       typescript: 4.8.3
     devDependencies:
+      '@types/jest': 29.2.0
       '@types/node': 17.0.42
+      jest: 29.2.2_ulrz5zuh5kppsvny26pjrk2deu
       nodemon: 2.0.18
+      ts-jest: 29.0.3_glma5iex22efd6e6gux66qinci
 
   packages/app-template:
     specifiers:

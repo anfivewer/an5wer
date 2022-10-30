@@ -3,7 +3,7 @@ import {runApp} from '@-/util/src/app/run';
 import {createApp} from '@-/util/src/app/app';
 import {getConfig} from './config/config';
 import {createInitialContext} from './context/context';
-import {MemoryDatabasePersisted} from '@-/diffbelt-server/src/database/memory/database-persisted';
+import {Database} from './database/database';
 
 runApp({
   createApp: ({logger}) =>
@@ -14,13 +14,10 @@ runApp({
         logger.setDebug(config.isDebug);
       },
       getInitialContext: createInitialContext,
-      preInit: async ({app, config}) => {
-        const {databaseDumpPath} = config;
-
+      preInit: async ({app}) => {
         app.registerComponent({
           name: 'database',
-          getComponent: ({logger}) =>
-            new MemoryDatabasePersisted({logger, dumpPath: databaseDumpPath}),
+          getComponent: ({logger}) => new Database({logger}),
         });
         await Promise.resolve();
       },

@@ -1,3 +1,4 @@
+import {UniqueTimestamp} from './timestamp/unique-timestamp';
 import {Logger as LoggerInterface, LogLevel, logLevelToLetter} from './types';
 
 type LoggerWithFork = LoggerInterface & {fork: (key: string) => LoggerWithFork};
@@ -12,8 +13,7 @@ type FilterLogFn = (...params: Parameters<LogFn>) => boolean;
 const getTrue = () => true;
 
 export class Logger implements LoggerInterface {
-  private lastTimeMs = 0;
-  private microTicks = 0;
+  private timestamp = new UniqueTimestamp();
   private key: string;
   private logLevel: LogLevel;
   private filterLog: FilterLogFn = getTrue;
@@ -52,25 +52,11 @@ export class Logger implements LoggerInterface {
       return;
     }
 
-    let ms = Date.now();
-
-    if (this.lastTimeMs >= ms) {
-      this.microTicks++;
-      if (this.microTicks >= 1000) {
-        this.microTicks = 0;
-        ms++;
-      }
-    } else {
-      this.microTicks = 0;
-    }
-
-    this.lastTimeMs = ms;
-
-    const logString = `${logLevelToLetter(level)} ${new Date(
-      ms,
-    ).toISOString()}.${String(this.microTicks).padStart(3, '0')} ${escapeKey(
-      loggerKey,
-    )} ${escapeKey(key)} ${props ? propsToStringWithSpaceAfter(props) : ''}${
+    const logString = `${logLevelToLetter(
+      level,
+    )} ${this.timestamp.getNowString()} ${escapeKey(loggerKey)} ${escapeKey(
+      key,
+    )} ${props ? propsToStringWithSpaceAfter(props) : ''}${
       error ? `|${exceptionToString(error, this.isDebug)}` : ''
     }${extra ? `|${extraToString(extra, this.isDebug)}` : ''}\n`;
 

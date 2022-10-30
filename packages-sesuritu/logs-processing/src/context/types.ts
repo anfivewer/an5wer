@@ -1,9 +1,9 @@
 import {DependenciesGraph} from '@-/util/src/async/dependencies-graph';
 import {Config} from '../config/types';
-import {MemoryDatabase} from '@-/diffbelt-server/src/database/memory/database';
+import {Database} from '../database/database';
 
 export type Context = {
   config: Config;
   dependenciesGraph: DependenciesGraph;
-  database: MemoryDatabase;
+  database: Database;
 };
