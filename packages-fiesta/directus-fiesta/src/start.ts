@@ -63,7 +63,7 @@ export const startDirectus = async ({
   }
 
   childProcess.stdout.setEncoding('utf8');
-  const {getGenerator} = createReadableLinesStream({
+  const linesStream = createReadableLinesStream({
     stream: childProcess.stdout,
   });
 
@@ -76,9 +76,7 @@ export const startDirectus = async ({
   });
 
   (async () => {
-    const linesGenerator = getGenerator();
-
-    for await (const line of linesGenerator) {
+    for await (const line of linesStream) {
       process.stdout.write(line);
       process.stdout.write('\n');
 
@@ -88,7 +86,7 @@ export const startDirectus = async ({
       }
     }
 
-    for await (const line of linesGenerator) {
+    for await (const line of linesStream) {
       process.stdout.write(line);
       process.stdout.write('\n');
     }

@@ -1,5 +1,5 @@
 import {Context} from '../types/context';
-import {Logger} from '@-/util/src/logging/types';
+import {Logger} from '@-/types/src/logging/logging';
 import {ReadOnlyStream} from '@-/types/src/stream/stream';
 import {
   databaseDependency,

@@ -1,4 +1,4 @@
-import {LogLevel} from './types';
+import {LogLevel} from '@-/types/src/logging/logging';
 import {parseLogLine} from './parser';
 
 describe('parseLogLine', () => {
@@ -22,7 +22,7 @@ describe('parseLogLine', () => {
     );
     expect(loggerKey).toBe('test:key');
     expect(logKey).toBe('someLogKey');
-    expect(props.size).toBe(0);
+    expect(Array.from(Object.keys(props)).length).toBe(0);
     expect(extra.length).toBe(0);
   });
 
@@ -42,7 +42,7 @@ describe('parseLogLine', () => {
     );
 
     expect(logLevel).toBe(LogLevel.WARNING);
-    expect(Array.from(props.entries()).sort()).toStrictEqual([
+    expect(Array.from(Object.entries(props)).sort()).toStrictEqual([
       ['a', '1'],
       ['answer', '42'],
       ['b', 'escaped prop'],
@@ -56,7 +56,7 @@ describe('parseLogLine', () => {
     );
 
     expect(logLevel).toBe(LogLevel.ERROR);
-    expect(Array.from(props.entries()).sort()).toStrictEqual([
+    expect(Array.from(Object.entries(props)).sort()).toStrictEqual([
       ['a', '1'],
       ['b', '2'],
     ]);
@@ -67,5 +67,29 @@ describe('parseLogLine', () => {
       'escaped|extra',
       'final extra',
     ]);
+  });
+
+  it('should parse normalized logs', () => {
+    const {
+      logLevel,
+      timestampMilliseconds,
+      timestampMicroseconds,
+      loggerKey,
+      logKey,
+      extra,
+      props,
+    } = parseLogLine('2022-03-19T22:35:54.190Z.042 T test:key someLogKey');
+
+    expect(logLevel).toBe(LogLevel.TRACE);
+    expect(new Date(timestampMilliseconds).toISOString()).toBe(
+      '2022-03-19T22:35:54.190Z',
+    );
+    expect(timestampMicroseconds).toBe(
+      Date.parse('2022-03-19T22:35:54.190Z') * 1000 + 42,
+    );
+    expect(loggerKey).toBe('test:key');
+    expect(logKey).toBe('someLogKey');
+    expect(Array.from(Object.keys(props)).length).toBe(0);
+    expect(extra.length).toBe(0);
   });
 });

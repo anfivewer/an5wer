@@ -49,6 +49,7 @@ runApp({
     const names = await readdir(logsDirPath);
     const logNames = names.filter((name) => patternRegexp.test(name));
 
+    // Add all available logs to the database
     await Promise.all(
       logNames.map((logName) => {
         return (async () => {
@@ -73,6 +74,8 @@ runApp({
         });
       }),
     );
+
+    // Run transforms
 
     await app.stop();
   },

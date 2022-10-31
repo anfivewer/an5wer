@@ -1,4 +1,4 @@
-import {Logger as LoggerInterface} from '../logging/types';
+import {Logger as LoggerInterface} from '@-/types/src/logging/logging';
 import {Component} from '@-/types/src/app/component';
 import {
   AppOptions,

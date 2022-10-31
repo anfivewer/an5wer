@@ -1,5 +1,5 @@
 import {HttpServer} from '@-/util/src/http-server/http-server';
-import {Logger} from '@-/util/src/logging/types';
+import {Logger} from '@-/types/src/logging/logging';
 import {DependenciesGraph} from '@-/util/src/async/dependencies-graph';
 import {SiteVersion} from '../site-version/site-version';
 import {Config} from '@-/fiesta-types/src/server/config';

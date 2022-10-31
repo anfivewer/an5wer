@@ -1,5 +1,9 @@
+import {
+  Logger as LoggerInterface,
+  LogLevel,
+  logLevelToLetter,
+} from '@-/types/src/logging/logging';
 import {UniqueTimestamp} from './timestamp/unique-timestamp';
-import {Logger as LoggerInterface, LogLevel, logLevelToLetter} from './types';
 
 type LoggerWithFork = LoggerInterface & {fork: (key: string) => LoggerWithFork};
 type LogFn = (

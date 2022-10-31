@@ -1,6 +1,6 @@
 import {DependenciesGraph} from '@-/util/src/async/dependencies-graph';
 import {HttpServer} from '@-/util/src/http-server/http-server';
-import {Logger} from '@-/util/src/logging/types';
+import {Logger} from '@-/types/src/logging/logging';
 import {Sessions} from '../sessions/sessions';
 import {Config} from '../types/config';
 import {Context} from '../types/context';

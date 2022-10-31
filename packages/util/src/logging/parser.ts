@@ -1,21 +1,21 @@
-import {letterToLogLevel, LogLevel} from './types';
+import {ParsedLogLine} from '@-/types/src/logging/parsed-log';
+import {letterToLogLevel, LogLevel} from '@-/types/src/logging/logging';
 import {unescapeExtra, unescapeKey, unescapePropKey} from './logger';
 
-export type ParsedLogLine = {
-  logLevel: LogLevel;
-  timestampMilliseconds: number;
-  timestampMicroseconds: number;
-  loggerKey: string;
-  logKey: string;
-  props: Map<string, string>;
-  extra: string[];
-};
+const LOG_LEVEL_PATTERN = '(T|I|W|E|S)';
+// WARN: contains 2 groups
+const TIMESTAMP_PATTERN =
+  '(\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{1,3}Z)\\.(\\d{1,3})';
+
+const ENTRY_PATTERN =
+  `^(?:${LOG_LEVEL_PATTERN} ${TIMESTAMP_PATTERN}` +
+  `|${TIMESTAMP_PATTERN} ${LOG_LEVEL_PATTERN})`;
+const END_PATTERN = ' ((?:\\\\ |[^\\s])+) ((?:\\\\ |[^\\s])+)(.*)$';
+
+const LOG_LINE_REGEXP = new RegExp(`${ENTRY_PATTERN}${END_PATTERN}`);
 
 export const parseLogLine = (line: string): ParsedLogLine => {
-  const match =
-    /^(T|I|W|E|S) (\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{1,3}Z)\.(\d{1,3}) ((?:\\ |[^\s])+) ((?:\\ |[^\s])+)(.*)/.exec(
-      line,
-    );
+  const match = LOG_LINE_REGEXP.exec(line);
 
   if (!match) {
     throw new Error('Log line not parsed');
@@ -23,13 +23,20 @@ export const parseLogLine = (line: string): ParsedLogLine => {
 
   const [
     ,
-    levelLetter,
-    dateStr,
-    microsecondsStr,
+    levelLetterA,
+    dateStrA,
+    microsecondsStrA,
+    dateStrB,
+    microsecondsStrB,
+    levelLetterB,
     loggerKeyEscaped,
     logKeyEscaped,
     propsAndExtraStr,
   ] = match;
+
+  const levelLetter = levelLetterA || levelLetterB;
+  const dateStr = dateStrA || dateStrB;
+  const microsecondsStr = microsecondsStrA || microsecondsStrB;
 
   const logLevel = letterToLogLevel(levelLetter);
   if (!logLevel) {
@@ -40,7 +47,12 @@ export const parseLogLine = (line: string): ParsedLogLine => {
   const timestampMicroseconds =
     timestampMilliseconds * 1000 + parseInt(microsecondsStr, 10);
 
-  const {props, extra} = parsePropsAndExtra(propsAndExtraStr);
+  const {props: propsMap, extra} = parsePropsAndExtra(propsAndExtraStr);
+
+  const props: Record<string, string> = {};
+  propsMap.forEach((value, key) => {
+    props[key] = value;
+  });
 
   return {
     logLevel,

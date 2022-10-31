@@ -13,7 +13,7 @@ export type Logger = {
   fork: (key: string) => Logger;
 };
 
-export const enum LogLevel {
+export enum LogLevel {
   TRACE = 1,
   INFO = 2,
   WARNING = 3,
