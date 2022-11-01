@@ -1,6 +1,6 @@
 import {ReadOnlyStream} from '@-/types/src/stream/stream';
 
-type KeyValueUpdate = {
+export type KeyValueUpdate = {
   key: string;
   value: string | null;
   ifNotPresent?: boolean;
@@ -24,7 +24,7 @@ export type DiffResultValues = (string | null)[];
 export type DiffResultItems = {key: string; values: DiffResultValues}[];
 
 export type DiffResult = {
-  fromGenerationId: string;
+  fromGenerationId: string | null;
   generationId: string;
   items: DiffResultItems;
   cursorId?: string;
@@ -47,12 +47,17 @@ export const isGenerationProvidedByReader = (
   );
 };
 
+export type DiffOptions = DiffOptionsFromGenerationInput & {
+  toGenerationId?: string;
+};
+
 export type Collection = {
   getName: () => string;
   isManual: () => boolean;
 
   getGeneration: () => Promise<string>;
   getGenerationStream: () => ReadOnlyStream<string>;
+  getPlannedGeneration: () => Promise<string | null>;
 
   get: (options: {
     key: string;
@@ -70,11 +75,7 @@ export type Collection = {
     transactionId?: string;
     generationId?: string;
   }) => Promise<PutResult>;
-  diff: (
-    options: DiffOptionsFromGenerationInput & {
-      toGenerationId?: string;
-    },
-  ) => Promise<DiffResult>;
+  diff: (options: DiffOptions) => Promise<DiffResult>;
   readDiffCursor: (options: {cursorId: string}) => Promise<DiffResult>;
 
   closeCursor: (options: {cursorId: string}) => Promise<void>;
@@ -82,13 +83,13 @@ export type Collection = {
   listReaders: () => Promise<
     {
       readerId: string;
-      generationId: string;
+      generationId: string | null;
       collectionName: string | undefined;
     }[]
   >;
   createReader: (options: {
     readerId: string;
-    generationId: string;
+    generationId: string | null;
     collectionName: string | undefined;
   }) => Promise<void>;
   updateReader: (options: {
@@ -106,7 +107,10 @@ export type Collection = {
   }) => Promise<{generationId: string}>;
   abortTransaction: (options: {transactionId: string}) => Promise<void>;
 
-  startGeneration: (options: {generationId: string}) => Promise<void>;
+  startGeneration: (options: {
+    generationId: string;
+    abortOutdated?: boolean;
+  }) => Promise<void>;
   commitGeneration: (options: {
     generationId: string;
     updateReaders?: {

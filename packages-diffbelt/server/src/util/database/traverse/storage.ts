@@ -13,7 +13,7 @@ export type StorageTraverser = {
   peekPrev: () => KeyValueRecord | null;
   peekNext: () => KeyValueRecord | null;
   findGenerationRecord: (options: {
-    generationId: string;
+    generationId: string | null;
     exact?: boolean;
   }) => boolean;
   goPrevKey: () => boolean;
@@ -44,7 +44,7 @@ export const createStorageTraverser = ({
 
     let prevGenerationId = itemGenerationId;
 
-    if (itemGenerationId < generationId) {
+    if (generationId !== null && itemGenerationId < generationId) {
       // go forward
       while (true) {
         const nextItem = peekNext();
@@ -67,12 +67,12 @@ export const createStorageTraverser = ({
         const shouldReturn =
           !prevItem ||
           prevItem.key !== key ||
-          prevItem.generationId < generationId;
+          (generationId !== null && prevItem.generationId < generationId);
 
         if (shouldReturn) {
           return exact
             ? prevGenerationId === generationId
-            : prevGenerationId <= generationId;
+            : generationId === null || prevGenerationId <= generationId;
         }
 
         prevGenerationId = prevItem.generationId;

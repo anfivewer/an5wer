@@ -1,3 +1,6 @@
+import {literal, union} from 'zod';
+import {ZodInfer} from '../zod/zod';
+
 export type LogFn = (
   key: string,
   props?: Record<string, string | number | boolean | undefined | null>,
@@ -33,7 +36,17 @@ export function logLevelNameToLevel(name = ''): LogLevel {
   );
 }
 
-export const logLevelToLetter = (level: LogLevel): string => {
+export const LogLevelLetter = union([
+  literal('T'),
+  literal('I'),
+  literal('W'),
+  literal('E'),
+  literal('S'),
+  literal('?'),
+]);
+export type LogLevelLetter = ZodInfer<typeof LogLevelLetter>;
+
+export const logLevelToLetter = (level: LogLevel): LogLevelLetter => {
   switch (level) {
     case LogLevel.TRACE:
       return 'T';

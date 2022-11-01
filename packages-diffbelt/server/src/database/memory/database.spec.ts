@@ -30,6 +30,7 @@ describe('MemoryDatabase', () => {
       '{"type":"collection","name":"colA","generationId":"00000000002",' +
       '"nextGenerationId":"00000000003","nextGenerationKeys":[],' +
       '"isManual":false}\n' +
+      '{"type":"readers","collectionName":"colA","readers":[]}\n' +
       '{"type":"items","collectionName":"colA","items":[{"key":"00000000003",' +
       '"value":"2","generationId":"00000000001"},{"key":"00000000003",' +
       '"value":null,"generationId":"00000000002"},{"key":"00000000065",' +
@@ -43,6 +44,8 @@ describe('MemoryDatabase', () => {
       '"value":"42","generationId":"00000000001"}]}\n' +
       '{"type":"collection","name":"colB","generationId":"00000000002",' +
       '"nextGenerationKeys":[],"isManual":true}\n' +
+      '{"type":"readers","collectionName":"colB","readers":[{"readerId":' +
+      '"aToB","generationId":"00000000002","collectionName":"colA"}]}\n' +
       '{"type":"items","collectionName":"colB","items":[{"key":"00000000000",' +
       '"value":"2","generationId":"00000000001"},{"key":"00000000000",' +
       '"value":"0","generationId":"00000000002"},{"key":"00000000060",' +
@@ -53,7 +56,9 @@ describe('MemoryDatabase', () => {
       '"value":"42","generationId":"00000000001"}]}\n{"type":"collection",' +
       '"name":"testEmptyStringValue","generationId":"00000000001",' +
       '"nextGenerationId":"00000000002","nextGenerationKeys":[],' +
-      '"isManual":false}\n{"type":"items","collectionName":' +
+      '"isManual":false}\n{"type":"readers","collectionName":' +
+      '"testEmptyStringValue","readers":[]}\n' +
+      '{"type":"items","collectionName":' +
       '"testEmptyStringValue","items":[{"key":"test","value":"",' +
       '"generationId":"00000000001"}]}\n{"type":"end"}\n';
 

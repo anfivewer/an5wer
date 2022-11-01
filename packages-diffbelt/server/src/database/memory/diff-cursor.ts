@@ -9,7 +9,7 @@ import {CursorStartKey, MemoryDatabaseStorage} from './types';
 export class CollectionDiffCursor {
   private startKey: CursorStartKey | undefined;
   private storage: MemoryDatabaseStorage;
-  private fromGenerationId: string;
+  private fromGenerationId: string | null;
   private toGenerationId: string;
   private maxItemsInPack: number;
   private createNextCursor: (options: {nextStartKey: CursorStartKey}) => {
@@ -26,7 +26,7 @@ export class CollectionDiffCursor {
   }: {
     startKey: CursorStartKey | undefined;
     storage: MemoryDatabaseStorage;
-    fromGenerationId: string;
+    fromGenerationId: string | null;
     toGenerationId: string;
     maxItemsInPack: number;
     createNextCursor: (options: {nextStartKey: CursorStartKey}) => {
@@ -112,7 +112,7 @@ export class CollectionDiffCursor {
         }
       };
 
-      if (!found) {
+      if (!found || this.fromGenerationId === null) {
         pushValue(null);
       }
 
@@ -142,6 +142,10 @@ export class CollectionDiffCursor {
       }
 
       pushItem();
+
+      if (items.length >= this.maxItemsInPack) {
+        break;
+      }
     }
 
     const nextStartKey = (() => {

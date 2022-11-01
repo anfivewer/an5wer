@@ -1,9 +1,11 @@
 import {array, nativeEnum, number, object, record, string} from 'zod';
 import {ZodInfer} from '../zod/zod';
-import {LogLevel} from './logging';
+import {LogLevel, LogLevelLetter} from './logging';
 
 export const ParsedLogLine = object({
   logLevel: nativeEnum(LogLevel),
+  logLevelLetter: LogLevelLetter,
+  timestampString: string(),
   timestampMilliseconds: number(),
   timestampMicroseconds: number(),
   loggerKey: string(),

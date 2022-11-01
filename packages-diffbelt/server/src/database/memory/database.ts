@@ -116,7 +116,7 @@ export class MemoryDatabase extends BaseComponent implements Database {
     const collection = new MemoryDatabaseCollection({
       name,
       generationId,
-      isManual: Boolean(generationId),
+      isManual: typeof generationId === 'string',
       maxItemsInPack: this.maxItemsInPack,
       getReaderGenerationId: this.getReaderGenerationId.bind(this),
       waitForNonManualGenerationCommit: this.waitForNonManualGenerationCommit,

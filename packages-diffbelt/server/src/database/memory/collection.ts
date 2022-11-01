@@ -13,7 +13,6 @@ import {sleep} from '@-/util/src/async/sleep';
 import {assertNonNullable} from '@-/types/src/assert/runtime';
 import {
   CannotPutInManualCollectionError,
-  GenerationIsAbortingError,
   NextGenerationIsNotStartedError,
   NoSuchCursorError,
   NoSuchReaderError,
@@ -42,7 +41,6 @@ export class MemoryDatabaseCollection implements Collection {
   private generationId: string;
   private generationIdStream = createStream<string>();
   private _isManual: boolean;
-  private isGenerationAborting = false;
   private plannedNextGenerationId: string | undefined;
   private nextGenerationKeys = new Set<string>();
   private maxItemsInPack: number;
@@ -51,12 +49,16 @@ export class MemoryDatabaseCollection implements Collection {
   private cursorIdGenerator = new AlphaGenerationIdGenerator();
   private readers = new Map<
     string,
-    {readerId: string; generationId: string; collectionName: string | undefined}
+    {
+      readerId: string;
+      generationId: string | null;
+      collectionName: string | undefined;
+    }
   >();
   private getReaderGenerationId: (options: {
     readerId: string;
     collectionName: string;
-  }) => string;
+  }) => string | null;
   private nonManualGenerationCommitSingleton = new SingletonAsyncTask();
   _idling = new IdlingStatus();
   _rwLock = new RwLock();
@@ -81,7 +83,7 @@ export class MemoryDatabaseCollection implements Collection {
     getReaderGenerationId: (options: {
       readerId: string;
       collectionName: string;
-    }) => string;
+    }) => string | null;
     waitForNonManualGenerationCommit?: () => Promise<void>;
     _restore?: Pick<
       PersistCollection,
@@ -122,6 +124,9 @@ export class MemoryDatabaseCollection implements Collection {
   }
   getGenerationStream() {
     return this.generationIdStream.getGenerator();
+  }
+  getPlannedGeneration() {
+    return Promise.resolve(this.plannedNextGenerationId ?? null);
   }
 
   get: Collection['get'] = this.wrapFn(
@@ -242,10 +247,6 @@ export class MemoryDatabaseCollection implements Collection {
         if (generationId !== this.plannedNextGenerationId) {
           throw new OutdatedGenerationError();
         }
-
-        if (this.isGenerationAborting) {
-          throw new GenerationIsAbortingError();
-        }
       } else if (this._isManual) {
         throw new CannotPutInManualCollectionError();
       } else if (!this.plannedNextGenerationId) {
@@ -328,10 +329,6 @@ export class MemoryDatabaseCollection implements Collection {
   putMany: Collection['putMany'] = this.wrapFn(
     {isWriter: true},
     async ({items, generationId}) => {
-      if (this.isGenerationAborting) {
-        throw new GenerationIsAbortingError();
-      }
-
       await Promise.all(
         items.map((item) =>
           this.put(generationId ? {...item, generationId} : item),
@@ -369,6 +366,15 @@ export class MemoryDatabaseCollection implements Collection {
     })();
 
     const toGenerationId = toGenerationIdRaw || this.generationId;
+
+    if (fromGenerationId === toGenerationId) {
+      return Promise.resolve({
+        fromGenerationId,
+        generationId: toGenerationId,
+        items: [],
+        cursorId: undefined,
+      });
+    }
 
     const createCursor = (
       prevCursorId: string | undefined,
@@ -419,7 +425,7 @@ export class MemoryDatabaseCollection implements Collection {
     return Promise.resolve();
   });
 
-  _getReaderGenerationId(readerId: string) {
+  _getReaderGenerationId(readerId: string): string | null {
     const reader = this.readers.get(readerId);
     if (!reader) {
       throw new NoSuchReaderError();
@@ -429,11 +435,7 @@ export class MemoryDatabaseCollection implements Collection {
   }
 
   listReaders: Collection['listReaders'] = this.wrapFn({}, () => {
-    const readers: {
-      readerId: string;
-      generationId: string;
-      collectionName: string | undefined;
-    }[] = [];
+    const readers: Awaited<ReturnType<Collection['listReaders']>> = [];
 
     this.readers.forEach(({readerId, generationId, collectionName}) => {
       readers.push({readerId, generationId, collectionName});
@@ -481,11 +483,17 @@ export class MemoryDatabaseCollection implements Collection {
 
   startGeneration: Collection['startGeneration'] = this.wrapFn(
     {isWriter: true},
-    ({generationId}) => {
+    ({generationId, abortOutdated}) => {
       if (
         this.plannedNextGenerationId &&
         this.plannedNextGenerationId !== generationId
       ) {
+        if (abortOutdated && generationId > this.plannedNextGenerationId) {
+          return this.abortGeneration({
+            generationId: this.plannedNextGenerationId,
+          });
+        }
+
         throw new OutdatedGenerationError();
       }
 
@@ -499,9 +507,6 @@ export class MemoryDatabaseCollection implements Collection {
     ({generationId, updateReaders}) => {
       if (this.plannedNextGenerationId !== generationId) {
         throw new OutdatedGenerationError();
-      }
-      if (this.isGenerationAborting) {
-        throw new GenerationIsAbortingError();
       }
       if (!this._isManual) {
         throw new CannotPutInManualCollectionError();
@@ -531,20 +536,15 @@ export class MemoryDatabaseCollection implements Collection {
   );
   abortGeneration: Collection['abortGeneration'] = this.wrapFn(
     {isWriter: true},
-    ({generationId}) => {
+    async ({generationId}) => {
       if (this.plannedNextGenerationId !== generationId) {
         throw new OutdatedGenerationError();
-      }
-      if (this.isGenerationAborting) {
-        throw new GenerationIsAbortingError();
       }
       if (!this._isManual) {
         throw new CannotPutInManualCollectionError();
       }
 
-      this.isGenerationAborting = true;
-
-      try {
+      await this._rwLock.blockWrite(() => {
         this.nextGenerationKeys.forEach((key) => {
           let traversing: MemoryStorageTraverser;
 
@@ -568,11 +568,7 @@ export class MemoryDatabaseCollection implements Collection {
 
         this.nextGenerationKeys.clear();
         this.plannedNextGenerationId = undefined;
-      } finally {
-        this.isGenerationAborting = false;
-      }
-
-      return Promise.resolve();
+      });
     },
   );
 
@@ -592,6 +588,12 @@ export class MemoryDatabaseCollection implements Collection {
       nextGenerationId: this.plannedNextGenerationId,
       nextGenerationKeys: Array.from(this.nextGenerationKeys),
       isManual: this._isManual,
+    });
+
+    pushDumpPart({
+      type: 'readers',
+      collectionName: this.name,
+      readers: Array.from(this.readers.values()),
     });
 
     let processedSize = 0;

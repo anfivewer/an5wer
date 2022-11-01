@@ -41,7 +41,7 @@ export const PersistCollectionReaders = object({
   readers: array(
     object({
       readerId: string(),
-      generationId: string(),
+      generationId: string().nullable(),
       collectionName: string().optional(),
     }),
   ),

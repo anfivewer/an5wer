@@ -9,6 +9,7 @@ import {createReadStream} from 'fs';
 import {join} from 'path';
 import {LinesNormalizer} from './logs/lines-normalizer';
 import {createReadableLinesStream} from '@-/util/src/stream/lines-stream';
+import {transformLogsLinesToParsedLines} from './transforms/parsed-lines';
 
 runApp({
   createApp: ({logger}) =>
@@ -75,7 +76,10 @@ runApp({
       }),
     );
 
+    await database.onLinesSaved();
+
     // Run transforms
+    await Promise.all([transformLogsLinesToParsedLines({context})]);
 
     await app.stop();
   },

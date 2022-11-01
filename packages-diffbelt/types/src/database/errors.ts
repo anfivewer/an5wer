@@ -14,8 +14,5 @@ export const NextGenerationIsNotStartedError = createCustomError(
 export const CannotPutInManualCollectionError = createCustomError(
   'CannotPutInManualCollectionError',
 );
-export const GenerationIsAbortingError = createCustomError(
-  'GenerationIsAbortingError',
-);
 export const NoSuchReaderError = createCustomError('NoSuchReaderError');
 export const CursorCrashedError = createCustomError('CursorCrashedError');

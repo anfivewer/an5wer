@@ -1,6 +1,11 @@
 import {ParsedLogLine} from '@-/types/src/logging/parsed-log';
-import {letterToLogLevel, LogLevel} from '@-/types/src/logging/logging';
+import {
+  letterToLogLevel,
+  LogLevel,
+  logLevelToLetter,
+} from '@-/types/src/logging/logging';
 import {unescapeExtra, unescapeKey, unescapePropKey} from './logger';
+import {createCustomError} from '@-/types/src/errors/util';
 
 const LOG_LEVEL_PATTERN = '(T|I|W|E|S)';
 // WARN: contains 2 groups
@@ -14,11 +19,25 @@ const END_PATTERN = ' ((?:\\\\ |[^\\s])+) ((?:\\\\ |[^\\s])+)(.*)$';
 
 const LOG_LINE_REGEXP = new RegExp(`${ENTRY_PATTERN}${END_PATTERN}`);
 
+export const LogLineNotParsed = createCustomError('LogLineNotParsed');
+
+export const maybeParseLogLine = (line: string): ParsedLogLine | null => {
+  try {
+    return parseLogLine(line);
+  } catch (error) {
+    if (!(error instanceof LogLineNotParsed)) {
+      throw error;
+    }
+  }
+
+  return null;
+};
+
 export const parseLogLine = (line: string): ParsedLogLine => {
   const match = LOG_LINE_REGEXP.exec(line);
 
   if (!match) {
-    throw new Error('Log line not parsed');
+    throw new LogLineNotParsed('Log line not parsed');
   }
 
   const [
@@ -40,12 +59,11 @@ export const parseLogLine = (line: string): ParsedLogLine => {
 
   const logLevel = letterToLogLevel(levelLetter);
   if (!logLevel) {
-    throw new Error(`Unknown log level letter: ${levelLetter}`);
+    throw new LogLineNotParsed(`Unknown log level letter: ${levelLetter}`);
   }
 
   const timestampMilliseconds = new Date(dateStr).getTime();
-  const timestampMicroseconds =
-    timestampMilliseconds * 1000 + parseInt(microsecondsStr, 10);
+  const timestampMicroseconds = parseInt(microsecondsStr, 10);
 
   const {props: propsMap, extra} = parsePropsAndExtra(propsAndExtraStr);
 
@@ -56,6 +74,8 @@ export const parseLogLine = (line: string): ParsedLogLine => {
 
   return {
     logLevel,
+    logLevelLetter: logLevelToLetter(logLevel),
+    timestampString: `${dateStr}.${microsecondsStr}`,
     timestampMilliseconds,
     timestampMicroseconds,
     loggerKey: unescapeKey(loggerKeyEscaped),
@@ -86,7 +106,7 @@ const parsePropsAndExtra = (
     }
 
     if (lastIndex !== match.index) {
-      throw new Error('Failed to parse props');
+      throw new LogLineNotParsed('Failed to parse props');
     }
 
     lastIndex = regexp.lastIndex;
