@@ -6,8 +6,12 @@ export const LOG_LINES_COLLECTION_NAME = 'log-lines';
 // keys are `<timestamp> <first part of log key (before first ":")>`
 // values are ParsedLogLine
 export const PARSED_LINES_COLLECTION_NAME = 'parsed-log-lines';
-
 export const PARSED_LINES_LOG_LINES_READER_NAME = 'log-lines';
+
+// key is `parsed-log-lines` key,
+// values are KicksCollectionItem
+export const KICKS_COLLECTION_NAME = 'kicks';
+export const KICKS_PARSED_LINES_READER_NAME = 'parsed-log-lines';
 
 type CollectionReaderDef = {
   name: string;
@@ -28,6 +32,16 @@ export const collections: CollectionDef[] = [
       {
         name: PARSED_LINES_LOG_LINES_READER_NAME,
         collectionName: LOG_LINES_COLLECTION_NAME,
+      },
+    ],
+  },
+  {
+    name: KICKS_COLLECTION_NAME,
+    isManual: true,
+    readers: [
+      {
+        name: KICKS_PARSED_LINES_READER_NAME,
+        collectionName: PARSED_LINES_COLLECTION_NAME,
       },
     ],
   },

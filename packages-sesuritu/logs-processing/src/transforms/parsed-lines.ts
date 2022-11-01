@@ -57,7 +57,9 @@ export const transformLogsLinesToParsedLines = async ({
       updates.push({key: parsedKey, value: JSON.stringify(parsedLine)});
     }
 
-    await parsedLinesCollection.putMany({items: updates, generationId});
+    if (updates.length) {
+      await parsedLinesCollection.putMany({items: updates, generationId});
+    }
   }
 
   await parsedLinesCollection.commitGeneration({

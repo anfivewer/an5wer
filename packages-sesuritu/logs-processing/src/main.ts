@@ -10,6 +10,7 @@ import {join} from 'path';
 import {LinesNormalizer} from './logs/lines-normalizer';
 import {createReadableLinesStream} from '@-/util/src/stream/lines-stream';
 import {transformLogsLinesToParsedLines} from './transforms/parsed-lines';
+import {transformParsedLinesToKicks} from './transforms/kicks';
 
 runApp({
   createApp: ({logger}) =>
@@ -35,16 +36,18 @@ runApp({
     } = context;
 
     const patternRegexp = new RegExp(
-      logsFilesPattern.replace(/[*.]/g, (full) => {
-        switch (full) {
-          case '*':
-            return '.*';
-          case '.':
-            return '\\.';
-          default:
-            throw new Error('unsupported replace');
-        }
-      }),
+      '^' +
+        logsFilesPattern.replace(/[*.]/g, (full) => {
+          switch (full) {
+            case '*':
+              return '.*';
+            case '.':
+              return '\\.';
+            default:
+              throw new Error('unsupported replace');
+          }
+        }) +
+        '$',
     );
 
     const names = await readdir(logsDirPath);
@@ -80,6 +83,9 @@ runApp({
 
     // Run transforms
     await Promise.all([transformLogsLinesToParsedLines({context})]);
+    await Promise.all(
+      [transformParsedLinesToKicks].map((fun) => fun({context})),
+    );
 
     await app.stop();
   },

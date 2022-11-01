@@ -126,7 +126,19 @@ export class MemoryDatabaseCollection implements Collection {
     return this.generationIdStream.getGenerator();
   }
   getPlannedGeneration() {
-    return Promise.resolve(this.plannedNextGenerationId ?? null);
+    if (this.plannedNextGenerationId === undefined) {
+      return Promise.resolve(null);
+    }
+
+    if (this._isManual) {
+      return Promise.resolve(this.plannedNextGenerationId);
+    }
+
+    if (!this.nextGenerationKeys.size) {
+      return Promise.resolve(null);
+    }
+
+    return Promise.resolve(this.plannedNextGenerationId);
   }
 
   get: Collection['get'] = this.wrapFn(

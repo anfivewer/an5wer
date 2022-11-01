@@ -10,7 +10,7 @@ export const ParsedLogLine = object({
   timestampMicroseconds: number(),
   loggerKey: string(),
   logKey: string(),
-  props: record(string()),
+  props: record(string().optional()),
   extra: array(string()),
 });
 export type ParsedLogLine = ZodInfer<typeof ParsedLogLine>;
