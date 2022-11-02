@@ -16,6 +16,9 @@ export const KICKS_PARSED_LINES_READER_NAME = 'parsed-log-lines';
 export const KICKS_PER_HOUR_COLLECTION_NAME = 'kicks:1h';
 export const KICKS_PER_HOUR_KICKS_READER_NAME = 'kicks';
 
+export const KICKS_PER_DAY_COLLECTION_NAME = 'kicks:1d';
+export const KICKS_PER_DAY_KICKS_READER_NAME = 'kicks:1h';
+
 type CollectionReaderDef = {
   name: string;
   collectionName: string | undefined;
@@ -55,6 +58,16 @@ export const collections: CollectionDef[] = [
       {
         name: KICKS_PER_HOUR_KICKS_READER_NAME,
         collectionName: KICKS_COLLECTION_NAME,
+      },
+    ],
+  },
+  {
+    name: KICKS_PER_DAY_COLLECTION_NAME,
+    isManual: true,
+    readers: [
+      {
+        name: KICKS_PER_DAY_KICKS_READER_NAME,
+        collectionName: KICKS_PER_HOUR_COLLECTION_NAME,
       },
     ],
   },

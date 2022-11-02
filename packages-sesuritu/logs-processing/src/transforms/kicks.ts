@@ -1,10 +1,13 @@
 import {
   KICKS_COLLECTION_NAME,
   KICKS_PARSED_LINES_READER_NAME,
+  KICKS_PER_DAY_COLLECTION_NAME,
+  KICKS_PER_DAY_KICKS_READER_NAME,
   KICKS_PER_HOUR_COLLECTION_NAME,
   KICKS_PER_HOUR_KICKS_READER_NAME,
 } from '../database/structure';
 import {
+  AggregatedKicksCollectionItem,
   KicksCollectionItem,
   KicksPerHourCollectionItem,
 } from '../types/collections/kicks';
@@ -41,7 +44,7 @@ export const transformParsedLinesToKicks = createParsedLinesFilterTransform({
 
 export const aggregateKicksPerHour = createAggregateByTimestampTransform<
   KicksCollectionItem,
-  KicksPerHourCollectionItem,
+  AggregatedKicksCollectionItem,
   {reason: string},
   {count: number; reasons: Record<string, number | undefined>}
 >({
@@ -51,7 +54,7 @@ export const aggregateKicksPerHour = createAggregateByTimestampTransform<
   targetFromSourceReaderName: KICKS_PER_HOUR_KICKS_READER_NAME,
   parseSourceItem: (value) => KicksCollectionItem.parse(JSON.parse(value)),
   parseTargetItem: (value) =>
-    KicksPerHourCollectionItem.parse(JSON.parse(value)),
+    AggregatedKicksCollectionItem.parse(JSON.parse(value)),
   serializeTargetItem: (item) => JSON.stringify(item),
   getTimestampMs: extractTimestampFromTimestampWithLoggerKey,
   mapFilter: ({sourceItem}) => {
@@ -97,6 +100,97 @@ export const aggregateKicksPerHour = createAggregateByTimestampTransform<
   },
 });
 
+export const aggregateKicksPerDay = createAggregateKicksMoreThanHour({
+  interval: AggregateInterval.DAY,
+  targetCollectionName: KICKS_PER_DAY_COLLECTION_NAME,
+  sourceCollectionName: KICKS_PER_HOUR_COLLECTION_NAME,
+  targetFromSourceReaderName: KICKS_PER_DAY_KICKS_READER_NAME,
+});
+
+function createAggregateKicksMoreThanHour({
+  interval,
+  targetCollectionName,
+  sourceCollectionName,
+  targetFromSourceReaderName,
+}: {
+  interval: AggregateInterval;
+  targetCollectionName: string;
+  sourceCollectionName: string;
+  targetFromSourceReaderName: string;
+}) {
+  const merge = (
+    accumulator: AggregatedKicksCollectionItem,
+    items: AggregatedKicksCollectionItem[],
+  ) => {
+    return items.reduce((acc, {count, reasons}) => {
+      acc.count += count;
+
+      for (const [reason, count] of Object.entries(reasons)) {
+        if (!count) {
+          continue;
+        }
+
+        increment(acc.reasons, reason, count);
+      }
+
+      return acc;
+    }, accumulator);
+  };
+
+  return createAggregateByTimestampTransform<
+    AggregatedKicksCollectionItem,
+    AggregatedKicksCollectionItem,
+    AggregatedKicksCollectionItem,
+    AggregatedKicksCollectionItem
+  >({
+    interval,
+    targetCollectionName,
+    sourceCollectionName,
+    targetFromSourceReaderName,
+    parseSourceItem: (value) =>
+      AggregatedKicksCollectionItem.parse(JSON.parse(value)),
+    parseTargetItem: (value) =>
+      KicksPerHourCollectionItem.parse(JSON.parse(value)),
+    serializeTargetItem: (item) => JSON.stringify(item),
+    getTimestampMs: extractTimestampFromTimestampWithLoggerKey,
+    mapFilter: ({sourceItem}) => {
+      return sourceItem;
+    },
+    parallelReduceWithInitialAccumulator: ({accumulator, items}) => {
+      const newItems: AggregatedKicksCollectionItem[] = [];
+
+      items.forEach(({prev, next}) => {
+        if (prev) {
+          const negativeReasons: Record<string, number | undefined> = {};
+
+          for (const [reason, count] of Object.entries(prev.reasons)) {
+            if (typeof count !== 'number') {
+              continue;
+            }
+
+            negativeReasons[reason] = -count;
+          }
+
+          newItems.push({count: -prev.count, reasons: negativeReasons});
+        }
+        if (next) {
+          newItems.push(next);
+        }
+      });
+
+      return merge(accumulator, newItems);
+    },
+    getInitialAccumulator: ({prevTargetItem}) =>
+      prevTargetItem || {count: 0, reasons: {}},
+    merge: ({items}) => {
+      return merge({count: 0, reasons: {}}, items);
+    },
+    apply: ({mergedItem}) => {
+      return mergedItem;
+    },
+  });
+}
+
 const increment = (
   record: Record<string, number | undefined>,
   key: string,
@@ -126,15 +220,3 @@ const decrement = (
 
   record[key] = count;
 };
-
-/*
-    interval,
-    targetCollectionName,
-    sourceCollectionName,
-    fullRecalculationRequired,
-    targetFromSourceReaderName,
-    parseSourceItem,
-    parseTargetItem,
-    getTimestampMs,
-    mapFilter,
-*/

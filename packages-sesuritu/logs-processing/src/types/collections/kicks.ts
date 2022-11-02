@@ -8,10 +8,10 @@ export const KicksCollectionItem = object({
 });
 export type KicksCollectionItem = ZodInfer<typeof KicksCollectionItem>;
 
-export const KicksPerHourCollectionItem = object({
+export const AggregatedKicksCollectionItem = object({
   count: number(),
   reasons: record(number().optional()),
 });
-export type KicksPerHourCollectionItem = ZodInfer<
-  typeof KicksPerHourCollectionItem
+export type AggregatedKicksCollectionItem = ZodInfer<
+  typeof AggregatedKicksCollectionItem
 >;

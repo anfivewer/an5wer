@@ -38,4 +38,17 @@ export const writeStreamToFile = async ({
       await onDrainDefer.promise;
     }
   }
+
+  const closeDefer = new Defer();
+
+  ws.close((error) => {
+    if (error) {
+      closeDefer.reject(error);
+      return;
+    }
+
+    closeDefer.resolve();
+  });
+
+  await closeDefer.promise;
 };
