@@ -1,5 +1,5 @@
 import {ZodInfer} from '@-/types/src/zod/zod';
-import {object, string} from 'zod';
+import {number, object, record, string} from 'zod';
 
 export const KicksCollectionItem = object({
   reason: string(),
@@ -7,3 +7,11 @@ export const KicksCollectionItem = object({
   userId: string(),
 });
 export type KicksCollectionItem = ZodInfer<typeof KicksCollectionItem>;
+
+export const KicksPerHourCollectionItem = object({
+  count: number(),
+  reasons: record(number().optional()),
+});
+export type KicksPerHourCollectionItem = ZodInfer<
+  typeof KicksPerHourCollectionItem
+>;

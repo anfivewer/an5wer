@@ -10,7 +10,10 @@ import {join} from 'path';
 import {LinesNormalizer} from './logs/lines-normalizer';
 import {createReadableLinesStream} from '@-/util/src/stream/lines-stream';
 import {transformLogsLinesToParsedLines} from './transforms/parsed-lines';
-import {transformParsedLinesToKicks} from './transforms/kicks';
+import {
+  aggregateKicksPerHour,
+  transformParsedLinesToKicks,
+} from './transforms/kicks';
 
 runApp({
   createApp: ({logger}) =>
@@ -86,6 +89,7 @@ runApp({
     await Promise.all(
       [transformParsedLinesToKicks].map((fun) => fun({context})),
     );
+    await Promise.all([aggregateKicksPerHour].map((fun) => fun({context})));
 
     await app.stop();
   },

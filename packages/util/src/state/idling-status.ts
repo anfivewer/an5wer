@@ -7,13 +7,19 @@ export class IdlingStatus {
   private runningTasksCount = 0;
   private runningStacks = DEBUG ? new Set<Error>() : undefined;
   private idleStream = createStream<boolean>();
+  private tasksCountStream = createStream<number>();
 
   getActiveTasksCount() {
     return this.runningTasksCount;
   }
 
+  getActiveTasksCountStream() {
+    return this.tasksCountStream.getGenerator();
+  }
+
   startTask = (meta?: unknown): (() => void) => {
     this.runningTasksCount++;
+    this.tasksCountStream.replace(this.runningTasksCount);
 
     if (this.runningTasksCount === 1) {
       this.idleStream.replace(false);
@@ -38,6 +44,7 @@ export class IdlingStatus {
       if (finished) return;
       finished = true;
       this.runningTasksCount--;
+      this.tasksCountStream.replace(this.runningTasksCount);
 
       if (DEBUG && stack && this.runningStacks) {
         this.runningStacks.delete(stack);
