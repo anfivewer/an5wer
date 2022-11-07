@@ -33,7 +33,7 @@ export const renderRootMst = <ServerState, MstState, DispatchFn>(
       derivedState,
     }: {
       children: ReactNode;
-      derivedState: MstState;
+      derivedState: NonNullable<MstState>;
     }) => {
       const dispatch = getDispatch?.({store: derivedState});
 
