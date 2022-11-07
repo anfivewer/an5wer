@@ -1,18 +1,32 @@
 import React, {Context, ReactNode} from 'react';
 import {renderRoot, RenderRootBaseOptions} from './render-root';
 
-export const renderRootMst = <ServerState, MstState>({
-  stateParser,
-  Component,
-  getMstStore,
-  MstContext,
-}: RenderRootBaseOptions<ServerState> & {
-  getMstStore: (options: {state: ServerState}) => MstState;
-  MstContext: Context<MstState>;
-}) => {
+export const renderRootMst = <ServerState, MstState, DispatchFn>(
+  options: RenderRootBaseOptions<ServerState> &
+    ({
+      getMstStore: (options: {state: ServerState}) => NonNullable<MstState>;
+      MstContext: Context<MstState>;
+    } & (
+      | {
+          getDispatch: (options: {store: NonNullable<MstState>}) => DispatchFn;
+          DispatchContext: Context<DispatchFn>;
+        }
+      | {
+          getDispatch?: undefined;
+          DispatchContext?: undefined;
+        }
+    )),
+) => {
+  const {
+    getMstStore,
+    MstContext,
+    getDispatch,
+    DispatchContext,
+    ...restOptions
+  } = options;
+
   return renderRoot({
-    stateParser,
-    Component,
+    ...restOptions,
     createDerivedState: getMstStore,
     wrap: ({
       children,
@@ -21,11 +35,23 @@ export const renderRootMst = <ServerState, MstState>({
       children: ReactNode;
       derivedState: MstState;
     }) => {
-      return (
+      const dispatch = getDispatch?.({store: derivedState});
+
+      let wrapped = (
         <MstContext.Provider value={derivedState}>
           {children}
         </MstContext.Provider>
       );
+
+      if (dispatch && DispatchContext) {
+        wrapped = (
+          <DispatchContext.Provider value={dispatch}>
+            {wrapped}
+          </DispatchContext.Provider>
+        );
+      }
+
+      return wrapped;
     },
   });
 };

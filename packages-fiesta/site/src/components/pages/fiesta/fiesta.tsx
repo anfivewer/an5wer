@@ -1,4 +1,4 @@
-import React, {FC} from 'react';
+import React, {FC, useCallback} from 'react';
 import cn from 'classnames';
 import {RootPageState} from '@-/fiesta-types/src/site/state/root';
 import '../../../css/global.css';
@@ -9,10 +9,24 @@ import {Link} from '../../basic/link/link';
 import {EventsSection} from '../../events-section/events-section';
 import typoStyles from '../../../css/typography.module.css';
 import utilStyles from '../../../css/utility.module.css';
+import {useRootDispatch} from '../../../contexts/root';
+import {PageName} from '../../../state/root/pages/name';
+import {RootDispatchEventType} from '../../../state/root/dispatch';
 
 export const Fiesta: FC<{state: RootPageState}> = ({
   state: {events, plannedEvents, totalConsumption},
 }) => {
+  const dispatch = useRootDispatch();
+
+  const onEventClick = useCallback(() => {
+    dispatch({
+      type: RootDispatchEventType.switchPage,
+      page: {
+        name: PageName.carEvents,
+      },
+    });
+  }, []);
+
   const consumptionFields = (() => {
     if (!totalConsumption) {
       return null;
@@ -106,11 +120,13 @@ export const Fiesta: FC<{state: RootPageState}> = ({
           className={styles.eventsFirst}
           title="Последние события"
           events={events}
+          onEventClick={onEventClick}
         />
         <EventsSection
           className={styles.eventsSecond}
           title="Ближайшие обслуживания"
           events={plannedEvents}
+          onEventClick={onEventClick}
         />
       </div>
     </div>

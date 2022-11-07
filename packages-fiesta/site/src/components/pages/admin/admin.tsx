@@ -1,5 +1,4 @@
 import React, {FC, ReactNode, useCallback} from 'react';
-import {AdminPageState} from '@-/fiesta-types/src/site/state/admin';
 import {observer} from 'mobx-react-lite';
 import {useAdminMstContext} from '../../../contexts/admin-mst';
 import {
@@ -8,7 +7,7 @@ import {
 } from '../../admin/login-form/login-form';
 import {CreateEventForm} from '../../admin/create-event-form/create-event-form';
 
-const AdminPage: FC<{state: AdminPageState}> = () => {
+const AdminPage: FC = () => {
   const store = useAdminMstContext();
   const {page} = store;
 
