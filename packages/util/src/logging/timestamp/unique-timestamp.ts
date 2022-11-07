@@ -1,4 +1,5 @@
 import {createCustomError} from '@-/types/src/errors/util';
+import {parseTimestamp} from './validate';
 
 export const TimestampParsingError = createCustomError('TimestampParsingError');
 
@@ -46,19 +47,9 @@ export class UniqueTimestamp {
   }
 
   setLastTimestampFromString(value: string): void {
-    const match = /^(.*)\.(\d{3})$/.exec(value);
-    if (!match) {
-      throw new TimestampParsingError('cannot parse timestamp');
-    }
+    const {timestampMs, microTicks} = parseTimestamp(value);
 
-    const [, isoString, microTicksString] = match;
-
-    const ms = Date.parse(isoString);
-    if (!isFinite(ms)) {
-      throw new TimestampParsingError('invalid ISO date string');
-    }
-
-    this.lastTimeMs = ms;
-    this.microTicks = parseInt(microTicksString, 10);
+    this.lastTimeMs = timestampMs;
+    this.microTicks = microTicks;
   }
 }

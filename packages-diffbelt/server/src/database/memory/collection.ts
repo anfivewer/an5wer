@@ -167,7 +167,7 @@ export class MemoryDatabaseCollection implements Collection {
 
       return Promise.resolve({
         generationId,
-        item: value ? {key, value} : null,
+        item: value !== null ? {key, value} : null,
       });
     },
   );

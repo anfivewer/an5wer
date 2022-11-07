@@ -3,7 +3,7 @@ import {Readable} from 'stream';
 import {createFinishableStream} from './finishable-stream';
 import {readableStringsToAsyncStream} from './node-stream-to-async';
 
-const DEFAULT_MAX_LINE_LENGTH = 4 * 1024 * 1024;
+export const DEFAULT_MAX_LINE_LENGTH = 4 * 1024 * 1024;
 
 export const createLinesStream = ({
   stream: readOnlyInputStream,

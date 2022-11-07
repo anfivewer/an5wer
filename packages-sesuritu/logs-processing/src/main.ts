@@ -5,16 +5,14 @@ import {getConfig} from './config/config';
 import {createInitialContext} from './context/context';
 import {Database} from './database/database';
 import {readdir} from 'fs/promises';
-import {createReadStream} from 'fs';
 import {join} from 'path';
-import {LinesNormalizer} from './logs/lines-normalizer';
-import {createReadableLinesStream} from '@-/util/src/stream/lines-stream';
 import {transformLogsLinesToParsedLines} from './transforms/parsed-lines';
 import {
   aggregateKicksPerDay,
   aggregateKicksPerHour,
   transformParsedLinesToKicks,
 } from './transforms/kicks';
+import {processLogFile} from './logs/process-file';
 
 runApp({
   createApp: ({logger}) =>
@@ -60,24 +58,10 @@ runApp({
     // Add all available logs to the database
     await Promise.all(
       logNames.map((logName) => {
-        return (async () => {
-          const linesNormalizer = new LinesNormalizer();
-          const rs = createReadStream(join(logsDirPath, logName), {
-            encoding: 'utf8',
-          });
-
-          const linesStream = createReadableLinesStream({stream: rs});
-
-          for await (const line of linesStream) {
-            const normalizedLine = linesNormalizer.normalizeLine(line);
-
-            if (!normalizedLine) {
-              continue;
-            }
-
-            database.addLine(normalizedLine);
-          }
-        })().catch((error) => {
+        return processLogFile({
+          path: join(logsDirPath, logName),
+          database,
+        }).catch((error) => {
           logger.error('logProcessing', {fileName: logName}, {error});
         });
       }),
