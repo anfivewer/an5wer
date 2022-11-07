@@ -4,6 +4,11 @@ import {readFile, writeFile} from 'fs/promises';
 import {array, object, optional, record, string, infer as Infer} from 'zod';
 import {EntryManifest} from '@-/fiesta-types/src/server/manifest';
 
+const ENTRIES = [
+  {entrySrc: 'src/entries/main-client.tsx', entryName: 'root'},
+  {entrySrc: 'src/entries/admin-client.tsx', entryName: 'admin'},
+];
+
 const PackageJson = object({
   version: string(),
 });
@@ -45,10 +50,7 @@ const main = async () => {
 
   await Promise.all([
     Promise.all(
-      [
-        {entrySrc: 'src/entries/main-client.tsx', entryName: 'root'},
-        {entrySrc: 'src/entries/admin-client.tsx', entryName: 'admin'},
-      ].map(({entrySrc, entryName}) =>
+      ENTRIES.map(({entrySrc, entryName}) =>
         processClientEntries({
           entrySrc,
           entryName,

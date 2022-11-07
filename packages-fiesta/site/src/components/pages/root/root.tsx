@@ -10,6 +10,7 @@ const RootPage: FC = () => {
 
   let content: ReactNode = null;
 
+  const pageName = page.name;
   switch (page.name) {
     case PageName.car:
       content = <Fiesta state={store.serverState} />;
@@ -18,7 +19,7 @@ const RootPage: FC = () => {
       break;
     default: {
       const shouldBeNever: never = page;
-      throw new Error(`unknown page: ${page.name}`);
+      throw new Error(`unknown page: ${pageName}`);
     }
   }
   return <>{content}</>;
