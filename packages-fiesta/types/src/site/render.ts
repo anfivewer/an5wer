@@ -1,6 +1,6 @@
+import {EntryManifest} from '@-/types/src/frontend/entry-manifest';
 import {Database} from '../database/database';
 import {Config} from '../server/config';
-import {EntryManifest} from '../server/manifest';
 import {FiestaRenderPage} from './pages';
 
 export type RequestData = {

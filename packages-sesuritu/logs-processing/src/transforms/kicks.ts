@@ -9,7 +9,6 @@ import {
 import {
   AggregatedKicksCollectionItem,
   KicksCollectionItem,
-  KicksPerHourCollectionItem,
 } from '../types/collections/kicks';
 import {
   AggregateInterval,
@@ -150,7 +149,7 @@ function createAggregateKicksMoreThanHour({
     parseSourceItem: (value) =>
       AggregatedKicksCollectionItem.parse(JSON.parse(value)),
     parseTargetItem: (value) =>
-      KicksPerHourCollectionItem.parse(JSON.parse(value)),
+      AggregatedKicksCollectionItem.parse(JSON.parse(value)),
     serializeTargetItem: (item) => JSON.stringify(item),
     getTimestampMs: extractTimestampFromTimestampWithLoggerKey,
     mapFilter: ({sourceItem}) => {

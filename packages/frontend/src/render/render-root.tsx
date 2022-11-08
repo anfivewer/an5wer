@@ -1,9 +1,9 @@
 import React, {ComponentType, ReactNode} from 'react';
 import {hydrateRoot, createRoot} from 'react-dom/client';
-import {STATE_KEY} from '../constants';
-import {SiteServerState} from '../types';
+import {SiteServerState} from './types';
 
 export type RenderRootBaseOptions<ServerState> = {
+  stateKey: string;
   stateParser: {parse: (value: unknown) => ServerState};
   Component: ComponentType<{state: ServerState}>;
 };
@@ -27,11 +27,11 @@ export const renderRoot = <ServerState, DerivedState = undefined>(
         }
     ),
 ) => {
-  const {stateParser, Component} = options;
+  const {stateKey, stateParser, Component} = options;
 
   const {rootId, state: rawState} = SiteServerState.parse(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (window as any)[STATE_KEY],
+    (window as any)[stateKey],
   );
   const state = stateParser.parse(rawState);
 

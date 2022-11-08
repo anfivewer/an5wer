@@ -12,15 +12,7 @@ export class Parallel {
     const stream = this.runningTasks.getActiveTasksCountStream();
 
     while (this.runningTasks.getActiveTasksCount() >= this.concurrency) {
-      const iteratorResult = await stream.next();
-      if (iteratorResult.done) {
-        throw new Error('impossible');
-      }
-
-      const count = iteratorResult.value;
-      if (count < this.concurrency) {
-        break;
-      }
+      await stream.next();
     }
 
     return await this.runningTasks.wrapTask(fun);

@@ -4,8 +4,19 @@ import {parse as parseYaml} from 'yaml';
 import {ArrayOfStrings} from '@-/types/src/zod/primitives';
 import {spawn} from 'child_process';
 import {Defer} from '../../async/defer';
+import {Parallel} from '../../async/parallel';
+
+const DEBUG_STALLED = false;
 
 const repoRoot = resolve(__dirname, '../../../../..');
+
+type ExecResult = {
+  path: string;
+  code: number | null;
+  stdout: string;
+  stderr: string;
+  error?: unknown;
+};
 
 export const runNpmScriptForAllPackagesSideEffect = ({
   name: npmScriptName,
@@ -45,73 +56,92 @@ export const runNpmScriptForAllPackagesSideEffect = ({
       )
     ).flat();
 
-    const result = await Promise.all(
-      packagePaths.map(async (packagePath) => {
-        if (onlyIfPresent) {
-          const content = await readFile(join(packagePath, 'package.json'), {
-            encoding: 'utf8',
+    const pendingPathsSet = new Set<string>();
+
+    const intervalId = DEBUG_STALLED
+      ? setInterval(() => {
+          pendingPathsSet.forEach((packagePath) => {
+            process.stdout.write(`pending ${packagePath}\n`);
           });
-          const packageJson = JSON.parse(content);
+          process.stdout.write('\n');
+        }, 5000)
+      : null;
 
-          if (!packageJson.scripts[npmScriptName]) {
-            return Promise.resolve({
-              path: packagePath,
-              code: 0,
-              stdout: '',
-              stderr: '',
-              error: undefined,
-            });
-          }
-        }
+    const tasks = packagePaths.map((packagePath) => async () => {
+      pendingPathsSet.add(packagePath);
 
-        const cp = await spawn(
-          'npm',
-          ['run', npmScriptName, '--', ...(npmScriptArgs || [])],
-          {
-            stdio: 'pipe',
-            cwd: packagePath,
-          },
-        );
-
-        cp.stdout.setEncoding('utf8');
-        cp.stderr.setEncoding('utf8');
-
-        let stdout = '';
-        let stderr = '';
-
-        const resultDefer = new Defer<{
-          path: string;
-          code: number | null;
-          stdout: string;
-          stderr: string;
-          error?: unknown;
-        }>();
-
-        cp.stdout.on('data', (data) => {
-          stdout += data;
+      if (onlyIfPresent) {
+        const content = await readFile(join(packagePath, 'package.json'), {
+          encoding: 'utf8',
         });
+        const packageJson = JSON.parse(content);
 
-        cp.stderr.on('data', (data) => {
-          stderr += data;
-        });
-
-        cp.on('close', (code) => {
-          resultDefer.resolve({path: packagePath, code, stdout, stderr});
-        });
-
-        cp.on('error', (error) => {
-          resultDefer.resolve({
+        if (!packageJson.scripts[npmScriptName]) {
+          return Promise.resolve({
             path: packagePath,
-            code: null,
-            stdout,
-            stderr,
-            error,
+            code: 0,
+            stdout: '',
+            stderr: '',
+            error: undefined,
           });
-        });
+        }
+      }
 
-        return resultDefer.promise;
-      }),
+      const cp = await spawn(
+        'npm',
+        ['run', npmScriptName, '--', ...(npmScriptArgs || [])],
+        {
+          stdio: 'pipe',
+          cwd: packagePath,
+        },
+      );
+
+      cp.stdout.setEncoding('utf8');
+      cp.stderr.setEncoding('utf8');
+
+      let stdout = '';
+      let stderr = '';
+
+      const resultDefer = new Defer<ExecResult>();
+
+      cp.stdout.on('data', (data) => {
+        stdout += data;
+      });
+
+      cp.stderr.on('data', (data) => {
+        stderr += data;
+      });
+
+      cp.on('close', (code) => {
+        resultDefer.resolve({path: packagePath, code, stdout, stderr});
+      });
+
+      cp.on('error', (error) => {
+        resultDefer.resolve({
+          path: packagePath,
+          code: null,
+          stdout,
+          stderr,
+          error,
+        });
+      });
+
+      resultDefer.promise.then(() => {
+        pendingPathsSet.delete(packagePath);
+      });
+
+      return resultDefer.promise;
+    });
+
+    const parallel = new Parallel({concurrency: 4});
+
+    const result = await Promise.all(
+      tasks.map((task) => parallel.schedule(task)),
     );
+
+    if (intervalId !== null) {
+      clearInterval(intervalId);
+    }
 
     let exitCode = 0;
 
