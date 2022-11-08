@@ -215,6 +215,43 @@ importers:
       typescript: 4.8.3
       zod: 3.17.3
 
+  packages-sesuritu/dashboard-site:
+    specifiers:
+      '@-/frontend': workspace:*
+      '@-/sesuritu-types': workspace:*
+      '@-/types': workspace:*
+      '@-/util': workspace:*
+      '@-/util-react': workspace:*
+      '@types/node': 17.0.42
+      '@types/react': 18.0.15
+      '@types/react-dom': 18.0.6
+      classnames: 2.3.1
+      mobx: 6.6.2
+      mobx-react-lite: 3.4.0
+      mobx-state-tree: 5.1.6
+      react: 18.1.0
+      react-dom: 18.1.0
+      ts-node: 10.8.1
+      typescript: 4.8.3
+    dependencies:
+      '@-/frontend': link:../../packages/frontend
+      '@-/sesuritu-types': link:../types
+      '@-/types': link:../../packages/types
+      '@-/util': link:../../packages/util
+      '@-/util-react': link:../../packages/util-react
+      classnames: 2.3.1
+      mobx: 6.6.2
+      mobx-react-lite: 3.4.0_hnlgfutfykjo7655p5bdldryma
+      mobx-state-tree: 5.1.6_mobx@6.6.2
+      react: 18.1.0
+      react-dom: 18.1.0_react@18.1.0
+      typescript: 4.8.3
+    devDependencies:
+      '@types/node': 17.0.42
+      '@types/react': 18.0.15
+      '@types/react-dom': 18.0.6
+      ts-node: 10.8.1_7elzlgvrtu6xx6s2d4lb477dqa
+
   packages-sesuritu/logs-processing:
     specifiers:
       '@-/diffbelt-server': workspace:*
@@ -245,6 +282,16 @@ importers:
       jest: 29.2.2_ulrz5zuh5kppsvny26pjrk2deu
       nodemon: 2.0.18
       ts-jest: 29.0.3_glma5iex22efd6e6gux66qinci
+
+  packages-sesuritu/types:
+    specifiers:
+      '@-/types': workspace:*
+      typescript: 4.8.3
+      zod: 3.17.3
+    dependencies:
+      '@-/types': link:../../packages/types
+      typescript: 4.8.3
+      zod: 3.17.3
 
   packages/app-template:
     specifiers:
