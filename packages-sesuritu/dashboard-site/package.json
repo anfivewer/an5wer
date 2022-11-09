@@ -11,8 +11,8 @@
   "author": "Alexander Ruliov <alexander.rulov@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "@-/sesuritu-types": "workspace:*",
     "@-/frontend": "workspace:*",
+    "@-/sesuritu-types": "workspace:*",
     "@-/types": "workspace:*",
     "@-/util": "workspace:*",
     "@-/util-react": "workspace:*",
@@ -20,8 +20,10 @@
     "mobx": "6.6.2",
     "mobx-react-lite": "3.4.0",
     "mobx-state-tree": "5.1.6",
+    "prop-types": "15.8.1",
     "react": "18.1.0",
     "react-dom": "18.1.0",
+    "recharts": "2.1.16",
     "typescript": "4.8.3"
   },
   "devDependencies": {

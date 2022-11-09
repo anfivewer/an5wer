@@ -3,6 +3,7 @@ import {HttpServer} from '@-/util/src/http-server/http-server';
 import {Logger} from '@-/util/src/logging/logger';
 import {HttpResultType} from '@-/util/src/http-server/types';
 import {SiteRenderPage} from '@-/sesuritu-types/src/site/pages';
+import {MOCK_REPORT_DATA} from './mocks/report';
 
 async function main() {
   const logger = new Logger('root');
@@ -23,6 +24,7 @@ async function main() {
         clientBuildPath: '',
         stylesCache: new Map(),
         jsCache: new Map(),
+        getReport: () => MOCK_REPORT_DATA,
       });
 
       return {

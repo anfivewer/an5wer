@@ -3,6 +3,7 @@ import {
   ZodBoolean,
   ZodEnum,
   ZodFirstPartyTypeKind,
+  ZodLiteral,
   ZodNull,
   ZodNullable,
   ZodNumber,
@@ -45,6 +46,8 @@ type ZodToMst<T extends ZodTypeAny> = T extends ZodNumber
   ? ZodObjectToMst<A, B, C, D, T>
   : T extends ZodArray<infer InnerT>
   ? IArrayType<ZodToMst<InnerT>>
+  : T extends ZodLiteral<infer InnerT>
+  ? ISimpleType<InnerT>
   : ISimpleType<unknown>;
 
 type ZodObjectToMst<
@@ -93,6 +96,8 @@ export const zodToMst = <T extends ZodTypeAny>(zodParser: T): ZodToMst<T> => {
         return types.maybeNull(zodToMstInternal(zodDef.innerType._def));
       case ZodFirstPartyTypeKind.ZodOptional:
         return types.maybe(zodToMstInternal(zodDef.innerType._def));
+      case ZodFirstPartyTypeKind.ZodLiteral:
+        return types.literal(zodDef.value);
       default:
         throw new Error(`Unknown Zod type: ${zodDef.typeName}`);
     }

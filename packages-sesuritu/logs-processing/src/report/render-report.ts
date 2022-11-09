@@ -4,6 +4,7 @@ import {resolve} from 'path';
 import {SiteManifest} from '@-/sesuritu-types/src/site/manifest';
 import {SiteRenderPage} from '@-/sesuritu-types/src/site/pages';
 import {Context} from '../context/types';
+import {collectReportData} from './collect-report-data';
 
 export const renderReport = async ({context}: {context: Context}) => {
   const {
@@ -28,6 +29,8 @@ export const renderReport = async ({context}: {context: Context}) => {
 
   const render: SiteRenderFun = mod.render;
 
+  const data = await collectReportData({context});
+
   const html = await render({
     manifest: siteManifest.entries.main,
     page: SiteRenderPage.main,
@@ -38,6 +41,7 @@ export const renderReport = async ({context}: {context: Context}) => {
     stylesCache: new Map(),
     jsCache: new Map(),
     inlineJs: true,
+    getReport: () => data,
   });
 
   await writeFile(reportPath, html, {encoding: 'utf8'});
