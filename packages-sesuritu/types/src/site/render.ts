@@ -11,6 +11,8 @@ export type SiteRenderOptions = {
   request: RequestData;
   clientBuildPath: string;
   stylesCache: Map<string, string>;
+  jsCache: Map<string, string>;
+  inlineJs?: boolean;
 };
 
 export type SiteRenderFun = (options: SiteRenderOptions) => Promise<string>;

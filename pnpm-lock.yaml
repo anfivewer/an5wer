@@ -256,6 +256,7 @@ importers:
     specifiers:
       '@-/diffbelt-server': workspace:*
       '@-/diffbelt-types': workspace:*
+      '@-/sesuritu-types': workspace:*
       '@-/types': workspace:*
       '@-/util': workspace:*
       '@types/jest': 29.2.0
@@ -270,6 +271,7 @@ importers:
     dependencies:
       '@-/diffbelt-server': link:../../packages-diffbelt/server
       '@-/diffbelt-types': link:../../packages-diffbelt/types
+      '@-/sesuritu-types': link:../types
       '@-/types': link:../../packages/types
       '@-/util': link:../../packages/util
       dotenv: 16.0.1
