@@ -140,6 +140,16 @@ export const runDirectus = async ({
     defer.resolve();
   });
 
+  const onNodeExit = () => {
+    directusProcess.kill('SIGINT');
+  };
+
+  process.on('exit', onNodeExit);
+
+  defer.promise.finally(() => {
+    process.off('exit', onNodeExit);
+  });
+
   if (resolveOnExit) {
     await defer.promise;
   }
