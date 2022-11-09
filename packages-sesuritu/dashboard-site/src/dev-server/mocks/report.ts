@@ -76,5 +76,23 @@ export const MOCK_REPORT_DATA: ReportData = {
         {tsMs: 1667347200000, value: 35},
       ],
     },
+    {
+      type: 'pieTimeMetric',
+      name: 'kicks:1d:reasons (fake)',
+      keys: ['captchaTimeout', 'cas'],
+      data: [
+        {tsMs: 1666915200000, values: [1, 0]},
+        {tsMs: 1667174400000, values: [69, 0]},
+        {tsMs: 1667260800000, values: [76, 0]},
+        {tsMs: 1667347200000, values: [64, 1]},
+        {tsMs: 1667433600000, values: [84, 1]},
+        {tsMs: 1667520000000, values: [34, 0]},
+        {tsMs: 1667606400000, values: [29, 12]},
+        {tsMs: 1667692800000, values: [38, 17]},
+        {tsMs: 1667779200000, values: [63, 5]},
+        {tsMs: 1667865600000, values: [17, 0]},
+        {tsMs: 1667952000000, values: [27, 0]},
+      ],
+    },
   ],
 };

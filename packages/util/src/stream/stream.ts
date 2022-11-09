@@ -56,7 +56,10 @@ export const createStream = <T, N = void>({
         if (error) {
           throw error;
         }
-        if (isDestroyed || listItem.isEnd) {
+        if (isDestroyed) {
+          return {value: undefined, done: true};
+        }
+        if (listItem.isEnd) {
           return {value: undefined, done: true};
         }
 
@@ -64,14 +67,27 @@ export const createStream = <T, N = void>({
 
         if (replaceId !== currentReplaceId) {
           currentReplaceId = replaceId;
+          prevSentListItem = null;
           listItem = head;
+
+          if (listItem.isEnd) {
+            return {value: undefined, done: true};
+          }
         }
 
-        while (listItem.isEmpty && listItem.next) {
+        while (listItem.isEmpty || listItem === prevSentListItem) {
+          if (!listItem.next) {
+            break;
+          }
+
           listItem = listItem.next;
+
+          if (listItem.isEnd) {
+            return {value: undefined, done: true};
+          }
         }
 
-        while (listItem.isEmpty || listItem == prevSentListItem) {
+        while (listItem.isEmpty || listItem === prevSentListItem) {
           notFullnessDefer.resolve();
           onDataRequested?.();
 
@@ -150,7 +166,7 @@ export const createStream = <T, N = void>({
     itemsAvailableDefer.resolve();
   };
 
-  return {
+  const streamObj = {
     getGenerator: () => getGenerator({listItem: head, replaceId}),
     push: (item: T): void => {
       if (tail.isEnd || isDestroyed || error) {
@@ -244,4 +260,6 @@ export const createStream = <T, N = void>({
       return notFullnessDefer.promise;
     },
   };
+
+  return streamObj;
 };

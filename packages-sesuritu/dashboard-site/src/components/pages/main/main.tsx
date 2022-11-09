@@ -4,6 +4,7 @@ import {useMainMst} from '../../../contexts/main';
 import styles from './main.module.css';
 import {ReportType} from '@-/sesuritu-types/src/site/report/report';
 import {SimpleTimeMetric} from '../../simple-time-metric/simple-time-metric';
+import {PieTimeMetric} from '../../pie-time-metric/pie-time-metric';
 
 const MainPage: FC = () => {
   const store = useMainMst();
@@ -23,8 +24,11 @@ const MainPage: FC = () => {
         case ReportType.simpleTimeMetric:
           result.push(<SimpleTimeMetric key={report.name} metric={report} />);
           break;
+        case ReportType.pieTimeMetric:
+          result.push(<PieTimeMetric key={report.name} metric={report} />);
+          break;
         default: {
-          const shouldBeNever: never = report.type;
+          const shouldBeNever: never = report;
           break;
         }
       }

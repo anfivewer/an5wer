@@ -20,8 +20,8 @@ runApp({
     createApp({
       getLogger: () => logger,
       getConfig,
-      setupLoggerByConfig: ({logger, config}) => {
-        logger.setDebug(config.isDebug);
+      setupLoggerByConfig: ({logger}) => {
+        logger.setDebug(true);
       },
       getInitialContext: createInitialContext,
       preInit: async ({app}) => {

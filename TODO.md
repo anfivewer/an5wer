@@ -3,3 +3,5 @@
   no deployment of statics site
 - add `withIntermediateValues` option to diffbelt's diff
 - Migrate fiesta site to `frontend-template`
+- React eslint rules
+- Eslint `==`

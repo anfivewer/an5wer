@@ -13,6 +13,7 @@ import {
   ZodString,
   ZodTypeAny,
   ZodUndefined,
+  ZodUnion,
 } from 'zod';
 import {
   IModelType,
@@ -22,9 +23,16 @@ import {
   IAnyType,
   IMaybe,
   IMaybeNull,
+  ITypeUnion,
+  Instance,
 } from 'mobx-state-tree';
 
 type ZodUnknownKeysParam = 'passthrough' | 'strict' | 'strip';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type DistributeZodToMstInstance<T extends ZodTypeAny> = T extends any
+  ? Instance<ZodToMst<T>>
+  : never;
 
 type ZodToMst<T extends ZodTypeAny> = T extends ZodNumber
   ? ISimpleType<number>
@@ -48,6 +56,8 @@ type ZodToMst<T extends ZodTypeAny> = T extends ZodNumber
   ? IArrayType<ZodToMst<InnerT>>
   : T extends ZodLiteral<infer InnerT>
   ? ISimpleType<InnerT>
+  : T extends ZodUnion<infer InnerT>
+  ? ITypeUnion<unknown, unknown, DistributeZodToMstInstance<InnerT[number]>>
   : ISimpleType<unknown>;
 
 type ZodObjectToMst<
@@ -98,6 +108,12 @@ export const zodToMst = <T extends ZodTypeAny>(zodParser: T): ZodToMst<T> => {
         return types.maybe(zodToMstInternal(zodDef.innerType._def));
       case ZodFirstPartyTypeKind.ZodLiteral:
         return types.literal(zodDef.value);
+      case ZodFirstPartyTypeKind.ZodUnion:
+        return types.union(
+          ...zodDef.options.map((zodType: ZodTypeAny) =>
+            zodToMstInternal(zodType._def),
+          ),
+        );
       default:
         throw new Error(`Unknown Zod type: ${zodDef.typeName}`);
     }
