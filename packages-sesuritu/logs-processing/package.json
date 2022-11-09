@@ -13,6 +13,7 @@
   "dependencies": {
     "@-/diffbelt-server": "workspace:*",
     "@-/diffbelt-types": "workspace:*",
+    "@-/sesuritu-types": "workspace:*",
     "@-/types": "workspace:*",
     "@-/util": "workspace:*",
     "dotenv": "16.0.1",

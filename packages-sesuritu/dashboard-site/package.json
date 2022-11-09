@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "description": "",
   "scripts": {
+    "dev-server": "ts-node src/dev-server/start.ts",
     "build": "ts-node src/build/build.ts",
     "clean": "rm -rf dist",
     "tsc": "rm -f **/*.module.css.d.ts && tsc"

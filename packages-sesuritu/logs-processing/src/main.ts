@@ -13,6 +13,7 @@ import {
   transformParsedLinesToKicks,
 } from './transforms/kicks';
 import {processLogFile} from './logs/process-file';
+import {renderReport} from './report/render-report';
 
 runApp({
   createApp: ({logger}) =>
@@ -76,6 +77,8 @@ runApp({
     );
     await Promise.all([aggregateKicksPerHour].map((fun) => fun({context})));
     await Promise.all([aggregateKicksPerDay].map((fun) => fun({context})));
+
+    await renderReport({context});
 
     await app.stop();
   },

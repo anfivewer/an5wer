@@ -4,4 +4,5 @@ export type Config = {
   databaseDumpPath: string;
   logsDirPath: string;
   logsFilesPattern: string;
+  reportPath: string | undefined;
 };
