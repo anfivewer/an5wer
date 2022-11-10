@@ -32,9 +32,17 @@ export const timestampMsToChartTick = (tsMs: number) => {
   const date = new Date(tsMs);
   date.setTime(date.getTime() + date.getTimezoneOffset() * 60 * 1000);
 
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+
+  const withTime = hours !== 0 || minutes !== 0;
+
   const monthName = MONTHS_SHORT[date.getMonth()];
-  return `${date.getDate()} ${monthName} ${String(date.getHours()).padStart(
-    2,
-    '0',
-  )}:${String(date.getMinutes()).padStart(2, '0')}`;
+  return `${date.getDate()} ${monthName}${withTime ? ' ' : ''}${
+    withTime
+      ? `${String(date.getHours()).padStart(2, '0')}:${String(
+          date.getMinutes(),
+        ).padStart(2, '0')}`
+      : ''
+  }`;
 };

@@ -81,6 +81,7 @@ type AggregateTransformOptions<
         },
       ) => ReducedItem;
       getInitialAccumulator?: never;
+      getEmptyAccumulator?: never;
     }
   | {
       parallelReduceWithInitialAccumulator: (
@@ -90,6 +91,7 @@ type AggregateTransformOptions<
         },
       ) => ReducedItem;
       getInitialAccumulator: (options: IntervalData<TargetItem>) => ReducedItem;
+      getEmptyAccumulator: () => ReducedItem;
     }
 ) & {
     merge: (
@@ -291,6 +293,8 @@ export const createAggregateByTimestampTransform = <
       prevTargetItem: TargetItem | null;
     }) => {
       let maybeProgressStatus = intervalsInProgress.get(intervalTimestampMs);
+      const allowInitialAccumulatorCreation = !maybeProgressStatus;
+
       if (!maybeProgressStatus) {
         maybeProgressStatus = {
           intervalTimestampMs,
@@ -314,12 +318,15 @@ export const createAggregateByTimestampTransform = <
                 const {
                   parallelReduceWithInitialAccumulator,
                   getInitialAccumulator,
+                  getEmptyAccumulator,
                 } = options;
 
-                const accumulator = getInitialAccumulator({
-                  intervalTimestampMs,
-                  prevTargetItem,
-                });
+                const accumulator = allowInitialAccumulatorCreation
+                  ? getInitialAccumulator({
+                      intervalTimestampMs,
+                      prevTargetItem,
+                    })
+                  : getEmptyAccumulator();
 
                 return parallelReduceWithInitialAccumulator({
                   accumulator,

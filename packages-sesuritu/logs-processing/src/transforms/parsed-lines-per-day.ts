@@ -41,13 +41,13 @@ export const aggregateParsedLinesPerDay = createAggregateByTimestampTransform<
     return {mergedLogKey};
   },
   parallelReduceWithInitialAccumulator: ({accumulator, items}) => {
-    accumulator.count += items.length;
-
     items.forEach(({prev, next}) => {
       if (prev) {
+        accumulator.count--;
         decrement(accumulator.logKeys, prev.mergedLogKey);
       }
       if (next) {
+        accumulator.count++;
         increment(accumulator.logKeys, next.mergedLogKey);
       }
     });
@@ -56,6 +56,7 @@ export const aggregateParsedLinesPerDay = createAggregateByTimestampTransform<
   },
   getInitialAccumulator: ({prevTargetItem}) =>
     prevTargetItem || {count: 0, logKeys: {}},
+  getEmptyAccumulator: () => ({count: 0, logKeys: {}}),
   merge: ({items}) => {
     return items.reduce((acc, {count, logKeys}) => {
       acc.count += count;

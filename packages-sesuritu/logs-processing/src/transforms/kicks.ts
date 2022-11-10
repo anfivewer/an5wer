@@ -65,13 +65,13 @@ export const aggregateKicksPerHour = createAggregateByTimestampTransform<
     return {reason: sourceItem.reason};
   },
   parallelReduceWithInitialAccumulator: ({accumulator, items}) => {
-    accumulator.count += items.length;
-
     items.forEach(({prev, next}) => {
       if (prev) {
+        accumulator.count--;
         decrement(accumulator.reasons, prev.reason);
       }
       if (next) {
+        accumulator.count++;
         increment(accumulator.reasons, next.reason);
       }
     });
@@ -80,6 +80,7 @@ export const aggregateKicksPerHour = createAggregateByTimestampTransform<
   },
   getInitialAccumulator: ({prevTargetItem}) =>
     prevTargetItem || {count: 0, reasons: {}},
+  getEmptyAccumulator: () => ({count: 0, reasons: {}}),
   merge: ({items}) => {
     return items.reduce((acc, {count, reasons}) => {
       acc.count += count;
@@ -182,6 +183,7 @@ function createAggregateKicksMoreThanHour({
     },
     getInitialAccumulator: ({prevTargetItem}) =>
       prevTargetItem || {count: 0, reasons: {}},
+    getEmptyAccumulator: () => ({count: 0, reasons: {}}),
     merge: ({items}) => {
       return merge({count: 0, reasons: {}}, items);
     },
