@@ -8,6 +8,9 @@ export const LOG_LINES_COLLECTION_NAME = 'log-lines';
 export const PARSED_LINES_COLLECTION_NAME = 'parsed-log-lines';
 export const PARSED_LINES_LOG_LINES_READER_NAME = 'log-lines';
 
+export const PARSED_LINES_PER_DAY_COLLECTION_NAME = 'parsed-log-lines:1d';
+export const PARSED_LINES_PER_DAY_PARSED_LINES_READER_NAME = 'parsed-log-lines';
+
 // key is `parsed-log-lines` key,
 // values are KicksCollectionItem
 export const KICKS_COLLECTION_NAME = 'kicks';
@@ -47,6 +50,16 @@ export const collections: CollectionDef[] = [
     readers: [
       {
         name: KICKS_PARSED_LINES_READER_NAME,
+        collectionName: PARSED_LINES_COLLECTION_NAME,
+      },
+    ],
+  },
+  {
+    name: PARSED_LINES_PER_DAY_COLLECTION_NAME,
+    isManual: true,
+    readers: [
+      {
+        name: PARSED_LINES_PER_DAY_PARSED_LINES_READER_NAME,
         collectionName: PARSED_LINES_COLLECTION_NAME,
       },
     ],

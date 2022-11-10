@@ -1,14 +1,18 @@
 import {
-  PieTimeMetric,
   ReportData,
   ReportType,
   SimpleTimeMetric,
 } from '@-/sesuritu-types/src/site/report/report';
 import {Context} from '../context/types';
-import {KICKS_PER_DAY_COLLECTION_NAME} from '../database/structure';
+import {
+  KICKS_PER_DAY_COLLECTION_NAME,
+  PARSED_LINES_PER_DAY_COLLECTION_NAME,
+} from '../database/structure';
 import {queryCollection} from '@-/diffbelt-server/src/util/database/queries/dump';
 import {AggregatedKicksCollectionItem} from '../types/collections/kicks';
 import {extractTimestampFromTimestampWithLoggerKey} from '../transforms/helpers/extract-timestamp';
+import {PieCollector} from './helpers/pie-collector';
+import {AggregatedParsedLinesPerDayCollectionItem} from '../types/collections/parsed-lines-per-day';
 
 export const collectReportData = async ({
   context,
@@ -54,21 +58,31 @@ export const collectReportData = async ({
     return metric;
   };
 
-  const kicksPerDayReasonsMetric: PieTimeMetric = {
-    type: ReportType.pieTimeMetric,
-    name: 'kicks:1d:reasons',
-    keys: [],
-    data: [],
-  };
+  const kicksPerDayReasonsMetricCollector =
+    new PieCollector<AggregatedKicksCollectionItem>({
+      name: 'kicks:1d:reasons',
+      extractCategories: ({item: {reasons}, addCategory}) => {
+        for (const [key, value] of Object.entries(reasons)) {
+          addCategory(key, value ?? 0);
+        }
+      },
+      extractCategoryCount: ({reasons}, key) => {
+        return reasons[key] ?? 0;
+      },
+    });
 
-  // We will need to sort them from higher to lower
-  const kicksPerDayReasonsMetricKeysObj: Record<string, number> = {};
-  const kicksPerDayReasonsMetricData = kicksPerDayReasonsMetric.data;
-
-  const kicksPerDayItems: {
-    tsMs: number;
-    item: AggregatedKicksCollectionItem;
-  }[] = [];
+  const logsPerDayLogKeysMetricCollector =
+    new PieCollector<AggregatedParsedLinesPerDayCollectionItem>({
+      name: 'parsed-log-lines:1d:log-keys',
+      extractCategories: ({item: {logKeys}, addCategory}) => {
+        for (const [key, value] of Object.entries(logKeys)) {
+          addCategory(key, value ?? 0);
+        }
+      },
+      extractCategoryCount: ({logKeys}, key) => {
+        return logKeys[key] ?? 0;
+      },
+    });
 
   const reports: ReportData['reports'] = await Promise.all([
     collectCountMetric({
@@ -76,39 +90,23 @@ export const collectReportData = async ({
       collectionName: KICKS_PER_DAY_COLLECTION_NAME,
       itemParser: AggregatedKicksCollectionItem,
       onItem: ({tsMs, item}) => {
-        kicksPerDayItems.push({tsMs, item});
-
-        for (const [key, value] of Object.entries(item.reasons)) {
-          let n = kicksPerDayReasonsMetricKeysObj[key];
-          if (typeof n !== 'number') {
-            n = 0;
-          }
-
-          n += value ?? 0;
-
-          kicksPerDayReasonsMetricKeysObj[key] = n;
-        }
+        kicksPerDayReasonsMetricCollector.addItem({tsMs, item});
+      },
+    }),
+    collectCountMetric({
+      metricName: 'parsed-log-lines:1d',
+      collectionName: PARSED_LINES_PER_DAY_COLLECTION_NAME,
+      itemParser: AggregatedParsedLinesPerDayCollectionItem,
+      onItem: ({tsMs, item}) => {
+        logsPerDayLogKeysMetricCollector.addItem({tsMs, item});
       },
     }),
   ]);
 
-  const keysList = Object.entries(kicksPerDayReasonsMetricKeysObj);
-  keysList.sort(([, a], [, b]) => b - a);
+  reports.push(kicksPerDayReasonsMetricCollector.getMetric());
+  reports.push(logsPerDayLogKeysMetricCollector.getMetric());
 
-  keysList.forEach(([key]) => {
-    kicksPerDayReasonsMetric.keys.push(key);
-  });
-
-  kicksPerDayItems.forEach(({tsMs, item}) => {
-    kicksPerDayReasonsMetricData.push({
-      tsMs,
-      values: kicksPerDayReasonsMetric.keys.map((key) => {
-        return item.reasons[key] ?? 0;
-      }),
-    });
-  });
-
-  reports.push(kicksPerDayReasonsMetric);
+  reports.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 
   return {
     reports,

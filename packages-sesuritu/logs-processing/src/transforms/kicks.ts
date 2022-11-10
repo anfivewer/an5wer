@@ -14,6 +14,7 @@ import {
   AggregateInterval,
   createAggregateByTimestampTransform,
 } from './helpers/aggregate-by-timestamp';
+import {decrement, increment} from './helpers/counter-record';
 import {extractTimestampFromTimestampWithLoggerKey} from './helpers/extract-timestamp';
 import {createParsedLinesFilterTransform} from './helpers/filter-parsed-lines';
 
@@ -189,33 +190,3 @@ function createAggregateKicksMoreThanHour({
     },
   });
 }
-
-const increment = (
-  record: Record<string, number | undefined>,
-  key: string,
-  amount = 1,
-): void => {
-  let count = record[key];
-
-  if (typeof count === 'number') {
-    count += amount;
-  } else {
-    count = amount;
-  }
-
-  record[key] = count;
-};
-const decrement = (
-  record: Record<string, number | undefined>,
-  key: string,
-): void => {
-  let count = record[key];
-
-  if (typeof count === 'number') {
-    count -= 1;
-  } else {
-    count = -1;
-  }
-
-  record[key] = count;
-};

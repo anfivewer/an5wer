@@ -203,6 +203,7 @@ export const createAggregateByTimestampTransform = <
       intervalTimestampMs: number;
       prevTargetItem: TargetItem | null;
       reducedItems: Map<number, PendingReducedItem>;
+      reducedItemsByNextTs: Map<number, PendingReducedItem>;
       pendingTasks: IdlingStatus;
     };
 
@@ -225,7 +226,21 @@ export const createAggregateByTimestampTransform = <
         item,
       };
 
-      const chain: PendingReducedItem[] = [pendingReducedItem];
+      const chain: PendingReducedItem[] = [];
+
+      let prevTimestampMs: number | undefined = timestampMs;
+      while (prevTimestampMs !== undefined) {
+        const prevPending =
+          progressStatus.reducedItemsByNextTs.get(prevTimestampMs);
+        if (!prevPending) {
+          break;
+        }
+
+        chain.unshift(prevPending);
+        prevTimestampMs = prevPending.timestampMs;
+      }
+
+      chain.push(pendingReducedItem);
 
       let lastTimestampMs = nextTimestampMs;
       while (lastTimestampMs !== undefined) {
@@ -241,10 +256,13 @@ export const createAggregateByTimestampTransform = <
       if (chain.length > 1) {
         // Remove items from pending to process them,
         // else they can be included in other chain
-        for (let i = 1; i < chain.length; i++) {
-          const {timestampMs} = chain[i];
+        chain.forEach(({timestampMs, nextTimestampMs}) => {
           progressStatus.reducedItems.delete(timestampMs);
-        }
+
+          if (typeof nextTimestampMs === 'number') {
+            progressStatus.reducedItemsByNextTs.delete(nextTimestampMs);
+          }
+        });
 
         scheduleIntervalMerge({
           chain,
@@ -253,6 +271,13 @@ export const createAggregateByTimestampTransform = <
       } else {
         // Wait for finish or some chain creation
         progressStatus.reducedItems.set(timestampMs, pendingReducedItem);
+
+        if (typeof nextTimestampMs === 'number') {
+          progressStatus.reducedItemsByNextTs.set(
+            nextTimestampMs,
+            pendingReducedItem,
+          );
+        }
       }
     };
 
@@ -271,6 +296,7 @@ export const createAggregateByTimestampTransform = <
           intervalTimestampMs,
           prevTargetItem,
           reducedItems: new Map(),
+          reducedItemsByNextTs: new Map(),
           pendingTasks: new IdlingStatus(),
         };
         intervalsInProgress.set(intervalTimestampMs, maybeProgressStatus);
@@ -378,7 +404,8 @@ export const createAggregateByTimestampTransform = <
         throw new Error('finish: no such interval in progress');
       }
 
-      const {prevTargetItem, pendingTasks, reducedItems} = progressStatus;
+      const {prevTargetItem, pendingTasks, reducedItems, reducedItemsByNextTs} =
+        progressStatus;
 
       finishTasks
         .wrapTask(async () => {
@@ -386,6 +413,9 @@ export const createAggregateByTimestampTransform = <
 
           if (reducedItems.size !== 1) {
             throw new Error('finish: not single item');
+          }
+          if (reducedItemsByNextTs.size !== 0) {
+            throw new Error('finish: reducedItemsByNextTs is not empty');
           }
 
           const iteratorResult = reducedItems.values().next();

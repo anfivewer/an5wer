@@ -94,5 +94,128 @@ export const MOCK_REPORT_DATA: ReportData = {
         {tsMs: 1667952000000, values: [27, 0]},
       ],
     },
+    {
+      type: 'pieTimeMetric',
+      name: 'parsed-log-lines:1d:log-keys',
+      keys: [
+        'kicker::checkCandidates::T',
+        'kicker::candidates::T',
+        'kicker::findCandidates:finish::T',
+        'kicker::findCandidates::T',
+        'main:l10n::noTranslation::T',
+        'worker#::notifyCandidate:96716187e5876ea1::E',
+        'kicker::kick::I',
+        'kicker::kicking::I',
+        'worker#::updateFull::S',
+        'main::updateFull::S',
+        'master#::chats::S',
+        'master#::users::S',
+        'deleter::updateFull::S',
+        'kicker::updateFull::S',
+        'master#:setMyCommands::set::T',
+        'worker#::Replying to\\ help::T',
+        'worker#::start::I',
+        'worker#::started::I',
+        'worker#::Got to\\ checkTime\\ on\\ help::T',
+        'worker#::Got to\\ attachUser\\ on\\ help::T',
+        'worker#::Got to\\ attachUser\\ on\\ help,\\ found\\ user::T',
+        'worker#::Got to\\ attachChatMember\\ on\\ help::T',
+        'worker#::Got to\\ checkRestrict\\ on\\ help::T',
+        'worker#::Got to\\ checkNoChannelLinks\\ on\\ help::T',
+        'worker#::kick::I',
+        'deleter::started::I',
+        'kicker::started::I',
+        'master#::start::I',
+        'master#::started::I',
+        'master#:setMyCommands::start::T',
+        'master#:setMyCommands::finish::T',
+      ],
+      data: [
+        {
+          tsMs: 1666915200000,
+          values: [
+            9, 8, 9, 9, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0,
+          ],
+        },
+        {
+          tsMs: 1667088000000,
+          values: [
+            42, 42, 43, 42, 188, 0, 0, 0, 0, 0, 0, 0, 0, 0, 55, 0, 2, 2, 0, 0,
+            0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1,
+          ],
+        },
+        {
+          tsMs: 1667174400000,
+          values: [
+            5642, 5643, 5656, 5641, 15, 77, 69, 66, 48, 26, 24, 24, 23, 24, 0,
+            3, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+          ],
+        },
+        {
+          tsMs: 1667260800000,
+          values: [
+            5652, 5646, 5644, 5642, 0, 83, 77, 77, 47, 24, 24, 22, 23, 23, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          ],
+        },
+        {
+          tsMs: 1667347200000,
+          values: [
+            5647, 5637, 5651, 5645, 0, 70, 65, 65, 47, 24, 24, 24, 24, 23, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+          ],
+        },
+        {
+          tsMs: 1667433600000,
+          values: [
+            5656, 5652, 5639, 5633, 36, 87, 84, 85, 48, 24, 24, 23, 24, 24, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0,
+          ],
+        },
+        {
+          tsMs: 1667520000000,
+          values: [
+            5653, 5645, 5646, 5645, 0, 55, 51, 52, 48, 23, 23, 24, 22, 22, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          ],
+        },
+        {
+          tsMs: 1667606400000,
+          values: [
+            5642, 5645, 5653, 5643, 0, 37, 29, 29, 45, 26, 21, 24, 24, 24, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          ],
+        },
+        {
+          tsMs: 1667692800000,
+          values: [
+            5654, 5642, 5647, 5637, 0, 29, 39, 38, 48, 27, 24, 23, 23, 23, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          ],
+        },
+        {
+          tsMs: 1667779200000,
+          values: [
+            5649, 5648, 5633, 5653, 0, 45, 66, 48, 46, 23, 24, 24, 23, 23, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          ],
+        },
+        {
+          tsMs: 1667865600000,
+          values: [
+            5646, 5651, 5638, 5649, 0, 20, 18, 17, 46, 24, 24, 24, 23, 23, 0, 0,
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+          ],
+        },
+        {
+          tsMs: 1667952000000,
+          values: [
+            4713, 4707, 4701, 4714, 311, 33, 28, 26, 40, 19, 20, 19, 20, 20, 0,
+            1, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+          ],
+        },
+      ],
+    },
   ],
 };

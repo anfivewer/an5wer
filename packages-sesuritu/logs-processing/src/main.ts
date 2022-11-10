@@ -14,6 +14,7 @@ import {
 } from './transforms/kicks';
 import {processLogFile} from './logs/process-file';
 import {renderReport} from './report/render-report';
+import {aggregateParsedLinesPerDay} from './transforms/parsed-lines-per-day';
 
 runApp({
   createApp: ({logger}) =>
@@ -73,7 +74,9 @@ runApp({
     // Run transforms
     await Promise.all([transformLogsLinesToParsedLines({context})]);
     await Promise.all(
-      [transformParsedLinesToKicks].map((fun) => fun({context})),
+      [transformParsedLinesToKicks, aggregateParsedLinesPerDay].map((fun) =>
+        fun({context}),
+      ),
     );
     await Promise.all([aggregateKicksPerHour].map((fun) => fun({context})));
     await Promise.all([aggregateKicksPerDay].map((fun) => fun({context})));
