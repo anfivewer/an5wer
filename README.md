@@ -11,7 +11,7 @@
   (maybe `nvm install` will be required)
 
 - Install `pnpm`:
-  `npm install -g pnpm`
+  `npm install -g pnpm@7.12.1`
 
 - Fetch dependencies inside clone of this repo:
   `pnpm install`
