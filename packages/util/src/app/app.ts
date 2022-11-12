@@ -1,4 +1,4 @@
-import {Logger as LoggerInterface} from '../logging/types';
+import {Logger as LoggerInterface} from '@-/types/src/logging/logging';
 import {Component} from '@-/types/src/app/component';
 import {
   AppOptions,
@@ -105,7 +105,7 @@ class App<Logger extends LoggerInterface, Config, Context>
     // Validate that we are not forgot to register some components
     for (const [key, value] of Object.entries(this.nonInitializedContext)) {
       if (value === notInitializedContextValue) {
-        throw new Error(`Context ${key} not filled`);
+        throw new Error(`Context field '${key}' not filled`);
       }
     }
 
@@ -134,6 +134,7 @@ class App<Logger extends LoggerInterface, Config, Context>
     return context;
   }
 
+  private stopDefer: Defer | undefined;
   async stop({
     timeoutMs = 3000,
     printHandlesOnTimeout = false,
@@ -141,47 +142,60 @@ class App<Logger extends LoggerInterface, Config, Context>
     timeoutMs?: number;
     printHandlesOnTimeout?: boolean;
   } = {}): Promise<void> {
-    const {logger} = this;
+    if (this.stopDefer) {
+      return this.stopDefer.promise;
+    }
 
-    logger.info('shutdown:start');
+    this.stopDefer = new Defer();
 
-    const timeoutDefer = new Defer<void>();
+    try {
+      const {logger} = this;
 
-    const timeoutId = setTimeout(() => {
-      logger.error('shutdown:timeout');
+      logger.info('shutdown:start');
 
-      if (printHandlesOnTimeout) {
-        try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const requests = (process as any)._getActiveRequests();
-          console.error(requests);
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const handles = (process as any)._getActiveHandles();
-          console.error(handles);
-        } catch (error) {
-          logger.error('shutdown:handles', undefined, {error});
+      const timeoutDefer = new Defer<void>();
+
+      const timeoutId = setTimeout(() => {
+        logger.error('shutdown:timeout');
+
+        if (printHandlesOnTimeout) {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const requests = (process as any)._getActiveRequests();
+            console.error(requests);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const handles = (process as any)._getActiveHandles();
+            console.error(handles);
+          } catch (error) {
+            logger.error('shutdown:handles', undefined, {error});
+          }
         }
-      }
 
-      timeoutDefer.reject(new Error('shutdown:timeout'));
-    }, timeoutMs);
+        timeoutDefer.reject(new Error('shutdown:timeout'));
+      }, timeoutMs);
 
-    const shutdownPromises: Promise<void>[] = [];
+      const shutdownPromises: Promise<void>[] = [];
 
-    this.components.forEach(({name, component}) => {
-      if (component.stop) {
-        const stop = component.stop.bind(component);
-        shutdownPromises.push(
-          stop().catch((error) => {
-            logger.error('shutdown', {componentName: String(name)}, {error});
-          }),
-        );
-      }
-    });
+      this.components.forEach(({name, component}) => {
+        if (component.stop) {
+          const stop = component.stop.bind(component);
+          shutdownPromises.push(
+            stop().catch((error) => {
+              logger.error('shutdown', {componentName: String(name)}, {error});
+            }),
+          );
+        }
+      });
 
-    await Promise.race([Promise.all(shutdownPromises), timeoutDefer.promise]);
+      await Promise.race([Promise.all(shutdownPromises), timeoutDefer.promise]);
 
-    clearTimeout(timeoutId);
+      clearTimeout(timeoutId);
+    } catch (error) {
+      this.stopDefer.reject(error);
+      throw error;
+    }
+
+    this.stopDefer.resolve();
   }
 }
 

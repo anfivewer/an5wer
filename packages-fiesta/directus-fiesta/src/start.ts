@@ -1,6 +1,6 @@
 import {prepareDirectus, runDirectus} from './run';
 import {Defer} from '@-/util/src/async/defer';
-import {createLinesStream} from '@-/util/src/stream/lines-stream';
+import {createReadableLinesStream} from '@-/util/src/stream/lines-stream';
 import {createDirectus} from './types';
 import {setupFolders} from './setup/folders';
 import {setupPermissions} from './setup/permissions';
@@ -63,7 +63,9 @@ export const startDirectus = async ({
   }
 
   childProcess.stdout.setEncoding('utf8');
-  const {getGenerator} = createLinesStream({stream: childProcess.stdout});
+  const linesStream = createReadableLinesStream({
+    stream: childProcess.stdout,
+  });
 
   const defer = new Defer();
   const readingStdoutDefer = new Defer();
@@ -74,9 +76,7 @@ export const startDirectus = async ({
   });
 
   (async () => {
-    const linesGenerator = getGenerator();
-
-    for await (const line of linesGenerator) {
+    for await (const line of linesStream) {
       process.stdout.write(line);
       process.stdout.write('\n');
 
@@ -86,7 +86,7 @@ export const startDirectus = async ({
       }
     }
 
-    for await (const line of linesGenerator) {
+    for await (const line of linesStream) {
       process.stdout.write(line);
       process.stdout.write('\n');
     }

@@ -1,0 +1,34 @@
+- hosts: "{{ lookup('ansible.builtin.env', 'DEPLOY_HOSTS') }}"
+  gather_facts: no
+  become: yes
+  become_method: su
+
+  tasks:
+    - name: load global vars
+      include_vars: ../../../../packages/deploy/src/ansible/vars.public.yml
+    - name: load vars
+      include_vars: vars.yml
+
+    - name: with vars
+      become_user: '{{ logs_user }}'
+      block:
+        - name: update latest repo
+          git:
+            repo: https://github.com/anfivewer/an5wer.git
+            dest: '{{ logs_an5wer_path }}'
+            version: '{{ release_branch }}'
+
+        - name: run
+          shell:
+            cmd: >
+              . {{ logs_nvm_path }}/nvm.sh &&
+              cd {{ logs_an5wer_path }} &&
+              nvm install &&
+              (npm list -g {{ pnpm_package }} || npm install -g {{ pnpm_package }}) &&
+              pnpm install &&
+              cd packages-sesuritu/logs-processing &&
+              npm run start
+            executable: /bin/bash
+            environment:
+              SESURITU_LOGS_LOGS_DIR_PATH: '{{ logs_dir_path }}'
+              SESURITU_LOGS_LOGS_FILES_PATTERN: '{{ logs_files_pattern }}'

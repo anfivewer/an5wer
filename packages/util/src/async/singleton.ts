@@ -5,6 +5,10 @@ export class SingletonAsyncTask {
   private scheduledTask: (() => Promise<void>) | null = null;
   private scheduledDefers: Defer[] = [];
 
+  hasScheduledTask() {
+    return Boolean(this.scheduledTask);
+  }
+
   private run(task: () => Promise<void>): Promise<void> {
     this.isRunning = true;
 
@@ -39,14 +43,15 @@ export class SingletonAsyncTask {
   }
 
   schedule(task: () => Promise<void>): Promise<void> {
-    if (!this.isRunning) {
-      return this.run(task);
-    }
+    this.scheduledTask = task;
 
     const scheduledDefer = new Defer();
     this.scheduledDefers.push(scheduledDefer);
 
-    this.scheduledTask = task;
+    (async () => {
+      await Promise.resolve();
+      this.onTaskFinished();
+    })();
 
     return scheduledDefer.promise;
   }

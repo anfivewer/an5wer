@@ -31,4 +31,16 @@
 
 ## `skipLibCheck`
 
-- `@directus/sdk` is not supports latest TypeScript, remove `skipLibCheck` when it will
+- `@directus/sdk` is not supports latest TypeScript
+- `recharts` contain bad typedefs:
+
+```
+../../node_modules/.pnpm/recharts@2.1.16_fbbixigdshhwz6qslju44ayfr4/node_modules/recharts/types/component/LabelList.d.ts:21:70 - error TS2344: Type 'T' does not satisfy the constraint 'Data'.
+
+21 export declare type Props<T> = SVGProps<SVGElement> & LabelListProps<T>;
+
+  ../../node_modules/.pnpm/recharts@2.1.16_fbbixigdshhwz6qslju44ayfr4/node_modules/recharts/types/component/LabelList.d.ts:21:27
+    21 export declare type Props<T> = SVGProps<SVGElement> & LabelListProps<T>;
+                                 ~
+    This type parameter might need an `extends Data` constraint.
+```

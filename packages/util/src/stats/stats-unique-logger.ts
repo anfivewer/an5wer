@@ -1,4 +1,4 @@
-import {Logger} from '../logging/types';
+import {Logger} from '@-/types/src/logging/logging';
 import type {StatsUniqueLogger as StatsUniqueLoggerType} from './types';
 
 type LogStatsFn = (stats: Record<string, number>) => void;

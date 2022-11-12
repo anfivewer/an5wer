@@ -1,14 +1,11 @@
-import {object, array, string, infer as Infer, record} from 'zod';
+import {createSiteManifestParser} from '@-/types/src/frontend/site-manifest';
+import {zodEnum, ZodInfer} from '@-/types/src/zod/zod';
 import {FiestaRenderPageEnum} from '../site/pages';
 
-export const EntryManifest = object({
-  name: string(),
-  version: string(),
-  basePath: string(),
-  js: array(string()),
-  css: array(string()),
-});
-export type EntryManifest = Infer<typeof EntryManifest>;
+const SsrEnum = zodEnum(['server']);
 
-export const SiteManifest = record(FiestaRenderPageEnum, EntryManifest);
-export type SiteManifest = Infer<typeof SiteManifest>;
+export const SiteManifest = createSiteManifestParser({
+  pageZodEnum: FiestaRenderPageEnum,
+  ssrZodEnum: SsrEnum,
+});
+export type SiteManifest = ZodInfer<typeof SiteManifest>;

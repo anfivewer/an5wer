@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["dom"],
+    "jsx": "react",
+    "noEmit": false,
+    "outDir": "./lib",
+    "declaration": true
+  },
+  "include": ["src/**/*"]
+}

@@ -112,7 +112,17 @@ export class SiteRendererProd extends BaseComponent implements SiteRenderer {
         throw error;
       }
     })();
-    const manifestJson = JSON.parse(manifestStr);
+
+    let manifestJson = JSON.parse(manifestStr);
+
+    // Remove this after next release
+    if (typeof manifestJson?.version === 'undefined') {
+      manifestJson = {
+        version: 1,
+        entries: manifestJson,
+        ssrEntries: ['server'],
+      };
+    }
 
     const manifest = SiteManifest.parse(manifestJson);
 
@@ -138,7 +148,7 @@ export class SiteRendererProd extends BaseComponent implements SiteRenderer {
     }
 
     return this.renderFn({
-      manifest: this.manifest[page],
+      manifest: this.manifest.entries[page],
       page,
       request,
       clientBuildPath: this.clientBuildPath,
