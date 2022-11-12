@@ -1,1 +1,4 @@
 /pnpm-lock.yaml
+/packages/frontend/lib
+/packages-fiesta/site/dist
+/packages-sesuritu/dashboard-site/dist
