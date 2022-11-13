@@ -159,7 +159,7 @@ export class MemoryDatabaseCollection implements Collection {
       } catch (error) {
         if (error instanceof TraverserInitialItemNotFoundError) {
           return Promise.resolve({
-            generationId: requiredGenerationId || this.generationId,
+            generationId: requiredGenerationId ?? this.generationId,
             item: null,
           });
         }
@@ -183,10 +183,10 @@ export class MemoryDatabaseCollection implements Collection {
       const cursor = new CollectionQueryCursor({
         startKey,
         storage: this.storage,
-        generationId: generationId || this.generationId,
+        generationId: generationId ?? this.generationId,
         maxItemsInPack: this.maxItemsInPack,
         createNextCursor: ({nextStartKey}) => {
-          if (prevCursorId) {
+          if (typeof prevCursorId === 'string') {
             this.queryCursors.delete(prevCursorId);
           }
 
@@ -234,7 +234,7 @@ export class MemoryDatabaseCollection implements Collection {
         this.wrapFn({isWriter: true}, async () => {
           await this.waitForNonManualGenerationCommit();
 
-          if (!this.plannedNextGenerationId) {
+          if (typeof this.plannedNextGenerationId !== 'string') {
             throw new Error(
               'impossible: non-manual collections always have planned generation',
             );
@@ -258,19 +258,19 @@ export class MemoryDatabaseCollection implements Collection {
 
   put: Collection['put'] = this.wrapFn(
     {isWriter: true},
-    ({key, value, ifNotPresent, generationId}) => {
-      if (generationId) {
+    ({key, value, ifNotPresent = false, generationId}) => {
+      if (typeof generationId === 'string') {
         if (generationId !== this.plannedNextGenerationId) {
           throw new OutdatedGenerationError();
         }
       } else if (this._isManual) {
         throw new CannotPutInManualCollectionError();
-      } else if (!this.plannedNextGenerationId) {
+      } else if (typeof this.plannedNextGenerationId !== 'string') {
         throw new NextGenerationIsNotStartedError();
       }
 
       const recordGenerationId: string =
-        generationId || this.plannedNextGenerationId;
+        generationId ?? this.plannedNextGenerationId;
       assertNonNullable(recordGenerationId, 'put');
 
       if (!this.storage.length) {
@@ -319,12 +319,12 @@ export class MemoryDatabaseCollection implements Collection {
             return (
               (index < this.storage.length
                 ? checkItemPresent(index)
-                : undefined) ||
+                : undefined) ??
               (index >= 1 ? checkItemPresent(index - 1) : undefined)
             );
           })();
 
-          if (itemGenerationId) {
+          if (typeof itemGenerationId === 'string') {
             return Promise.resolve({generationId: itemGenerationId});
           }
         }
@@ -347,7 +347,9 @@ export class MemoryDatabaseCollection implements Collection {
     async ({items, generationId}) => {
       await Promise.all(
         items.map((item) =>
-          this.put(generationId ? {...item, generationId} : item),
+          this.put(
+            typeof generationId === 'string' ? {...item, generationId} : item,
+          ),
         ),
       );
 
@@ -363,7 +365,7 @@ export class MemoryDatabaseCollection implements Collection {
       if (isGenerationProvidedByReader(options)) {
         const {readerId, readerCollectionName} = options;
 
-        if (!readerCollectionName) {
+        if (typeof readerCollectionName !== 'string') {
           const reader = this.readers.get(readerId);
           if (!reader) {
             throw new NoSuchReaderError();
@@ -381,7 +383,7 @@ export class MemoryDatabaseCollection implements Collection {
       }
     })();
 
-    const toGenerationId = toGenerationIdRaw || this.generationId;
+    const toGenerationId = toGenerationIdRaw ?? this.generationId;
 
     if (fromGenerationId === toGenerationId) {
       return Promise.resolve({
@@ -403,7 +405,7 @@ export class MemoryDatabaseCollection implements Collection {
         toGenerationId,
         maxItemsInPack: this.maxItemsInPack,
         createNextCursor: ({nextStartKey}) => {
-          if (prevCursorId) {
+          if (typeof prevCursorId === 'string') {
             this.diffCursors.delete(prevCursorId);
           }
 
@@ -499,9 +501,9 @@ export class MemoryDatabaseCollection implements Collection {
 
   startGeneration: Collection['startGeneration'] = this.wrapFn(
     {isWriter: true},
-    ({generationId, abortOutdated}) => {
+    ({generationId, abortOutdated = false}) => {
       if (
-        this.plannedNextGenerationId &&
+        typeof this.plannedNextGenerationId === 'string' &&
         this.plannedNextGenerationId !== generationId
       ) {
         if (abortOutdated && generationId > this.plannedNextGenerationId) {
