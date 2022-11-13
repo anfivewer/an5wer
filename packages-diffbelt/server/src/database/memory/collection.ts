@@ -29,20 +29,22 @@ import {
 import {StorageTraverser} from '../../util/database/traverse/storage';
 import {
   PersistCollection,
+  PersistCollectionGeneration,
   PersistCollectionItems,
   PersistCollectionReaders,
   PersistDatabasePart,
 } from '@-/diffbelt-types/src/database/persist/parts';
 import {IdlingStatus} from '@-/util/src/state/idling-status';
 import {RwLock} from '@-/util/src/async/rw-lock';
+import {CollectionGeneration} from './generation';
 
 export class MemoryDatabaseCollection implements Collection {
   private name: string;
   private generationId: string;
   private generationIdStream = createStream<string>();
   private _isManual: boolean;
-  private plannedNextGenerationId: string | undefined;
-  private nextGenerationKeys = new Set<string>();
+  private nextGeneration: CollectionGeneration | undefined;
+  private generationsList: CollectionGeneration[] = [];
   private maxItemsInPack: number;
   private queryCursors = new Map<string, CollectionQueryCursor>();
   private diffCursors = new Map<string, CollectionDiffCursor>();
@@ -85,10 +87,7 @@ export class MemoryDatabaseCollection implements Collection {
       collectionName: string;
     }) => string | null;
     waitForNonManualGenerationCommit?: () => Promise<void>;
-    _restore?: Pick<
-      PersistCollection,
-      'nextGenerationId' | 'nextGenerationKeys'
-    >;
+    _restore?: Pick<PersistCollection, 'nextGenerationId'>;
   }) {
     this.name = name;
     this.generationId = generationId;
@@ -98,16 +97,19 @@ export class MemoryDatabaseCollection implements Collection {
     this.waitForNonManualGenerationCommit = waitForNonManualGenerationCommit;
 
     if (_restore) {
-      const {nextGenerationId, nextGenerationKeys} = _restore;
-      this.plannedNextGenerationId = nextGenerationId;
+      const {nextGenerationId} = _restore;
 
-      nextGenerationKeys.forEach((key) => {
-        this.nextGenerationKeys.add(key);
+      if (typeof nextGenerationId === 'string') {
+        this.nextGeneration = new CollectionGeneration({
+          generationId: nextGenerationId,
+        });
+      }
+    }
+
+    if (!isManual && !this.nextGeneration) {
+      this.nextGeneration = new CollectionGeneration({
+        generationId: generateNextId(generationId),
       });
-    } else {
-      this.plannedNextGenerationId = isManual
-        ? undefined
-        : generateNextId(generationId);
     }
   }
 
@@ -130,19 +132,19 @@ export class MemoryDatabaseCollection implements Collection {
     return this.generationIdStream.getGenerator();
   }
   getPlannedGeneration() {
-    if (this.plannedNextGenerationId === undefined) {
+    if (!this.nextGeneration) {
       return Promise.resolve(null);
     }
 
     if (this._isManual) {
-      return Promise.resolve(this.plannedNextGenerationId);
+      return Promise.resolve(this.nextGeneration.getGenerationId());
     }
 
-    if (!this.nextGenerationKeys.size) {
+    if (!this.nextGeneration.hasChangedKeys()) {
       return Promise.resolve(null);
     }
 
-    return Promise.resolve(this.plannedNextGenerationId);
+    return Promise.resolve(this.nextGeneration.getGenerationId());
   }
 
   get: Collection['get'] = this.wrapFn(
@@ -234,15 +236,22 @@ export class MemoryDatabaseCollection implements Collection {
         this.wrapFn({isWriter: true}, async () => {
           await this.waitForNonManualGenerationCommit();
 
-          if (typeof this.plannedNextGenerationId !== 'string') {
+          if (!this.nextGeneration) {
             throw new Error(
               'impossible: non-manual collections always have planned generation',
             );
           }
 
-          this.generationId = this.plannedNextGenerationId;
-          this.plannedNextGenerationId = generateNextId(this.generationId);
-          this.nextGenerationKeys.clear();
+          const newGeneration = this.nextGeneration;
+          const newGenerationId = newGeneration.getGenerationId();
+
+          const nextGeneration = new CollectionGeneration({
+            generationId: generateNextId(newGenerationId),
+          });
+
+          this.generationId = newGeneration.getGenerationId();
+          this.nextGeneration = nextGeneration;
+          this.generationsList.push(newGeneration);
 
           this.generationIdStream.replace(this.generationId);
 
@@ -260,21 +269,24 @@ export class MemoryDatabaseCollection implements Collection {
     {isWriter: true},
     ({key, value, ifNotPresent = false, generationId}) => {
       if (typeof generationId === 'string') {
-        if (generationId !== this.plannedNextGenerationId) {
+        if (
+          !this.nextGeneration ||
+          generationId !== this.nextGeneration.getGenerationId()
+        ) {
           throw new OutdatedGenerationError();
         }
       } else if (this._isManual) {
         throw new CannotPutInManualCollectionError();
-      } else if (typeof this.plannedNextGenerationId !== 'string') {
+      } else if (!this.nextGeneration) {
         throw new NextGenerationIsNotStartedError();
       }
 
       const recordGenerationId: string =
-        generationId ?? this.plannedNextGenerationId;
+        generationId ?? this.nextGeneration.getGenerationId();
       assertNonNullable(recordGenerationId, 'put');
 
       if (!this.storage.length) {
-        this.nextGenerationKeys.add(key);
+        this.nextGeneration.addKey(key);
         this.scheduleNonManualCommit();
         this.storage.push({key, value, generationId: recordGenerationId});
         return Promise.resolve({generationId: recordGenerationId});
@@ -298,7 +310,7 @@ export class MemoryDatabaseCollection implements Collection {
           return Promise.resolve({generationId: itemGenerationId});
         }
 
-        this.nextGenerationKeys.add(key);
+        this.nextGeneration.addKey(key);
         this.storage[getIndex()].value = value;
       } else {
         const index = getIndex() + (place < 0 ? 0 : 1);
@@ -329,7 +341,7 @@ export class MemoryDatabaseCollection implements Collection {
           }
         }
 
-        this.nextGenerationKeys.add(key);
+        this.nextGeneration.addKey(key);
         this.storage.splice(index, 0, {
           key,
           value,
@@ -353,9 +365,9 @@ export class MemoryDatabaseCollection implements Collection {
         ),
       );
 
-      assertNonNullable(this.plannedNextGenerationId, 'putMany');
+      assertNonNullable(this.nextGeneration, 'putMany');
 
-      return {generationId: this.plannedNextGenerationId};
+      return {generationId: this.nextGeneration.getGenerationId()};
     },
   );
   diff: Collection['diff'] = this.wrapFn({}, (options) => {
@@ -501,21 +513,27 @@ export class MemoryDatabaseCollection implements Collection {
 
   startGeneration: Collection['startGeneration'] = this.wrapFn(
     {isWriter: true},
-    ({generationId, abortOutdated = false}) => {
-      if (
-        typeof this.plannedNextGenerationId === 'string' &&
-        this.plannedNextGenerationId !== generationId
-      ) {
-        if (abortOutdated && generationId > this.plannedNextGenerationId) {
-          return this.abortGeneration({
-            generationId: this.plannedNextGenerationId,
-          });
+    async ({generationId, abortOutdated = false}) => {
+      await (() => {
+        const nextGenerationId = this.nextGeneration?.getGenerationId();
+
+        if (
+          typeof nextGenerationId === 'string' &&
+          nextGenerationId !== generationId
+        ) {
+          if (abortOutdated && generationId > nextGenerationId) {
+            return this.abortGeneration({
+              generationId: nextGenerationId,
+            });
+          }
+
+          throw new OutdatedGenerationError();
         }
+      })();
 
-        throw new OutdatedGenerationError();
-      }
-
-      this.plannedNextGenerationId = generationId;
+      this.nextGeneration = new CollectionGeneration({
+        generationId,
+      });
 
       return Promise.resolve();
     },
@@ -523,7 +541,10 @@ export class MemoryDatabaseCollection implements Collection {
   commitGeneration: Collection['commitGeneration'] = this.wrapFn(
     {isWriter: true},
     ({generationId, updateReaders}) => {
-      if (this.plannedNextGenerationId !== generationId) {
+      if (
+        !this.nextGeneration ||
+        this.nextGeneration.getGenerationId() !== generationId
+      ) {
         throw new OutdatedGenerationError();
       }
       if (!this._isManual) {
@@ -536,9 +557,11 @@ export class MemoryDatabaseCollection implements Collection {
         }
       });
 
-      this.generationId = generationId;
-      this.plannedNextGenerationId = undefined;
-      this.nextGenerationKeys.clear();
+      const newGeneration = this.nextGeneration;
+
+      this.generationId = newGeneration.getGenerationId();
+      this.nextGeneration = undefined;
+      this.generationsList.push(newGeneration);
 
       updateReaders?.forEach(({readerId, generationId}) => {
         const reader = this.readers.get(readerId);
@@ -555,7 +578,12 @@ export class MemoryDatabaseCollection implements Collection {
   abortGeneration: Collection['abortGeneration'] = this.wrapFn(
     {isWriter: true},
     async ({generationId}) => {
-      if (this.plannedNextGenerationId !== generationId) {
+      const nextGeneration = this.nextGeneration;
+
+      if (
+        !nextGeneration ||
+        nextGeneration.getGenerationId() !== generationId
+      ) {
         throw new OutdatedGenerationError();
       }
       if (!this._isManual) {
@@ -563,14 +591,20 @@ export class MemoryDatabaseCollection implements Collection {
       }
 
       await this._rwLock.blockWrite(() => {
-        this.nextGenerationKeys.forEach((key) => {
+        if (nextGeneration !== this.nextGeneration) {
+          throw new Error('generation missmatch');
+        }
+
+        const changedKeys = nextGeneration.getUnsafeChangedKeys();
+
+        changedKeys.forEach((key) => {
           let traversing: MemoryStorageTraverser;
 
           try {
             traversing = createMemoryStorageTraverser({
               storage: this.storage,
               key,
-              generationId: this.plannedNextGenerationId,
+              generationId: nextGeneration.getGenerationId(),
               exactGenerationId: true,
             });
           } catch (error) {
@@ -584,8 +618,7 @@ export class MemoryDatabaseCollection implements Collection {
           this.storage.splice(traversing.getIndex(), 1);
         });
 
-        this.nextGenerationKeys.clear();
-        this.plannedNextGenerationId = undefined;
+        this.nextGeneration = undefined;
       });
     },
   );
@@ -603,10 +636,49 @@ export class MemoryDatabaseCollection implements Collection {
       type: 'collection',
       name: this.name,
       generationId: this.generationId,
-      nextGenerationId: this.plannedNextGenerationId,
-      nextGenerationKeys: Array.from(this.nextGenerationKeys),
+      nextGenerationId: this.nextGeneration?.getGenerationId(),
       isManual: this._isManual,
     });
+
+    const dumpGeneration = ({
+      generation,
+      type,
+    }: {
+      generation: CollectionGeneration;
+      type: 'generation' | 'nextGeneration';
+    }) => {
+      const keys = generation.getUnsafeChangedKeys();
+
+      for (let i = 0; i < keys.length; ) {
+        const partialKeys: string[] = [];
+
+        for (let j = 0; j < 100; j++) {
+          partialKeys.push(keys[i]);
+
+          i++;
+          if (i >= keys.length) {
+            break;
+          }
+        }
+
+        if (partialKeys.length) {
+          pushDumpPart({
+            type,
+            collectionName: this.name,
+            generationId: generation.getGenerationId(),
+            changedKeys: partialKeys,
+          });
+        }
+      }
+    };
+
+    if (this.nextGeneration) {
+      dumpGeneration({generation: this.nextGeneration, type: 'nextGeneration'});
+    }
+
+    for (const generation of this.generationsList) {
+      dumpGeneration({generation, type: 'generation'});
+    }
 
     pushDumpPart({
       type: 'readers',
@@ -655,6 +727,50 @@ export class MemoryDatabaseCollection implements Collection {
       this.storage.push(item);
     });
   }
+
+  _restoreGeneration({
+    type,
+    generationId,
+    changedKeys,
+  }: PersistCollectionGeneration): void {
+    if (type === 'nextGeneration') {
+      const {nextGeneration} = this;
+      assertNonNullable(nextGeneration, 'restoreGeneration');
+      changedKeys.forEach((key) => {
+        nextGeneration.addKey(key);
+      });
+      return;
+    }
+
+    let generation = this.generationsList[this.generationsList.length - 1] as
+      | CollectionGeneration
+      | undefined;
+
+    if (generation) {
+      const genId = generation.getGenerationId();
+
+      if (genId < generationId) {
+        generation = new CollectionGeneration({
+          generationId,
+        });
+        this.generationsList.push(generation);
+      } else if (genId !== generationId) {
+        throw new Error('restoreGeneration: bad order of generations');
+      }
+    } else {
+      generation = new CollectionGeneration({
+        generationId,
+      });
+      this.generationsList.push(generation);
+    }
+
+    const existingGeneration: CollectionGeneration = generation;
+
+    changedKeys.forEach((key) => {
+      existingGeneration.addKey(key);
+    });
+  }
+
   _restoreReaders({readers}: PersistCollectionReaders): void {
     this.readers.clear();
 

@@ -21,7 +21,7 @@ export class MemoryDatabase extends BaseComponent implements Database {
   private maxItemsInPack: number;
   private collections = new Map<string, MemoryDatabaseCollection>();
   private collectionDisposers = new Map<string, (() => void)[]>();
-  private idling = new IdlingStatus();
+  _idling = new IdlingStatus();
   private rwLock = new RwLock();
   private waitForNonManualGenerationCommit?: () => Promise<void>;
 
@@ -78,8 +78,7 @@ export class MemoryDatabase extends BaseComponent implements Database {
   }
 
   _restoreCollection(collectionDef: PersistCollection) {
-    const {name, generationId, nextGenerationId, nextGenerationKeys, isManual} =
-      collectionDef;
+    const {name, generationId, nextGenerationId, isManual} = collectionDef;
 
     const collection = new MemoryDatabaseCollection({
       name,
@@ -90,14 +89,15 @@ export class MemoryDatabase extends BaseComponent implements Database {
       waitForNonManualGenerationCommit: this.waitForNonManualGenerationCommit,
       _restore: {
         nextGenerationId,
-        nextGenerationKeys,
       },
     });
 
     this.disposeCollection(name);
     this.collections.set(name, collection);
 
-    const dispose = this.idling.dependsOnStream(collection._idling.getStream());
+    const dispose = this._idling.dependsOnStream(
+      collection._idling.getStream(),
+    );
     this.addCollectionDisposer(name, dispose);
   }
 
@@ -125,7 +125,9 @@ export class MemoryDatabase extends BaseComponent implements Database {
     this.disposeCollection(name);
     this.collections.set(name, collection);
 
-    const dispose = this.idling.dependsOnStream(collection._idling.getStream());
+    const dispose = this._idling.dependsOnStream(
+      collection._idling.getStream(),
+    );
     this.addCollectionDisposer(name, dispose);
 
     return {
@@ -166,21 +168,15 @@ export class MemoryDatabase extends BaseComponent implements Database {
   };
 
   onIdle() {
-    return this.idling.onIdle();
+    return this._idling.onIdle();
   }
   getIdlingStream() {
-    return this.idling.getStream();
+    return this._idling.getStream();
   }
 
   async runExclusiveTask<T>(fun: () => Promise<T>) {
-    while (this.idling.getActiveTasksCount() > 0) {
-      // setTimeout(() => {
-      //   this.collections.forEach(collection => {
-      //     console.log(collection.getName());
-      //     collection._idling._debugPrintStacks();
-      //   });
-      // });
-      await this.idling.onIdle();
+    while (this._idling.getActiveTasksCount() > 0) {
+      await this._idling.onIdle();
     }
 
     return await this.rwLock.blockReadWrite(async () => {
@@ -191,11 +187,11 @@ export class MemoryDatabase extends BaseComponent implements Database {
       );
 
       try {
-        while (this.idling.getActiveTasksCount() > 0) {
-          await this.idling.onIdle();
+        while (this._idling.getActiveTasksCount() > 0) {
+          await this._idling.onIdle();
         }
 
-        const dispose = this.idling.startTask();
+        const dispose = this._idling.startTask();
 
         try {
           return await fun();

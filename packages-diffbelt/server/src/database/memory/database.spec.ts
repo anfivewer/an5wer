@@ -9,8 +9,12 @@ import {restoreMemoryDatabase} from './persist/restore';
 describe('MemoryDatabase', () => {
   databaseTest({
     createDatabase: () => {
-      const commitRunner = new NonManualCommitRunner();
-      const database = new MemoryDatabase({
+      // eslint-disable-next-line prefer-const
+      let database: MemoryDatabase;
+      const commitRunner = new NonManualCommitRunner({
+        getDatabaseIdling: () => database._idling,
+      });
+      database = new MemoryDatabase({
         maxItemsInPack: 100,
         waitForNonManualGenerationCommit:
           commitRunner.waitForNonManualGenerationCommit.bind(commitRunner),
@@ -18,7 +22,7 @@ describe('MemoryDatabase', () => {
 
       return Promise.resolve({database, commitRunner});
     },
-    afterComplexTest: async ({database}) => {
+    afterComplexTest: async ({database, commitRunner}) => {
       const stream = await dumpMemoryDatabase({database});
 
       const buffers: Buffer[] = [];
@@ -30,8 +34,13 @@ describe('MemoryDatabase', () => {
       const expectedDump =
         '{"type":"header","version":1}\n' +
         '{"type":"collection","name":"colA","generationId":"00000000002",' +
-        '"nextGenerationId":"00000000003","nextGenerationKeys":[],' +
-        '"isManual":false}\n' +
+        '"nextGenerationId":"00000000003",' +
+        '"isManual":false}\n{"type":"generation","collectionName":"colA",' +
+        '"generationId":"00000000001","changedKeys":["00000000003",' +
+        '"00000000065","00000000069","00000000070","00000000249",' +
+        '"00000000270","00000000300"]}\n{"type":"generation",' +
+        '"collectionName":"colA","generationId":"00000000002",' +
+        '"changedKeys":["00000000003","00000000066","00000000270"]}\n' +
         '{"type":"readers","collectionName":"colA","readers":[]}\n' +
         '{"type":"items","collectionName":"colA","items":[{"key":"00000000003",' +
         '"value":"2","generationId":"00000000001"},{"key":"00000000003",' +
@@ -45,7 +54,11 @@ describe('MemoryDatabase', () => {
         '"value":"12","generationId":"00000000002"},{"key":"00000000300",' +
         '"value":"42","generationId":"00000000001"}]}\n' +
         '{"type":"collection","name":"colB","generationId":"00000000002",' +
-        '"nextGenerationKeys":[],"isManual":true}\n' +
+        '"isManual":true}\n{"type":"generation","collectionName":"colB",' +
+        '"generationId":"00000000001","changedKeys":["00000000000",' +
+        '"00000000060","00000000240","00000000300"]}\n{"type":"generation",' +
+        '"collectionName":"colB","generationId":"00000000002","changedKeys"' +
+        ':["00000000000","00000000060","00000000240"]}\n' +
         '{"type":"readers","collectionName":"colB","readers":[{"readerId":' +
         '"aToB","generationId":"00000000002","collectionName":"colA"}]}\n' +
         '{"type":"items","collectionName":"colB","items":[{"key":"00000000000",' +
@@ -64,6 +77,8 @@ describe('MemoryDatabase', () => {
       // Change some value
       let colA = await database.getCollection('colA');
       const {generationId} = await colA.put({key: '00000000070', value: '100'});
+
+      await commitRunner.makeCommits();
       await waitForGeneration({collection: colA, generationId});
 
       await restoreMemoryDatabase({database, dump: stream});

@@ -17,7 +17,6 @@ export const PersistCollection = object({
   name: string(),
   generationId: string(),
   nextGenerationId: string().optional(),
-  nextGenerationKeys: array(string()),
   isManual: boolean(),
 });
 export type PersistCollection = ZodInfer<typeof PersistCollection>;
@@ -34,6 +33,16 @@ export const PersistCollectionItems = object({
   ),
 });
 export type PersistCollectionItems = ZodInfer<typeof PersistCollectionItems>;
+
+export const PersistCollectionGeneration = object({
+  type: union([literal('generation'), literal('nextGeneration')]),
+  collectionName: string(),
+  generationId: string(),
+  changedKeys: array(string()),
+});
+export type PersistCollectionGeneration = ZodInfer<
+  typeof PersistCollectionGeneration
+>;
 
 export const PersistCollectionReaders = object({
   type: literal('readers'),
@@ -55,6 +64,7 @@ export const PersistDatabasePart = union([
   PersistDatabaseFooter,
   PersistCollection,
   PersistCollectionItems,
+  PersistCollectionGeneration,
   PersistCollectionReaders,
 ]);
 export type PersistDatabasePart = ZodInfer<typeof PersistDatabasePart>;

@@ -1,8 +1,17 @@
 import {Defer} from '@-/util/src/async/defer';
-import {sleep} from '@-/util/src/async/sleep';
+import {IdlingStatus} from '@-/util/src/state/idling-status';
 
 export class NonManualCommitRunner {
   private defers: Defer[] = [];
+  private getDatabaseIdling: () => IdlingStatus;
+
+  constructor({
+    getDatabaseIdling,
+  }: {
+    getDatabaseIdling: NonManualCommitRunner['getDatabaseIdling'];
+  }) {
+    this.getDatabaseIdling = getDatabaseIdling;
+  }
 
   waitForNonManualGenerationCommit() {
     const defer = new Defer();
@@ -10,14 +19,23 @@ export class NonManualCommitRunner {
     return defer.promise;
   }
 
-  async makeCommits() {
-    while (this.defers.length) {
+  hasPendingCommits() {
+    return Boolean(this.defers.length);
+  }
+
+  async makeCommits(): Promise<void> {
+    const idling = this.getDatabaseIdling();
+
+    while (true) {
       while (this.defers.length) {
         this.defers.pop()!.resolve();
       }
 
-      // FIXME: watch for collection planned commits
-      await sleep(10);
+      await idling.onIdle();
+
+      if (idling.isIdle() && !this.defers.length) {
+        return;
+      }
     }
   }
 }
