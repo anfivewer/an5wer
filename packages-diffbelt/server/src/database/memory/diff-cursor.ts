@@ -84,6 +84,9 @@ export class CollectionDiffCursor {
 
     const items: DiffResultItems = [];
 
+    let finishedByLimit = false;
+    let finishedByEnd = false;
+
     outer: while (true) {
       const found = traverser.findGenerationRecord({
         generationId: this.fromGenerationId,
@@ -94,6 +97,7 @@ export class CollectionDiffCursor {
       if (generationId > this.toGenerationId) {
         const found = traverser.goNextKey();
         if (!found) {
+          finishedByEnd = true;
           break;
         }
 
@@ -119,44 +123,54 @@ export class CollectionDiffCursor {
       pushValue(value);
 
       if (!traverser.peekNext()) {
+        finishedByEnd = true;
         pushItem();
         break;
       }
 
       while (true) {
-        const item = traverser.goNextGeneration();
-        if (!item) {
+        const nextGen = traverser.goNextGeneration();
+        if (!nextGen.found) {
+          if (nextGen.isEnd) {
+            finishedByEnd = true;
+            break outer;
+          }
           break;
         }
 
-        if (item.generationId > this.toGenerationId) {
+        if (nextGen.item.generationId > this.toGenerationId) {
           const found = traverser.goNextKey();
           if (!found) {
+            finishedByEnd = true;
             pushItem();
             break outer;
           }
           break;
         }
 
-        pushValue(item.value);
+        pushValue(nextGen.item.value);
       }
 
       pushItem();
 
-      if (items.length >= this.maxItemsInPack) {
+      finishedByLimit = items.length >= this.maxItemsInPack;
+
+      if (finishedByLimit) {
         break;
       }
     }
 
     const nextStartKey = (() => {
-      if (!traverser.peekNext()) {
+      if (finishedByEnd) {
         return 'end';
       }
 
-      const hasNextKey = traverser.goNextKey();
+      if (!finishedByLimit) {
+        const hasNextKey = traverser.goNextKey();
 
-      if (!hasNextKey) {
-        return 'end';
+        if (!hasNextKey) {
+          return 'end';
+        }
       }
 
       const {key, generationId} = traverser.getItem();

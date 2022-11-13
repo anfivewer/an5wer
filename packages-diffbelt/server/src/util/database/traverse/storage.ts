@@ -18,10 +18,15 @@ export type StorageTraverser = {
   }) => boolean;
   goPrevKey: () => boolean;
   goNextKey: () => boolean;
-  goNextGeneration: () => KeyValueRecord | null;
+  goNextGeneration: () =>
+    | {item: KeyValueRecord; found: true}
+    | {found: false; isEnd: boolean};
   goToInsertPosition: (options: {
     key: string;
     generationId: string;
+    //  0 -- key&generationId already exists, replace current index
+    // -1 -- should be inserted at current index
+    //  1 -- should be inserted after index (end of items)
   }) => -1 | 0 | 1;
 };
 
@@ -79,8 +84,6 @@ export const createStorageTraverser = ({
         goPrev();
       }
     }
-
-    return false;
   };
 
   const goNextGeneration: StorageTraverser['goNextGeneration'] = () => {
@@ -88,18 +91,19 @@ export const createStorageTraverser = ({
 
     const nextItem = peekNext();
     if (!nextItem) {
-      return null;
+      return {found: false, isEnd: true};
     }
 
     goNext();
 
     if (nextItem.key !== key) {
-      return null;
+      return {found: false, isEnd: false};
     }
 
-    return nextItem;
+    return {found: true, item: nextItem};
   };
 
+  // returns true if moved, false if this is start of items
   const goPrevKey: StorageTraverser['goPrevKey'] = () => {
     const {key} = getItem();
 
@@ -143,33 +147,51 @@ export const createStorageTraverser = ({
     goNextKey,
     goNextGeneration,
     goToInsertPosition: ({key, generationId}) => {
-      const {key: itemKey} = getItem();
+      let itemKey: string;
+      ({key: itemKey} = getItem());
 
-      if (itemKey === key) {
-        findGenerationRecord({generationId});
-        const {generationId: itemGenerationId} = getItem();
-        if (itemGenerationId === generationId) {
-          return 0;
+      while (true) {
+        if (itemKey === key) {
+          findGenerationRecord({generationId});
+          const {generationId: itemGenerationId} = getItem();
+          if (itemGenerationId === generationId) {
+            return 0;
+          }
+
+          return 1;
         }
 
-        return 1;
-      }
+        if (itemKey < key) {
+          const hasKey = goNextKey();
+          if (!hasKey) {
+            // end of items, insert to end
+            return 1;
+          }
 
-      if (itemKey < key) {
-        while (goNextGeneration()) {
-          //
+          ({key: itemKey} = getItem());
+          if (itemKey > key) {
+            // curent key was lesser, this is bigger, so insert before this
+            return -1;
+          }
+
+          continue;
         }
 
-        const hasNext = peekNext();
-        if (hasNext) {
+        // itemKey > key
+        const hasKey = goPrevKey();
+        if (!hasKey) {
+          // start of items, prepend
           return -1;
         }
 
-        return 1;
-      }
+        ({key: itemKey} = getItem());
+        if (itemKey < key) {
+          // current key was bigger, this is lesser, so insert after this
+          return 1;
+        }
 
-      goPrevKey();
-      return 1;
+        continue;
+      }
     },
   };
 };

@@ -127,6 +127,10 @@ export class MemoryDatabase extends BaseComponent implements Database {
 
     const dispose = this.idling.dependsOnStream(collection._idling.getStream());
     this.addCollectionDisposer(name, dispose);
+
+    return {
+      generationId: collection._getGenerationId(),
+    };
   };
 
   _getCollection(name: string): MemoryDatabaseCollection | undefined {

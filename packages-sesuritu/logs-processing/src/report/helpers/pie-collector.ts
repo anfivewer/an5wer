@@ -2,7 +2,7 @@ import {
   PieTimeMetric,
   ReportType,
 } from '@-/sesuritu-types/src/site/report/report';
-import {increment} from '../../transforms/helpers/counter-record';
+import {increment} from '@-/util/src/object/counter-record';
 
 type ExtractCategoryCountFn<T> = (item: T, key: string) => number;
 

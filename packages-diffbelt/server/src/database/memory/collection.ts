@@ -119,6 +119,10 @@ export class MemoryDatabaseCollection implements Collection {
     return this._isManual;
   }
 
+  _getGenerationId() {
+    return this.generationId;
+  }
+
   getGeneration() {
     return Promise.resolve(this.generationId);
   }

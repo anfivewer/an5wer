@@ -11,10 +11,13 @@ export class NonManualCommitRunner {
   }
 
   async makeCommits() {
-    await sleep(10);
-
     while (this.defers.length) {
-      this.defers.pop()!.resolve();
+      while (this.defers.length) {
+        this.defers.pop()!.resolve();
+      }
+
+      // FIXME: watch for collection planned commits
+      await sleep(10);
     }
   }
 }

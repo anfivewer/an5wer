@@ -5,18 +5,17 @@ import {
 } from '@-/diffbelt-types/src/database/types';
 import {NoSuchCollectionError} from '@-/diffbelt-types/src/database/errors';
 import {waitForGeneration} from '../../util/database/wait-for-generation';
-import {dumpCollection as dumpCollectionUtil} from '../../util/database/queries/dump';
+import {dumpCollection as dumpCollectionUtil} from '@-/diffbelt-util/src/queries/dump';
 import {testEmptyStringValue} from './empty-string-value';
 import {NonManualCommitRunner} from './non-manual-commit';
+import {CreateDatabaseFn} from './types';
+import {mapFilterTest} from './map-filter';
 
 export const databaseTest = <Db extends Database>({
   createDatabase,
   afterComplexTest,
 }: {
-  createDatabase: () => Promise<{
-    database: Db;
-    commitRunner: NonManualCommitRunner;
-  }>;
+  createDatabase: CreateDatabaseFn<Db>;
   afterComplexTest?: (options: {
     database: Db;
     commitRunner: NonManualCommitRunner;
@@ -203,6 +202,8 @@ export const databaseTest = <Db extends Database>({
     const {database, commitRunner} = await createDatabase();
     await testEmptyStringValue({database, commitRunner});
   });
+
+  mapFilterTest({createDatabase});
 };
 
 const makeId = (ts: number) => String(ts).padStart(11, '0');

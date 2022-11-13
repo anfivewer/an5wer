@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@-/diffbelt-types": "workspace:*",
+    "@-/diffbelt-util": "workspace:*",
     "@-/types": "workspace:*",
     "@-/util": "workspace:*",
     "dotenv": "16.0.1",

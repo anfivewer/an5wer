@@ -1,5 +1,5 @@
 import {Database, KeyValue} from '@-/diffbelt-types/src/database/types';
-import {queryCollection} from '../../util/database/queries/dump';
+import {queryCollection} from '@-/diffbelt-util/src/queries/dump';
 import {waitForGeneration} from '../../util/database/wait-for-generation';
 import {NonManualCommitRunner} from './non-manual-commit';
 

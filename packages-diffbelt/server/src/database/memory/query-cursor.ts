@@ -72,6 +72,9 @@ export class CollectionQueryCursor {
       }).traverser;
     })();
 
+    let finishedByLimit = false;
+    let finishedByEnd = false;
+
     const items: KeyValue[] = [];
 
     while (true) {
@@ -79,16 +82,28 @@ export class CollectionQueryCursor {
         generationId: this.generationId,
       });
       if (!found) {
-        break;
+        const hasNextKey = traverser.goNextKey();
+        if (!hasNextKey) {
+          finishedByEnd = true;
+          break;
+        }
+
+        continue;
       }
 
       const {key, value} = traverser.getItem();
       const hasNextKey = traverser.goNextKey();
 
+      if (!hasNextKey) {
+        finishedByEnd = true;
+      }
+
       if (value !== null) {
         items.push({key, value});
 
-        if (items.length >= this.maxItemsInPack) {
+        finishedByLimit = items.length >= this.maxItemsInPack;
+
+        if (finishedByLimit) {
           break;
         }
       }
@@ -99,14 +114,16 @@ export class CollectionQueryCursor {
     }
 
     const nextStartKey = (() => {
-      if (!traverser.peekNext()) {
+      if (finishedByEnd) {
         return 'end';
       }
 
-      const hasNextKey = traverser.goNextKey();
+      if (!finishedByLimit) {
+        const hasNextKey = traverser.goNextKey();
 
-      if (!hasNextKey) {
-        return 'end';
+        if (!hasNextKey) {
+          return 'end';
+        }
       }
 
       const {key, generationId} = traverser.getItem();

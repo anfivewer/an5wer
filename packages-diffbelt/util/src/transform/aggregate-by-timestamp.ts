@@ -1,7 +1,8 @@
-import {diffCollection} from '@-/diffbelt-server/src/util/database/queries/diff';
+import {Database} from '@-/diffbelt-types/src/database/types';
 import {Parallel} from '@-/util/src/async/parallel';
 import {IdlingStatus} from '@-/util/src/state/idling-status';
-import {Context} from '../../context/types';
+import {diffCollection} from '../queries/diff';
+import {Logger} from '@-/types/src/logging/logging';
 
 export const enum AggregateInterval {
   MINUTE = 60,
@@ -37,6 +38,7 @@ const isItemChange = <Item>(value: {
 };
 
 type AggregateTransformOptions<
+  Context,
   SourceItem,
   TargetItem,
   MappedItem,
@@ -56,6 +58,7 @@ type AggregateTransformOptions<
 
   maxItemsForReduce?: number;
 
+  extractContext: (context: Context) => {database: Database; logger: Logger};
   mapFilter: (
     options: IntervalData<TargetItem> & {
       timestampMs: number;
@@ -108,12 +111,14 @@ type AggregateTransformOptions<
   };
 
 export const createAggregateByTimestampTransform = <
+  Context,
   SourceItem,
   TargetItem,
   MappedItem,
   ReducedItem,
 >(
   options: AggregateTransformOptions<
+    Context,
     SourceItem,
     TargetItem,
     MappedItem,
@@ -130,6 +135,7 @@ export const createAggregateByTimestampTransform = <
     parseTargetItem,
     serializeTargetItem,
     getTimestampMs,
+    extractContext,
     mapFilter,
     maxItemsForReduce = 100,
     merge,
@@ -151,8 +157,7 @@ export const createAggregateByTimestampTransform = <
   }
 
   return async ({context}) => {
-    const {database, logger: rootLogger} = context;
-    const db = database.getDiffbelt();
+    const {database: db, logger: rootLogger} = extractContext(context);
 
     const logger = rootLogger.fork(
       `aggregate:${sourceCollectionName}>${targetCollectionName}`,
