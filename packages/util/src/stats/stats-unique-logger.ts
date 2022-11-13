@@ -14,6 +14,7 @@ export type StatsUniqueLoggerOptions = {
 const FIVE_MINUTES_MS = 5 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 
+/** @deprecated */
 export class StatsUniqueLogger implements StatsUniqueLoggerType {
   private logStats: LogStatsFn;
   private valuesSet = new Set<number | string>();
@@ -91,6 +92,7 @@ export class StatsUniqueLogger implements StatsUniqueLoggerType {
   };
 }
 
+/** @deprecated */
 export const createStatsUniqueLogger = ({
   name,
   logger,

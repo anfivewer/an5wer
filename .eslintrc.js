@@ -20,6 +20,10 @@ const options = {
       files: ['**/*.ts+(x|)'],
       parser: '@typescript-eslint/parser',
       plugins: ['@typescript-eslint'],
+      parserOptions: {
+        tsconfigRootDir: __dirname,
+        project: ['./tsconfig.base.json'],
+      },
       extends: [
         ...baseExtends,
         'plugin:@typescript-eslint/eslint-recommended',
@@ -32,6 +36,10 @@ const options = {
         '@typescript-eslint/no-unused-vars': [
           'error',
           {varsIgnorePattern: '^shouldBeNever$'},
+        ],
+        '@typescript-eslint/strict-boolean-expressions': [
+          'warn',
+          {allowNullableObject: true, allowAny: true},
         ],
       },
     },

@@ -195,6 +195,6 @@ export const mapFilterTest = ({
       await myMapFilterTransform({context: {database}});
 
       await testMappedCollection({expectedGenerationId: '00000000006'});
-    });
+    }, 10000);
   });
 };

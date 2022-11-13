@@ -133,6 +133,7 @@ export class CollectionDiffCursor {
         if (!nextGen.found) {
           if (nextGen.isEnd) {
             finishedByEnd = true;
+            pushItem();
             break outer;
           }
           break;

@@ -10,6 +10,7 @@ import {testEmptyStringValue} from './empty-string-value';
 import {NonManualCommitRunner} from './non-manual-commit';
 import {CreateDatabaseFn} from './types';
 import {mapFilterTest} from './map-filter';
+import {aggregateByTimestampTest} from './aggregate-by-timestamp';
 
 export const databaseTest = <Db extends Database>({
   createDatabase,
@@ -204,6 +205,7 @@ export const databaseTest = <Db extends Database>({
   });
 
   mapFilterTest({createDatabase});
+  aggregateByTimestampTest({createDatabase});
 };
 
 const makeId = (ts: number) => String(ts).padStart(11, '0');
@@ -276,8 +278,13 @@ const doTransformFromAtoB = async ({
       const ts = parseInt(key, 10);
       const ts60 = ts - (ts % 60);
 
-      const prevValue = parseInt(values[0] || '0', 10);
-      const lastValue = parseInt(values[values.length - 1] || '0', 10);
+      const maybeLastValue = values[values.length - 1];
+
+      const prevValue = parseInt(values[0] !== null ? values[0] : '0', 10);
+      const lastValue = parseInt(
+        maybeLastValue !== null ? maybeLastValue : '0',
+        10,
+      );
 
       if (prevTs !== ts60) {
         await save();
@@ -290,7 +297,7 @@ const doTransformFromAtoB = async ({
 
   await processItems(items);
 
-  while (cursorId) {
+  while (typeof cursorId === 'string') {
     const {
       generationId,
       items,
