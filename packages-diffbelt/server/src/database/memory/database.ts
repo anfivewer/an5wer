@@ -174,6 +174,51 @@ export class MemoryDatabase extends BaseComponent implements Database {
     return this._idling.getStream();
   }
 
+  _cleanup() {
+    return this.runExclusiveTask(async () => {
+      const collectionsList = Array.from(this.collections.values());
+
+      const collectionToOldestGenerationId = new Map<string, string>();
+
+      collectionsList.forEach((collection) => {
+        const thisCollectionName = collection.getName();
+        const readers = Array.from(collection._getReaders().values());
+
+        readers.forEach(
+          ({generationId, collectionName: readerCollectionName}) => {
+            if (generationId === null) {
+              return;
+            }
+
+            const collectionName = readerCollectionName ?? thisCollectionName;
+
+            const genId = collectionToOldestGenerationId.get(collectionName);
+            if (typeof genId !== 'string') {
+              collectionToOldestGenerationId.set(collectionName, generationId);
+              return;
+            }
+
+            if (genId <= generationId) {
+              return;
+            }
+
+            collectionToOldestGenerationId.set(collectionName, generationId);
+          },
+        );
+      });
+
+      await Promise.all(
+        collectionsList.map(async (collection) => {
+          const oldestGenerationId = collectionToOldestGenerationId.get(
+            collection.getName(),
+          );
+
+          await collection._cleanup({oldestGenerationId});
+        }),
+      );
+    });
+  }
+
   async runExclusiveTask<T>(fun: () => Promise<T>) {
     while (this._idling.getActiveTasksCount() > 0) {
       await this._idling.onIdle();

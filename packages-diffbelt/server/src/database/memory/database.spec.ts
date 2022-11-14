@@ -42,33 +42,25 @@ describe('MemoryDatabase', () => {
         '"collectionName":"colA","generationId":"00000000002",' +
         '"changedKeys":["00000000003","00000000066","00000000270"]}\n' +
         '{"type":"readers","collectionName":"colA","readers":[]}\n' +
-        '{"type":"items","collectionName":"colA","items":[{"key":"00000000003",' +
-        '"value":"2","generationId":"00000000001"},{"key":"00000000003",' +
-        '"value":null,"generationId":"00000000002"},{"key":"00000000065",' +
-        '"value":"5","generationId":"00000000001"},{"key":"00000000066",' +
-        '"value":"7","generationId":"00000000002"},{"key":"00000000069",' +
-        '"value":"11","generationId":"00000000001"},{"key":"00000000070",' +
-        '"value":"8","generationId":"00000000001"},{"key":"00000000249",' +
-        '"value":"13","generationId":"00000000001"},{"key":"00000000270",' +
-        '"value":"15","generationId":"00000000001"},{"key":"00000000270",' +
-        '"value":"12","generationId":"00000000002"},{"key":"00000000300",' +
-        '"value":"42","generationId":"00000000001"}]}\n' +
+        '{"type":"items","collectionName":"colA","items":[{"key":' +
+        '"00000000003","value":null,"generationId":"00000000002"},{"key":' +
+        '"00000000065","value":"5","generationId":"00000000001"},{"key":' +
+        '"00000000066","value":"7","generationId":"00000000002"},{"key":' +
+        '"00000000069","value":"11","generationId":"00000000001"},{"key":' +
+        '"00000000070","value":"8","generationId":"00000000001"},{"key":' +
+        '"00000000249","value":"13","generationId":"00000000001"},{"key":' +
+        '"00000000270","value":"12","generationId":"00000000002"},{"key":' +
+        '"00000000300","value":"42","generationId":"00000000001"}]}\n' +
         '{"type":"collection","name":"colB","generationId":"00000000002",' +
-        '"isManual":true}\n{"type":"generation","collectionName":"colB",' +
-        '"generationId":"00000000001","changedKeys":["00000000000",' +
-        '"00000000060","00000000240","00000000300"]}\n{"type":"generation",' +
-        '"collectionName":"colB","generationId":"00000000002","changedKeys"' +
-        ':["00000000000","00000000060","00000000240"]}\n' +
+        '"isManual":true}\n' +
         '{"type":"readers","collectionName":"colB","readers":[{"readerId":' +
         '"aToB","generationId":"00000000002","collectionName":"colA"}]}\n' +
-        '{"type":"items","collectionName":"colB","items":[{"key":"00000000000",' +
-        '"value":"2","generationId":"00000000001"},{"key":"00000000000",' +
-        '"value":"0","generationId":"00000000002"},{"key":"00000000060",' +
-        '"value":"24","generationId":"00000000001"},{"key":"00000000060",' +
-        '"value":"31","generationId":"00000000002"},{"key":"00000000240",' +
-        '"value":"28","generationId":"00000000001"},{"key":"00000000240",' +
-        '"value":"25","generationId":"00000000002"},{"key":"00000000300",' +
-        '"value":"42","generationId":"00000000001"}]}\n{"type":"end"}\n';
+        '{"type":"items","collectionName":"colB","items":[{"key":' +
+        '"00000000000","value":"0","generationId":"00000000002"},{"key":' +
+        '"00000000060","value":"31","generationId":"00000000002"},{"key":' +
+        '"00000000240","value":"25","generationId":"00000000002"},{"key":' +
+        '"00000000300","value":"42","generationId":"00000000001"}]}\n' +
+        '{"type":"end"}\n';
 
       const actualDump = Buffer.concat(buffers).toString('utf8');
 

@@ -511,6 +511,10 @@ export class MemoryDatabaseCollection implements Collection {
     return reader.generationId;
   }
 
+  _getReaders() {
+    return this.readers;
+  }
+
   listReaders: Collection['listReaders'] = this.wrapFn({}, () => {
     const readers: Awaited<ReturnType<Collection['listReaders']>> = [];
 
@@ -827,6 +831,34 @@ export class MemoryDatabaseCollection implements Collection {
         collectionName: reader.collectionName,
       });
     });
+  }
+
+  _cleanup({oldestGenerationId}: {oldestGenerationId: string | undefined}) {
+    // TODO: do not go through whole collection, use keys inside generations
+    this.generationsList =
+      typeof oldestGenerationId === 'string'
+        ? this.generationsList.filter(
+            (generation) => generation.getGenerationId() <= oldestGenerationId,
+          )
+        : [];
+
+    const generationToStay = oldestGenerationId ?? this.generationId;
+
+    this.storage = this.storage.filter(({key, generationId}, index) => {
+      if (index >= this.storage.length - 2) {
+        return true;
+      }
+
+      const {key: nextItemKey} = this.storage[index + 1];
+
+      if (key !== nextItemKey) {
+        return true;
+      }
+
+      return generationId >= generationToStay;
+    });
+
+    return Promise.resolve();
   }
 
   private wrapFn<Args extends unknown[], Result>(
