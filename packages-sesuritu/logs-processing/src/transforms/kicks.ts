@@ -13,10 +13,11 @@ import {
 import {
   AggregateInterval,
   createAggregateByTimestampTransform,
-} from './helpers/aggregate-by-timestamp';
-import {decrement, increment} from './helpers/counter-record';
+} from '@-/diffbelt-util/src/transform/aggregate-by-timestamp';
+import {decrement, increment} from '@-/util/src/object/counter-record';
 import {extractTimestampFromTimestampWithLoggerKey} from './helpers/extract-timestamp';
 import {createParsedLinesFilterTransform} from './helpers/filter-parsed-lines';
+import {Context} from '../context/types';
 
 export const transformParsedLinesToKicks = createParsedLinesFilterTransform({
   targetCollectionName: KICKS_COLLECTION_NAME,
@@ -43,6 +44,7 @@ export const transformParsedLinesToKicks = createParsedLinesFilterTransform({
 });
 
 export const aggregateKicksPerHour = createAggregateByTimestampTransform<
+  Context,
   KicksCollectionItem,
   AggregatedKicksCollectionItem,
   {reason: string},
@@ -57,6 +59,10 @@ export const aggregateKicksPerHour = createAggregateByTimestampTransform<
     AggregatedKicksCollectionItem.parse(JSON.parse(value)),
   serializeTargetItem: (item) => JSON.stringify(item),
   getTimestampMs: extractTimestampFromTimestampWithLoggerKey,
+  extractContext: ({database, logger}) => ({
+    database: database.getDiffbelt(),
+    logger,
+  }),
   mapFilter: ({sourceItem}) => {
     if (!sourceItem) {
       return null;
@@ -139,6 +145,7 @@ function createAggregateKicksMoreThanHour({
   };
 
   return createAggregateByTimestampTransform<
+    Context,
     AggregatedKicksCollectionItem,
     AggregatedKicksCollectionItem,
     AggregatedKicksCollectionItem,
@@ -154,6 +161,10 @@ function createAggregateKicksMoreThanHour({
       AggregatedKicksCollectionItem.parse(JSON.parse(value)),
     serializeTargetItem: (item) => JSON.stringify(item),
     getTimestampMs: extractTimestampFromTimestampWithLoggerKey,
+    extractContext: ({database, logger}) => ({
+      database: database.getDiffbelt(),
+      logger,
+    }),
     mapFilter: ({sourceItem}) => {
       return sourceItem;
     },

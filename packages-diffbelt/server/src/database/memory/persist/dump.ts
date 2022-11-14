@@ -20,8 +20,10 @@ export const dumpMemoryDatabase = ({
     stream.push(newLineBuffer);
   };
 
-  database
-    .runExclusiveTask(async () => {
+  (async () => {
+    await database._cleanup();
+
+    await database.runExclusiveTask(async () => {
       pushDumpPart({type: 'header', version: 1});
 
       for (const collection of database._getCollections().values()) {
@@ -40,14 +42,14 @@ export const dumpMemoryDatabase = ({
       pushDumpPart({type: 'end'});
 
       stream.finish();
-    })
-    .catch((error) => {
-      if (error instanceof StreamIsClosedError) {
-        return;
-      }
-
-      stream.destroyWithError(error);
     });
+  })().catch((error) => {
+    if (error instanceof StreamIsClosedError) {
+      return;
+    }
+
+    stream.destroyWithError(error);
+  });
 
   return stream.getGenerator();
 };

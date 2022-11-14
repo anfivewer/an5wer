@@ -1,10 +1,16 @@
 import {literal, union} from 'zod';
 import {ZodInfer} from '../zod/zod';
 
+export type LogFnProps = Record<
+  string,
+  string | number | boolean | undefined | null
+>;
+export type LogFnOptions = {extra?: unknown; error?: unknown};
+
 export type LogFn = (
   key: string,
-  props?: Record<string, string | number | boolean | undefined | null>,
-  options?: {extra?: unknown; error?: unknown},
+  props?: LogFnProps,
+  options?: LogFnOptions,
 ) => void;
 
 export type Logger = {

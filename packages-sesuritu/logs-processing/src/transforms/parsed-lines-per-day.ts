@@ -8,11 +8,13 @@ import {AggregatedParsedLinesPerDayCollectionItem} from '../types/collections/pa
 import {
   AggregateInterval,
   createAggregateByTimestampTransform,
-} from './helpers/aggregate-by-timestamp';
-import {decrement, increment} from './helpers/counter-record';
+} from '@-/diffbelt-util/src/transform/aggregate-by-timestamp';
+import {decrement, increment} from '@-/util/src/object/counter-record';
 import {extractTimestampFromTimestampWithLoggerKey} from './helpers/extract-timestamp';
+import {Context} from '../context/types';
 
 export const aggregateParsedLinesPerDay = createAggregateByTimestampTransform<
+  Context,
   ParsedLogLine,
   AggregatedParsedLinesPerDayCollectionItem,
   {mergedLogKey: string},
@@ -27,6 +29,10 @@ export const aggregateParsedLinesPerDay = createAggregateByTimestampTransform<
     AggregatedParsedLinesPerDayCollectionItem.parse(JSON.parse(value)),
   serializeTargetItem: (item) => JSON.stringify(item),
   getTimestampMs: extractTimestampFromTimestampWithLoggerKey,
+  extractContext: ({database, logger}) => ({
+    database: database.getDiffbelt(),
+    logger,
+  }),
   mapFilter: ({sourceItem}) => {
     if (!sourceItem) {
       return null;

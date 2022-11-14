@@ -8,7 +8,7 @@ import {
   KICKS_PER_DAY_COLLECTION_NAME,
   PARSED_LINES_PER_DAY_COLLECTION_NAME,
 } from '../database/structure';
-import {queryCollection} from '@-/diffbelt-server/src/util/database/queries/dump';
+import {queryCollection} from '@-/diffbelt-util/src/queries/dump';
 import {AggregatedKicksCollectionItem} from '../types/collections/kicks';
 import {extractTimestampFromTimestampWithLoggerKey} from '../transforms/helpers/extract-timestamp';
 import {PieCollector} from './helpers/pie-collector';

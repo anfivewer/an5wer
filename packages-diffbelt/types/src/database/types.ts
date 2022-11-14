@@ -125,7 +125,7 @@ export type Database = {
   createCollection: (
     name: string,
     options?: {generationId?: string},
-  ) => Promise<void>;
+  ) => Promise<{generationId: string}>;
   getCollection: (name: string) => Promise<Collection>;
   listCollections: () => Promise<{collections: string[]}>;
   deleteCollection: (name: string) => Promise<void>;

@@ -1,7 +1,8 @@
-import {diffCollection} from '@-/diffbelt-server/src/util/database/queries/diff';
+import {Database} from '@-/diffbelt-types/src/database/types';
 import {Parallel} from '@-/util/src/async/parallel';
 import {IdlingStatus} from '@-/util/src/state/idling-status';
-import {Context} from '../../context/types';
+import {diffCollection} from '../queries/diff';
+import {Logger} from '@-/types/src/logging/logging';
 
 export const enum AggregateInterval {
   MINUTE = 60,
@@ -36,26 +37,31 @@ const isItemChange = <Item>(value: {
   return prev !== null || next !== null;
 };
 
-type AggregateTransformOptions<
-  SourceItem,
-  TargetItem,
-  MappedItem,
-  ReducedItem,
-> = {
+export type BaseAggregateTransformOptions = {
   interval: AggregateInterval;
   targetCollectionName: string;
   sourceCollectionName: string;
   targetFromSourceReaderName: string;
+  // If `true` then any change of source data inside of interval
+  // will trigger full interval rebuilding
+  fullRecalculationRequired?: boolean;
+  maxItemsForReduce?: number;
+};
+
+type AggregateTransformOptions<
+  Context,
+  SourceItem,
+  TargetItem,
+  MappedItem,
+  ReducedItem,
+> = BaseAggregateTransformOptions & {
   parseSourceItem: (value: string) => SourceItem;
   parseTargetItem: (value: string) => TargetItem;
   serializeTargetItem: (value: TargetItem) => string;
   getTimestampMs: (sourceKey: string) => number;
-  // If `true` then any change of source data inside of interval
-  // will trigger full interval rebuilding
-  fullRecalculationRequired?: boolean;
+  getTargetKey?: (intervalTimestampMs: number) => string;
 
-  maxItemsForReduce?: number;
-
+  extractContext: (context: Context) => {database: Database; logger: Logger};
   mapFilter: (
     options: IntervalData<TargetItem> & {
       timestampMs: number;
@@ -66,34 +72,36 @@ type AggregateTransformOptions<
     // Return `null` if item should be ignored
   ) => MappedItem | null;
 } & (
-  | {
-      // `parallel` means that if we have items [A, B, C, D, E, F] then there can be:
-      //   - parallelReduce({..., items: [A, B]}) -> reducedAB
-      //   - parallelReduce({..., items: [A, B]}) -> reducedCD
-      //   - parallelReduce({..., items: [E, F]}) -> reducedEF
-      //   - merge({..., items: [reducedAB, reducedCD]}) -> mergedABCD
-      //   - merge({..., items: [mergedABCD, reducedEF]}) -> mergedABCDEF
-      //   - apply({..., mergedItem: mergedABCDEF}) -> newTargetItem
-      parallelReduce: (
-        options: IntervalData<TargetItem> & {
-          accumulator: ReducedItem | undefined;
-          items: ItemChange<MappedItem>[];
-        },
-      ) => ReducedItem;
-      getInitialAccumulator?: never;
-      getEmptyAccumulator?: never;
-    }
-  | {
-      parallelReduceWithInitialAccumulator: (
-        options: IntervalData<TargetItem> & {
-          accumulator: ReducedItem;
-          items: ItemChange<MappedItem>[];
-        },
-      ) => ReducedItem;
-      getInitialAccumulator: (options: IntervalData<TargetItem>) => ReducedItem;
-      getEmptyAccumulator: () => ReducedItem;
-    }
-) & {
+    | {
+        // `parallel` means that if we have items [A, B, C, D, E, F] then there can be:
+        //   - parallelReduce({..., items: [A, B]}) -> reducedAB
+        //   - parallelReduce({..., items: [A, B]}) -> reducedCD
+        //   - parallelReduce({..., items: [E, F]}) -> reducedEF
+        //   - merge({..., items: [reducedAB, reducedCD]}) -> mergedABCD
+        //   - merge({..., items: [mergedABCD, reducedEF]}) -> mergedABCDEF
+        //   - apply({..., mergedItem: mergedABCDEF}) -> newTargetItem
+        parallelReduce: (
+          options: IntervalData<TargetItem> & {
+            accumulator: ReducedItem | undefined;
+            items: ItemChange<MappedItem>[];
+          },
+        ) => ReducedItem;
+        getInitialAccumulator?: never;
+        getEmptyAccumulator?: never;
+      }
+    | {
+        parallelReduceWithInitialAccumulator: (
+          options: IntervalData<TargetItem> & {
+            accumulator: ReducedItem;
+            items: ItemChange<MappedItem>[];
+          },
+        ) => ReducedItem;
+        getInitialAccumulator: (
+          options: IntervalData<TargetItem>,
+        ) => ReducedItem;
+        getEmptyAccumulator: () => ReducedItem;
+      }
+  ) & {
     merge: (
       options: IntervalData<TargetItem> & {
         items: ReducedItem[];
@@ -108,12 +116,14 @@ type AggregateTransformOptions<
   };
 
 export const createAggregateByTimestampTransform = <
+  Context,
   SourceItem,
   TargetItem,
   MappedItem,
   ReducedItem,
 >(
   options: AggregateTransformOptions<
+    Context,
     SourceItem,
     TargetItem,
     MappedItem,
@@ -124,21 +134,19 @@ export const createAggregateByTimestampTransform = <
     interval,
     targetCollectionName,
     sourceCollectionName,
-    fullRecalculationRequired,
+    fullRecalculationRequired = false,
     targetFromSourceReaderName,
     parseSourceItem,
     parseTargetItem,
     serializeTargetItem,
     getTimestampMs,
+    getTargetKey = (timestamp) => new Date(timestamp).toISOString(),
+    extractContext,
     mapFilter,
     maxItemsForReduce = 100,
     merge,
     apply,
   } = options;
-
-  const getTargetKey = (intervalTs: number) => {
-    return new Date(intervalTs).toISOString();
-  };
 
   switch (interval) {
     case AggregateInterval.WEEK:
@@ -151,8 +159,7 @@ export const createAggregateByTimestampTransform = <
   }
 
   return async ({context}) => {
-    const {database, logger: rootLogger} = context;
-    const db = database.getDiffbelt();
+    const {database: db, logger: rootLogger} = extractContext(context);
 
     const logger = rootLogger.fork(
       `aggregate:${sourceCollectionName}>${targetCollectionName}`,
@@ -426,7 +433,7 @@ export const createAggregateByTimestampTransform = <
           }
 
           const iteratorResult = reducedItems.values().next();
-          if (iteratorResult.done) {
+          if (iteratorResult.done ?? false) {
             throw new Error('finish: impossible, no item');
           }
 
@@ -440,7 +447,8 @@ export const createAggregateByTimestampTransform = <
           });
 
           const key = getTargetKey(intervalTimestampMs);
-          const value = targetItem ? serializeTargetItem(targetItem) : null;
+          const value =
+            targetItem !== null ? serializeTargetItem(targetItem) : null;
 
           await targetCollection.put({key, value, generationId});
         })
@@ -483,7 +491,7 @@ export const createAggregateByTimestampTransform = <
         scheduleIntervalReduce({
           intervalTimestampMs: currentIntervalTs,
           changes: currentIntervalChanges,
-          prevTargetItem,
+          prevTargetItem: currentPrevTargetItem,
         });
         scheduleIntervalFinish(currentIntervalTs);
 
@@ -503,7 +511,7 @@ export const createAggregateByTimestampTransform = <
         scheduleIntervalReduce({
           intervalTimestampMs: currentIntervalTs,
           changes: currentIntervalChanges,
-          prevTargetItem,
+          prevTargetItem: currentPrevTargetItem,
         });
 
         currentIntervalChanges = {
@@ -586,7 +594,7 @@ export const createAggregateByTimestampTransform = <
       }
     }
 
-    if (currentIntervalTs && currentIntervalChanges) {
+    if (typeof currentIntervalTs === 'number' && currentIntervalChanges) {
       scheduleIntervalReduce({
         intervalTimestampMs: currentIntervalTs,
         changes: currentIntervalChanges,

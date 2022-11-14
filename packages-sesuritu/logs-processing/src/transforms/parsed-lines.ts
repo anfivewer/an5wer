@@ -4,7 +4,7 @@ import {
   PARSED_LINES_COLLECTION_NAME,
   PARSED_LINES_LOG_LINES_READER_NAME,
 } from '../database/structure';
-import {diffCollection} from '@-/diffbelt-server/src/util/database/queries/diff';
+import {diffCollection} from '@-/diffbelt-util/src/queries/diff';
 import {KeyValueUpdate} from '@-/diffbelt-types/src/database/types';
 import {maybeParseLogLine} from '@-/util/src/logging/parser';
 

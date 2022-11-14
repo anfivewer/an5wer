@@ -44,6 +44,18 @@ export const restoreMemoryDatabase = async ({
           collection._restoreItems(part);
           break;
         }
+        case 'generation':
+        case 'nextGeneration': {
+          const {collectionName} = part;
+          const collection = database._getCollection(collectionName);
+
+          if (!collection) {
+            throw new Error(`bad dump, no such collection ${collectionName}`);
+          }
+
+          collection._restoreGeneration(part);
+          break;
+        }
         case 'readers': {
           const {collectionName} = part;
           const collection = database._getCollection(collectionName);
