@@ -17,7 +17,7 @@ export const AdminPageEntry: FC<{state: AdminPageState}> = ({state}) => {
 
   return (
     <AdminMstContext.Provider value={store}>
-      <AdminPage state={state} />
+      <AdminPage />
     </AdminMstContext.Provider>
   );
 };
