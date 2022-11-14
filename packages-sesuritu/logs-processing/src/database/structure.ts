@@ -1,3 +1,5 @@
+import {CollectionsStructure} from '@-/diffbelt-util/src/database/initialize-structure';
+
 // keys are log lines
 // (normalized by moving timestamp in the line start),
 // value is empty
@@ -22,17 +24,7 @@ export const KICKS_PER_HOUR_KICKS_READER_NAME = 'kicks';
 export const KICKS_PER_DAY_COLLECTION_NAME = 'kicks:1d';
 export const KICKS_PER_DAY_KICKS_READER_NAME = 'kicks:1h';
 
-type CollectionReaderDef = {
-  name: string;
-  collectionName: string | undefined;
-};
-type CollectionDef = {
-  name: string;
-  isManual?: boolean;
-  readers?: CollectionReaderDef[];
-};
-
-export const collections: CollectionDef[] = [
+export const collections: CollectionsStructure = [
   {name: LOG_LINES_COLLECTION_NAME},
   {
     name: PARSED_LINES_COLLECTION_NAME,

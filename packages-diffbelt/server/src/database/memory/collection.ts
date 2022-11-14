@@ -17,6 +17,7 @@ import {
   NoSuchCursorError,
   NoSuchReaderError,
   OutdatedGenerationError,
+  UnsupportedActionOnNonManualCollectionError,
 } from '@-/diffbelt-types/src/database/errors';
 import {CollectionQueryCursor} from './query-cursor';
 import {CursorStartKey, MemoryDatabaseStorage} from './types';
@@ -565,6 +566,10 @@ export class MemoryDatabaseCollection implements Collection {
   startGeneration: Collection['startGeneration'] = this.wrapFn(
     {isWriter: true},
     async ({generationId, abortOutdated = false}) => {
+      if (!this._isManual) {
+        throw new UnsupportedActionOnNonManualCollectionError();
+      }
+
       await (() => {
         const nextGenerationId = this.nextGeneration?.getGenerationId();
 
@@ -599,7 +604,7 @@ export class MemoryDatabaseCollection implements Collection {
         throw new OutdatedGenerationError();
       }
       if (!this._isManual) {
-        throw new CannotPutInManualCollectionError();
+        throw new UnsupportedActionOnNonManualCollectionError();
       }
 
       updateReaders?.forEach(({readerId}) => {
@@ -638,7 +643,7 @@ export class MemoryDatabaseCollection implements Collection {
         throw new OutdatedGenerationError();
       }
       if (!this._isManual) {
-        throw new CannotPutInManualCollectionError();
+        throw new UnsupportedActionOnNonManualCollectionError();
       }
 
       await this._rwLock.blockWrite(() => {
