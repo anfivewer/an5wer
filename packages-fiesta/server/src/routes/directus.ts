@@ -1,5 +1,5 @@
 import {createProxyServer} from 'http-proxy';
-import {Logger} from '@-/util/src/logging/types';
+import {Logger} from '@-/types/src/logging/logging';
 import {Context} from '../types/context';
 
 export const registerDirectusRoute = ({

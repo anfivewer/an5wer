@@ -1,4 +1,4 @@
-import {Logger} from '../logging/types';
+import {Logger} from '@-/types/src/logging/logging';
 import type {StatsDistributionLogger as StatsDistributionLoggerType} from './types';
 
 type LogStatsFn = (stats: Record<string, number>) => void;
@@ -14,6 +14,7 @@ export type StatsDistributionLoggerOptions = {
 const FIVE_MINUTES_MS = 5 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
 
+/** @deprecated */
 export class StatsDistributionLogger implements StatsDistributionLoggerType {
   private logStats: LogStatsFn;
   private values: number[] = [];
@@ -123,6 +124,7 @@ const calcPercentile = (sortedArray: number[], p: number): number => {
   return a + (b - a) / 2;
 };
 
+/** @deprecated */
 export const createStatsDistributionLogger = ({
   name,
   logger,

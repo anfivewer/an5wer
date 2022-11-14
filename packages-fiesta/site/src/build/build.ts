@@ -2,7 +2,12 @@ import {resolve as pathResolve} from 'path';
 import childProcess from 'child_process';
 import {readFile, writeFile} from 'fs/promises';
 import {array, object, optional, record, string, infer as Infer} from 'zod';
-import {EntryManifest} from '@-/fiesta-types/src/server/manifest';
+import {EntryManifest} from '@-/types/src/frontend/entry-manifest';
+import {SiteManifest} from '@-/fiesta-types/src/server/manifest';
+import {
+  FiestaRenderPage,
+  FiestaRenderPageEnum,
+} from '@-/fiesta-types/src/site/pages';
 
 const ENTRIES = [
   {entrySrc: 'src/entries/main-client.tsx', entryName: 'root'},
@@ -59,11 +64,22 @@ const main = async () => {
         }),
       ),
     ).then((manifests) => {
-      const result: Record<string, EntryManifest> = {};
+      const entries: SiteManifest['entries'] = {};
+      const result: SiteManifest = {
+        version: 1,
+        entries,
+        ssrEntries: ['server'],
+      };
 
       manifests.forEach((manifest) => {
-        result[manifest.name] = manifest;
+        entries[manifest.name as FiestaRenderPage] = manifest;
       });
+
+      for (const key of FiestaRenderPageEnum.options) {
+        if (!entries[key]) {
+          throw new Error(`Entry ${key} is not present`);
+        }
+      }
 
       return writeFile(
         resolve('dist/server/manifest.json'),

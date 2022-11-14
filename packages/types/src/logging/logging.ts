@@ -1,7 +1,16 @@
+import {literal, union} from 'zod';
+import {ZodInfer} from '../zod/zod';
+
+export type LogFnProps = Record<
+  string,
+  string | number | boolean | undefined | null
+>;
+export type LogFnOptions = {extra?: unknown; error?: unknown};
+
 export type LogFn = (
   key: string,
-  props?: Record<string, string | number | boolean | undefined | null>,
-  options?: {extra?: unknown; error?: unknown},
+  props?: LogFnProps,
+  options?: LogFnOptions,
 ) => void;
 
 export type Logger = {
@@ -13,7 +22,7 @@ export type Logger = {
   fork: (key: string) => Logger;
 };
 
-export const enum LogLevel {
+export enum LogLevel {
   TRACE = 1,
   INFO = 2,
   WARNING = 3,
@@ -33,7 +42,17 @@ export function logLevelNameToLevel(name = ''): LogLevel {
   );
 }
 
-export const logLevelToLetter = (level: LogLevel): string => {
+export const LogLevelLetter = union([
+  literal('T'),
+  literal('I'),
+  literal('W'),
+  literal('E'),
+  literal('S'),
+  literal('?'),
+]);
+export type LogLevelLetter = ZodInfer<typeof LogLevelLetter>;
+
+export const logLevelToLetter = (level: LogLevel): LogLevelLetter => {
   switch (level) {
     case LogLevel.TRACE:
       return 'T';

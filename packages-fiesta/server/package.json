@@ -7,8 +7,7 @@
     "start:pm2:prod": "NODE_ENV=production pm2 start --name $FIESTA_PM2_NAME -l $FIESTA_PM2_LOG_FILE --wait-ready --listen-timeout 10000 --interpreter `which ts-node` src/main.ts",
     "stop:pm2:prod": "pm2 stop $FIESTA_PM2_NAME",
     "watch": "nodemon --signal SIGINT --watch src --exec ts-node -T src/main.ts",
-    "tsc": "tsc",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "tsc": "tsc"
   },
   "author": "Alexander Ruliov <alexander.rulov@gmail.com>",
   "license": "ISC",

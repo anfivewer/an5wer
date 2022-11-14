@@ -1,0 +1,19 @@
+{
+  "name": "@-/diffbelt-util",
+  "version": "0.0.1",
+  "description": "",
+  "scripts": {
+    "tsc": "tsc"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@-/diffbelt-types": "workspace:*",
+    "@-/types": "workspace:*",
+    "@-/util": "workspace:*",
+    "typescript": "4.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "17.0.42"
+  }
+}

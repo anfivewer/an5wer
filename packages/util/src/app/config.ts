@@ -56,7 +56,7 @@ export const createGetConfig = <T>(
     const getNonEmptyString = (name: string, defaultValue?: string): string => {
       const value = process.env[name];
       if (!value) {
-        if (defaultValue) {
+        if (typeof defaultValue === 'string') {
           return defaultValue;
         }
 

@@ -4,6 +4,8 @@
   become_method: su
 
   tasks:
+    - name: load global vars
+      include_vars: ../../../../packages/deploy/src/ansible/vars.public.yml
     - name: load vars
       include_vars: vars.yml
 
@@ -31,7 +33,7 @@
       git:
         repo: 'https://github.com/nvm-sh/nvm.git'
         dest: /home/fiesta/nvm
-        version: a82edf40ba72a15b1d40822735942141547f38e2
+        version: '{{ nvm_version }}'
       become: yes
 
     - name: create statics dir

@@ -1,6 +1,6 @@
 import {DependenciesGraph} from '@-/util/src/async/dependencies-graph';
 import {HttpServer} from '@-/util/src/http-server/http-server';
-import {Logger} from '@-/util/src/logging/types';
+import {Logger} from '@-/types/src/logging/logging';
 import {Sessions} from '../sessions/sessions';
 import {Config} from '../types/config';
 import {Context} from '../types/context';
@@ -59,7 +59,7 @@ export const createContext = ({
   // Validate that we are not forgot some field
   for (const [key, value] of Object.entries(context)) {
     if (value === notFilled) {
-      throw new Error(`Config ${key} not filled`);
+      throw new Error(`Config key '${key}' not filled`);
     }
   }
 

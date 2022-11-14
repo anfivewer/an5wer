@@ -6,12 +6,12 @@
     "start:fiesta": "cd packages-fiesta/server && npm run start",
     "lint": "eslint '**/*.+(t|j)s+(x|)'",
     "tsc": "cd packages/util && npm run monorepo-scripts:run-tsc",
+    "test": "cd packages/util && npm run monorepo-scripts:run-test",
     "prettier": "prettier --check .",
     "prettier:write": "prettier --write .",
     "check": "npm run prettier && npm run lint && npm run tsc",
     "prepare": "husky install",
-    "precommit": "pretty-quick --staged && lint-staged -v",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "precommit": "pretty-quick --staged && lint-staged -v"
   },
   "author": "Alexander Ruliov <alexander.rulov@gmail.com>",
   "license": "ISC",

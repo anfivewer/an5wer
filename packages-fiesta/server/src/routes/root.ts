@@ -1,6 +1,6 @@
 import {FiestaRenderPage} from '@-/fiesta-types/src/site/pages';
 import {HttpResultType} from '@-/util/src/http-server/types';
-import {Logger} from '@-/util/src/logging/types';
+import {Logger} from '@-/types/src/logging/logging';
 import {Context} from '../types/context';
 
 export const registerRootRoute = ({

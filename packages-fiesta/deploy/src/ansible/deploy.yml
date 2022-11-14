@@ -29,7 +29,7 @@
           . {{ fiesta_home }}/nvm/nvm.sh &&
           cd {{ fiesta_home }}/an5wer-latest &&
           nvm install &&
-          (npm list -g pnpm@7.12.1 || npm install -g pnpm@7.12.1) &&
+          (npm list -g {{ pnpm_package }} || npm install -g {{ pnpm_package }}) &&
           pnpm install
         executable: /bin/bash
 

@@ -1,7 +1,7 @@
 import path from 'path';
 import {config} from 'dotenv';
 import {Config} from './types/config';
-import {Logger} from '@-/util/src/logging/types';
+import {Logger} from '@-/types/src/logging/logging';
 
 config({path: path.resolve(__dirname, '../../../.env')});
 

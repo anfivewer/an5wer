@@ -8,7 +8,11 @@ export const runApp = <Context extends {config: {isDebug: boolean}}>({
 }: {
   rootLoggerKey?: string;
   createApp: (options: {logger: Logger}) => Promise<App<Context>>;
-  afterReady?: (options: {logger: Logger; context: Context}) => Promise<void>;
+  afterReady?: (options: {
+    app: App<Context>;
+    logger: Logger;
+    context: Context;
+  }) => Promise<void>;
 }) => {
   const mainLogger = new Logger(rootLoggerKey);
   let appGlobal: App<Context> | undefined;
@@ -48,7 +52,7 @@ export const runApp = <Context extends {config: {isDebug: boolean}}>({
 
     process.send?.('ready');
 
-    await afterReady?.({logger: mainLogger, context});
+    await afterReady?.({app, logger: mainLogger, context});
   })().catch((error) => {
     mainLogger.error('start', undefined, {error});
 

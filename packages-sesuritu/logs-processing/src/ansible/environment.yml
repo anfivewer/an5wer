@@ -1,0 +1,25 @@
+- hosts: "{{ lookup('ansible.builtin.env', 'DEPLOY_HOSTS') }}"
+  gather_facts: no
+  become_method: su
+
+  tasks:
+    - name: load global vars
+      include_vars: ../../../../packages/deploy/src/ansible/vars.public.yml
+    - name: load vars
+      include_vars: vars.yml
+
+    - name: with vars
+      become_user: '{{ logs_user }}'
+      block:
+        - name: install apt packages
+          apt:
+            name:
+              - git
+            state: present
+
+        - name: clone nvm
+          git:
+            repo: 'https://github.com/nvm-sh/nvm.git'
+            dest: '{{ logs_nvm_path }}'
+            version: '{{ nvm_version }}'
+          become: yes

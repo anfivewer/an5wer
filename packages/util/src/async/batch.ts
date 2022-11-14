@@ -1,3 +1,4 @@
+import {IdlingStatus} from '../state/idling-status';
 import {Defer} from './defer';
 
 type HandleFn<T> = (items: T[]) => Promise<void>;
@@ -21,6 +22,8 @@ export class AsyncBatcher<T> {
   private batchExecutionDefer = new Defer();
   private isRunning = false;
   private items: T[] = [];
+  private idlingDefer: Defer | undefined;
+  private batchWaitersCount = new IdlingStatus();
 
   constructor({
     maxItems,
@@ -37,9 +40,15 @@ export class AsyncBatcher<T> {
   }
 
   batch = async (item: T): Promise<void> => {
+    if (!this.idlingDefer) {
+      this.idlingDefer = new Defer();
+    }
+
     // Block next batch collection while previous is handled
     // TODO: actually we can still collect next portion
-    await this.batchExecutionDefer.promise;
+    await this.batchWaitersCount.wrapTask(
+      () => this.batchExecutionDefer.promise,
+    );
 
     this.items.push(item);
 
@@ -63,6 +72,14 @@ export class AsyncBatcher<T> {
     }, this.delayMs);
   };
 
+  onIdle(): Promise<void> {
+    if (!this.idlingDefer) {
+      return Promise.resolve();
+    }
+
+    return this.idlingDefer.promise;
+  }
+
   private doHandle = async (): Promise<void> => {
     if (this.isRunning) {
       return;
@@ -85,6 +102,11 @@ export class AsyncBatcher<T> {
       } catch (error) {
         this.handleError(error);
       }
+    }
+
+    if (!this.batchWaitersCount.getActiveTasksCount() && this.idlingDefer) {
+      this.idlingDefer.resolve();
+      this.idlingDefer = undefined;
     }
 
     this.isRunning = false;
