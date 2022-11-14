@@ -16,3 +16,6 @@ export const CannotPutInManualCollectionError = createCustomError(
 );
 export const NoSuchReaderError = createCustomError('NoSuchReaderError');
 export const CursorCrashedError = createCustomError('CursorCrashedError');
+export const UnsupportedActionOnNonManualCollectionError = createCustomError(
+  'UnsupportedActionOnNonManualCollectionError',
+);

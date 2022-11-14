@@ -11,6 +11,7 @@ import {NonManualCommitRunner} from './non-manual-commit';
 import {CreateDatabaseFn} from './types';
 import {mapFilterTest} from './map-filter';
 import {aggregateByTimestampTest} from './aggregate-by-timestamp';
+import {uniqueCounterTest} from './unique-counter';
 
 export const databaseTest = <Db extends Database>({
   createDatabase,
@@ -206,6 +207,7 @@ export const databaseTest = <Db extends Database>({
 
   mapFilterTest({createDatabase});
   aggregateByTimestampTest({createDatabase});
+  uniqueCounterTest({createDatabase});
 };
 
 const makeId = (ts: number) => String(ts).padStart(11, '0');
