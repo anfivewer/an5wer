@@ -1,0 +1,13 @@
+.eventsList {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.eventRow {
+  display: inline-block;
+
+  &:hover {
+    cursor: pointer;
+  }
+}

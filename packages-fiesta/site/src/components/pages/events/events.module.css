@@ -1,0 +1,69 @@
+.button {
+  display: flex;
+  align-items: center;
+  font-family: 'Roboto Condensed', sans-serif;
+  border: none;
+  background: none;
+  height: 32px;
+  top: 32px;
+  left: 32px;
+  position: absolute;
+  width: 400px;
+  font-weight: 500;
+  font-size: 32px;
+  line-height: 32px;
+  cursor: pointer;
+}
+
+.arrow {
+  display: inline-block;
+  height: 42px;
+}
+
+.eventCards {
+  display: flex;
+  flex-direction: column;
+  flex-wrap: wrap;
+  margin: 96px 32px 32px;
+  gap: 48px;
+  justify-content: space-around;
+}
+
+.eventCard {
+  font-family: 'Roboto', sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-sizing: border-box;
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  padding: 8px;
+  margin-bottom: 16px;
+  font-size: 24px;
+  line-height: 24px;
+  flex-basis: 0;
+  flex-grow: 1;
+}
+
+.eventCard:nth-child(1) {
+  margin-right: 8px;
+}
+.eventCard:nth-child(2) {
+  margin-left: 8px;
+}
+.eventCardDate {
+  opacity: 0.5;
+}
+
+.eventCardKM {
+}
+
+.eventCardTitle {
+}
+
+.cardItem {
+}
+
+.cardsRow {
+  display: flex;
+  flex-direction: row;
+}

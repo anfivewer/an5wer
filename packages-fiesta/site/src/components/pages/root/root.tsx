@@ -2,6 +2,7 @@ import {observer} from 'mobx-react-lite';
 import React, {FC, ReactNode} from 'react';
 import {useRootMst} from '../../../contexts/root';
 import {PageName} from '../../../state/root/pages/name';
+import {EventsPage} from '../events/events';
 import {Fiesta} from '../fiesta/fiesta';
 
 const RootPage: FC = () => {
@@ -16,6 +17,7 @@ const RootPage: FC = () => {
       content = <Fiesta state={store.serverState} />;
       break;
     case PageName.carEvents:
+      content = <EventsPage />;
       break;
     default: {
       const shouldBeNever: never = page;

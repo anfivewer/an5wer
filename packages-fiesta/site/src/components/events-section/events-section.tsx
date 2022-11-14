@@ -4,6 +4,7 @@ import {dateToStr, mileageToStr} from './utils';
 import {CarEvent} from '@-/fiesta-types/src/data/events';
 import typoStyles from '../../css/typography.module.css';
 import utilStyles from '../../css/utility.module.css';
+import styles from './events-section.module.css';
 
 type EventsSectionProps = {
   className?: string;
@@ -27,7 +28,11 @@ const EventRow: FC<{
 
   return (
     <div
-      className={cn(typoStyles.regular24_24, utilStyles.marginTop4)}
+      className={cn(
+        styles.eventRow,
+        typoStyles.regular24_24,
+        utilStyles.marginTop4,
+      )}
       onClick={handleClick}
     >
       {mileageStr}
@@ -58,7 +63,7 @@ export const EventsSection: FC<EventsSectionProps> = ({
   return (
     <div className={cn(className, utilStyles.flexCol)}>
       <h2 className={typoStyles.header32_32}>{title}</h2>
-      <div>
+      <div className={styles.eventsList}>
         {events.map((event, i) => (
           <EventRow key={i} event={event} onClick={onEventClick} />
         ))}
