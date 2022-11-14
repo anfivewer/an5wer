@@ -37,6 +37,7 @@ import {
 import {IdlingStatus} from '@-/util/src/state/idling-status';
 import {RwLock} from '@-/util/src/async/rw-lock';
 import {CollectionGeneration} from './generation';
+import {binarySearch} from '@-/util/src/array/binary-search';
 
 export class MemoryDatabaseCollection implements Collection {
   private name: string;
@@ -406,6 +407,51 @@ export class MemoryDatabaseCollection implements Collection {
       });
     }
 
+    const fromPos = (() => {
+      if (fromGenerationId === null) {
+        return 0;
+      }
+
+      const pos = binarySearch({
+        sortedArray: this.generationsList,
+        comparator: (item) => {
+          if (fromGenerationId < item.getGenerationId()) return -1;
+          if (fromGenerationId > item.getGenerationId()) return 1;
+          return 0;
+        },
+        returnInsertPos: true,
+      });
+
+      if (pos < 0 || pos >= this.generationsList.length) {
+        throw new Error('fromGeneration not found');
+      }
+
+      if (this.generationsList[pos].getGenerationId() === fromGenerationId) {
+        return pos + 1;
+      }
+
+      return pos;
+    })();
+
+    const toPos = (() => {
+      const pos = binarySearch({
+        sortedArray: this.generationsList,
+        comparator: (item) => {
+          if (toGenerationId < item.getGenerationId()) return -1;
+          if (toGenerationId > item.getGenerationId()) return 1;
+          return 0;
+        },
+      });
+
+      if (pos < 0) {
+        throw new Error('toGeneration not found');
+      }
+
+      return pos + 1;
+    })();
+
+    const generationsList = this.generationsList.slice(fromPos, toPos);
+
     const createCursor = (
       prevCursorId: string | undefined,
       startKey: CursorStartKey | undefined,
@@ -415,6 +461,7 @@ export class MemoryDatabaseCollection implements Collection {
         storage: this.storage,
         fromGenerationId,
         toGenerationId,
+        generationsList,
         maxItemsInPack: this.maxItemsInPack,
         createNextCursor: ({nextStartKey}) => {
           if (typeof prevCursorId === 'string') {

@@ -3,6 +3,7 @@ import {
   DiffResultItems,
   DiffResultValues,
 } from '@-/diffbelt-types/src/database/types';
+import {CollectionGeneration} from './generation';
 import {createMemoryStorageTraverser} from './storage';
 import {CursorStartKey, MemoryDatabaseStorage} from './types';
 
@@ -11,6 +12,8 @@ export class CollectionDiffCursor {
   private storage: MemoryDatabaseStorage;
   private fromGenerationId: string | null;
   private toGenerationId: string;
+  // TODO: use for optimization, to not read whole collection
+  private generationsList: CollectionGeneration[];
   private maxItemsInPack: number;
   private createNextCursor: (options: {nextStartKey: CursorStartKey}) => {
     cursorId: string;
@@ -21,6 +24,7 @@ export class CollectionDiffCursor {
     storage,
     fromGenerationId,
     toGenerationId,
+    generationsList,
     maxItemsInPack,
     createNextCursor,
   }: {
@@ -28,6 +32,7 @@ export class CollectionDiffCursor {
     storage: MemoryDatabaseStorage;
     fromGenerationId: string | null;
     toGenerationId: string;
+    generationsList: CollectionDiffCursor['generationsList'];
     maxItemsInPack: number;
     createNextCursor: (options: {nextStartKey: CursorStartKey}) => {
       cursorId: string;
@@ -37,6 +42,7 @@ export class CollectionDiffCursor {
     this.storage = storage;
     this.fromGenerationId = fromGenerationId;
     this.toGenerationId = toGenerationId;
+    this.generationsList = generationsList;
     this.maxItemsInPack = maxItemsInPack;
     this.createNextCursor = createNextCursor;
   }
