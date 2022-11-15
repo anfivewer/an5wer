@@ -1,69 +1,77 @@
-.button {
+@import '../../../css/typography.module.css';
+@import '../../../css/variables.css';
+
+.page {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.titleContainer {
+  display: flex;
+  padding: var(--size-8);
+}
+
+.backButton {
+  @mixin font-header-32-32;
   display: flex;
   align-items: center;
-  font-family: 'Roboto Condensed', sans-serif;
   border: none;
   background: none;
-  height: 32px;
-  top: 32px;
-  left: 32px;
-  position: absolute;
-  width: 400px;
-  font-weight: 500;
-  font-size: 32px;
-  line-height: 32px;
+  height: var(--size-8);
+  top: var(--size-8);
+  left: var(--size-8);
   cursor: pointer;
 }
 
 .arrow {
   display: inline-block;
-  height: 42px;
+  height: var(--size-11);
 }
 
 .eventCards {
   display: flex;
   flex-direction: column;
   flex-wrap: wrap;
-  margin: 96px 32px 32px;
-  gap: 48px;
+  margin: var(--size-8);
   justify-content: space-around;
-}
-
-.eventCard {
-  font-family: 'Roboto', sans-serif;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  box-sizing: border-box;
-  border: 1px solid rgba(0, 0, 0, 0.5);
-  padding: 8px;
-  margin-bottom: 16px;
-  font-size: 24px;
-  line-height: 24px;
-  flex-basis: 0;
-  flex-grow: 1;
-}
-
-.eventCard:nth-child(1) {
-  margin-right: 8px;
-}
-.eventCard:nth-child(2) {
-  margin-left: 8px;
-}
-.eventCardDate {
-  opacity: 0.5;
-}
-
-.eventCardKM {
-}
-
-.eventCardTitle {
-}
-
-.cardItem {
 }
 
 .cardsRow {
   display: flex;
   flex-direction: row;
+}
+
+.cardContainer {
+  flex-basis: 0;
+  flex-grow: 1;
+  padding: var(--size-2);
+  margin-bottom: var(--size-4);
+  gap: var(--size-12);
+
+  &.withoutBorder {
+    border: none;
+  }
+}
+
+.eventCard {
+  @mixin font-regular24_24;
+  display: flex;
+  flex-direction: column;
+  gap: var(--size-2);
+  box-sizing: border-box;
+  border: 1px solid var(--color-text-secondary);
+  padding: var(--size-2);
+  margin-bottom: var(--size-4);
+}
+
+.eventCard:nth-child(1) {
+  margin-right: var(--size-2);
+}
+
+.eventCard:nth-child(2) {
+  margin-left: var(--size-2);
+}
+
+.eventCardDate {
+  opacity: 0.5;
 }

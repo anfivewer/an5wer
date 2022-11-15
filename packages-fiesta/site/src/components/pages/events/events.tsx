@@ -13,10 +13,8 @@ const EventCard: FC<{className?: string; event: CarEvent}> = ({
   const {title, date, description, mileageKm, type} = event;
   return (
     <div className={cn(className, styles.eventCard)}>
-      <div className={styles.eventCardTitle}>
-        {mileageKm ? (
-          <span className={styles.eventCardKM}>{mileageKm} км</span>
-        ) : null}
+      <div>
+        {mileageKm ? <span>{mileageKm} км</span> : null}
         {mileageKm && date ? ' ' : null}
         {date ? (
           <span className={styles.eventCardDate}>
@@ -25,7 +23,7 @@ const EventCard: FC<{className?: string; event: CarEvent}> = ({
           </span>
         ) : null}
       </div>
-      <div className={styles.eventCardTitle}>
+      <div>
         {type === CarEventType.fuel ? '⛽︎' : null}
         {type === CarEventType.odometer ? '🚙💨' : null}
         {type === CarEventType.accident ? '🚨' : null}
@@ -59,22 +57,29 @@ export const EventsPage: FC = () => {
     const second = serverState.events[i + 1];
 
     eventPairs.push([
-      <EventCard className={styles.cardItem} event={first} />,
+      <EventCard className={styles.cardContainer} event={first} />,
       second ? (
-        <EventCard className={styles.cardItem} event={second} />
+        <EventCard className={styles.cardContainer} event={second} />
       ) : (
-        <div className={styles.cardItem} />
+        <div
+          className={cn(
+            styles.cardContainer,
+            styles.eventCard,
+            styles.withoutBorder,
+          )}
+        />
       ),
     ]);
   }
 
   return (
-    <div>
-      <button className={styles.button} onClick={goBack}>
-        <span className={styles.arrow}>←</span> Последние события
-      </button>
+    <div className={styles.page}>
+      <div className={styles.titleContainer}>
+        <button className={styles.backButton} onClick={goBack}>
+          <span className={styles.arrow}>←</span> Последние события
+        </button>
+      </div>
       <div className={styles.eventCards}>
-        <EventCard event={serverState.events[0]} />
         {eventPairs.map(([first, second]) => (
           <div className={styles.cardsRow}>
             {first}

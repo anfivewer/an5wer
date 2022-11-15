@@ -10,7 +10,7 @@ export const RootPageSsr: FC<{state: RootPageState}> = ({state}) => {
   const [{store, dispatch}] = useState(() => {
     const store = RootMst.create({
       page: {
-        name: PageName.carEvents,
+        name: PageName.car,
       },
       serverState: state,
     });
