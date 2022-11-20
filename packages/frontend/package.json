@@ -24,7 +24,7 @@
     "sass": "1.55.0",
     "typescript": "4.8.3",
     "vite": "2.9.9",
-    "vite-plugin-sass-dts": "git+https://github.com/Rulexec/vite-plugin-sass-dts.git#3a8629ba89cadd46beda1d668b03ae77e31284bc",
+    "vite-plugin-sass-dts": "git+https://github.com/Rulexec/vite-plugin-sass-dts.git#e649921b58c44f12d21298f7f676d5a2033b4a43",
     "zod": "3.17.3"
   },
   "devDependencies": {

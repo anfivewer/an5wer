@@ -9,6 +9,11 @@ import {
   FiestaRenderPageEnum,
 } from '@-/fiesta-types/src/site/pages';
 
+const ENTRIES = [
+  {entrySrc: 'src/entries/main-client.tsx', entryName: 'root'},
+  {entrySrc: 'src/entries/admin-client.tsx', entryName: 'admin'},
+];
+
 const PackageJson = object({
   version: string(),
 });
@@ -50,10 +55,7 @@ const main = async () => {
 
   await Promise.all([
     Promise.all(
-      [
-        {entrySrc: 'src/entries/main-client.tsx', entryName: 'root'},
-        {entrySrc: 'src/entries/admin-client.tsx', entryName: 'admin'},
-      ].map(({entrySrc, entryName}) =>
+      ENTRIES.map(({entrySrc, entryName}) =>
         processClientEntries({
           entrySrc,
           entryName,

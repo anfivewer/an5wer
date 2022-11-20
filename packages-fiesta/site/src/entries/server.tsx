@@ -7,7 +7,7 @@ import {readFile} from 'fs/promises';
 import {join} from 'path';
 import React, {ComponentType, FC} from 'react';
 import ReactDOMServer from 'react-dom/server';
-import {Fiesta} from '../components/pages/fiesta/fiesta';
+import {RootPageSsr} from '../components/pages/root/root-ssr';
 import {getAdminPageState} from '../state/admin/admin';
 import {getRootPageState} from '../state/root/root';
 import {GetStateFn} from '../state/types';
@@ -31,7 +31,7 @@ const createEntry = <T,>(options: {
 
 const entryPages = {
   [FiestaRenderPage.root]: createEntry({
-    component: Fiesta,
+    component: RootPageSsr,
     getState: getRootPageState,
     devClient: '/src/entries/main-client.tsx',
   }),

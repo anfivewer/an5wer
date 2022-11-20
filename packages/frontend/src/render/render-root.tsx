@@ -5,8 +5,13 @@ import {SiteServerState} from './types';
 export type RenderRootBaseOptions<ServerState> = {
   stateKey: string;
   stateParser: {parse: (value: unknown) => ServerState};
-  Component: ComponentType<{state: ServerState}>;
-};
+} & (
+  | {isTrivialComponent: true; Component: ComponentType<Record<string, never>>}
+  | {
+      isTrivialComponent?: undefined;
+      Component: ComponentType<{state: ServerState}>;
+    }
+);
 
 export const renderRoot = <ServerState, DerivedState = undefined>(
   options: RenderRootBaseOptions<ServerState> &
@@ -27,7 +32,14 @@ export const renderRoot = <ServerState, DerivedState = undefined>(
         }
     ),
 ) => {
-  const {stateKey, stateParser, Component} = options;
+  const {stateKey, stateParser} = options;
+
+  const getComponentNode = (state: ServerState) =>
+    options.isTrivialComponent ? (
+      <options.Component />
+    ) : (
+      <options.Component state={state} />
+    );
 
   const {rootId, state: rawState} = SiteServerState.parse(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,12 +54,18 @@ export const renderRoot = <ServerState, DerivedState = undefined>(
     const derivedState = createDerivedState({state});
 
     getAppNode = () =>
-      wrap({children: <Component state={state} />, derivedState});
+      wrap({
+        children: getComponentNode(state),
+        derivedState,
+      });
   } else {
     const {wrap = noopWrap} = options;
 
     getAppNode = () =>
-      wrap({children: <Component state={state} />, derivedState: undefined});
+      wrap({
+        children: getComponentNode(state),
+        derivedState: undefined,
+      });
   }
 
   const rootEl = document.getElementById(rootId);

@@ -189,7 +189,7 @@ importers:
       ts-node: 10.8.1
       typescript: 4.8.3
       vite: 2.9.9
-      vite-plugin-sass-dts: git+https://github.com/Rulexec/vite-plugin-sass-dts.git#3a8629ba89cadd46beda1d668b03ae77e31284bc
+      vite-plugin-sass-dts: git+https://github.com/Rulexec/vite-plugin-sass-dts.git#e649921b58c44f12d21298f7f676d5a2033b4a43
       zod: 3.17.3
     dependencies:
       '@-/fiesta-types': link:../types
@@ -214,7 +214,7 @@ importers:
       sass: 1.55.0
       typescript: 4.8.3
       vite: 2.9.9_sass@1.55.0
-      vite-plugin-sass-dts: github.com/Rulexec/vite-plugin-sass-dts/3a8629ba89cadd46beda1d668b03ae77e31284bc_qazsemdudwvwysahtqgcgnpdaa
+      vite-plugin-sass-dts: github.com/Rulexec/vite-plugin-sass-dts/e649921b58c44f12d21298f7f676d5a2033b4a43_qazsemdudwvwysahtqgcgnpdaa
       zod: 3.17.3
     devDependencies:
       '@types/node': 17.0.42
@@ -385,7 +385,7 @@ importers:
       ts-node: 10.8.1
       typescript: 4.8.3
       vite: 2.9.9
-      vite-plugin-sass-dts: git+https://github.com/Rulexec/vite-plugin-sass-dts.git#3a8629ba89cadd46beda1d668b03ae77e31284bc
+      vite-plugin-sass-dts: git+https://github.com/Rulexec/vite-plugin-sass-dts.git#e649921b58c44f12d21298f7f676d5a2033b4a43
       zod: 3.17.3
     dependencies:
       '@-/types': link:../types
@@ -403,7 +403,7 @@ importers:
       sass: 1.55.0
       typescript: 4.8.3
       vite: 2.9.9_sass@1.55.0
-      vite-plugin-sass-dts: github.com/Rulexec/vite-plugin-sass-dts/3a8629ba89cadd46beda1d668b03ae77e31284bc_qazsemdudwvwysahtqgcgnpdaa
+      vite-plugin-sass-dts: github.com/Rulexec/vite-plugin-sass-dts/e649921b58c44f12d21298f7f676d5a2033b4a43_qazsemdudwvwysahtqgcgnpdaa
       zod: 3.17.3
     devDependencies:
       '@types/node': 17.0.42
@@ -12600,9 +12600,9 @@ packages:
     resolution: {integrity: sha512-4oKP5zvG6GGbMlqBkI5FESOAweldEhSOZ6LI6cG+JzUT7ofj1ZOC0PJudpQOpT1iqOFpYYtX5Pw0+o403y4bcg==}
     dev: false
 
-  github.com/Rulexec/vite-plugin-sass-dts/3a8629ba89cadd46beda1d668b03ae77e31284bc_qazsemdudwvwysahtqgcgnpdaa:
-    resolution: {tarball: https://codeload.github.com/Rulexec/vite-plugin-sass-dts/tar.gz/3a8629ba89cadd46beda1d668b03ae77e31284bc}
-    id: github.com/Rulexec/vite-plugin-sass-dts/3a8629ba89cadd46beda1d668b03ae77e31284bc
+  github.com/Rulexec/vite-plugin-sass-dts/e649921b58c44f12d21298f7f676d5a2033b4a43_qazsemdudwvwysahtqgcgnpdaa:
+    resolution: {tarball: https://codeload.github.com/Rulexec/vite-plugin-sass-dts/tar.gz/e649921b58c44f12d21298f7f676d5a2033b4a43}
+    id: github.com/Rulexec/vite-plugin-sass-dts/e649921b58c44f12d21298f7f676d5a2033b4a43
     name: vite-plugin-sass-dts
     version: 1.1.43
     prepare: true
