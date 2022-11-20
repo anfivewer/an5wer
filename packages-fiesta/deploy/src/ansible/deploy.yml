@@ -5,6 +5,8 @@
   become_method: su
 
   tasks:
+    - name: load global vars
+      include_vars: ../../../../packages/deploy/src/ansible/vars.public.yml
     - name: load vars
       include_vars: vars.yml
 
