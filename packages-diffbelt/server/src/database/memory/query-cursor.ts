@@ -1,4 +1,6 @@
 import {KeyValue, QueryResult} from '@-/diffbelt-types/src/database/types';
+import {searchGenerationInCurrentKey} from '../../util/database/traverse/generation';
+import {goNextKey} from '../../util/database/traverse/key';
 import {createMemoryStorageTraverser} from './storage';
 import {CursorStartKey, MemoryDatabaseStorage} from './types';
 
@@ -54,12 +56,12 @@ export class CollectionQueryCursor {
       };
     }
 
-    const traverser = (() => {
+    const api = (() => {
       if (!this.startKey) {
         return createMemoryStorageTraverser({
           storage: this.storage,
           initialPos: 0,
-        }).traverser;
+        }).api;
       }
 
       const {key, generationId} = this.startKey;
@@ -69,7 +71,8 @@ export class CollectionQueryCursor {
         key,
         generationId,
         exactGenerationId: true,
-      }).traverser;
+        // FIXME: FIXME:
+      }).api;
     })();
 
     let finishedByLimit = false;
@@ -78,11 +81,12 @@ export class CollectionQueryCursor {
     const items: KeyValue[] = [];
 
     while (true) {
-      const found = traverser.findGenerationRecord({
+      const found = searchGenerationInCurrentKey({
+        api,
         generationId: this.generationId,
       });
       if (!found) {
-        const hasNextKey = traverser.goNextKey();
+        const hasNextKey = goNextKey({api});
         if (!hasNextKey) {
           finishedByEnd = true;
           break;
@@ -91,8 +95,8 @@ export class CollectionQueryCursor {
         continue;
       }
 
-      const {key, value} = traverser.getItem();
-      const hasNextKey = traverser.goNextKey();
+      const {key, value} = api.getItem();
+      const hasNextKey = goNextKey({api});
 
       if (!hasNextKey) {
         finishedByEnd = true;
@@ -119,14 +123,14 @@ export class CollectionQueryCursor {
       }
 
       if (!finishedByLimit) {
-        const hasNextKey = traverser.goNextKey();
+        const hasNextKey = goNextKey({api});
 
         if (!hasNextKey) {
           return 'end';
         }
       }
 
-      const {key, generationId} = traverser.getItem();
+      const {key, generationId} = api.getItem();
       return {key, generationId};
     })();
 

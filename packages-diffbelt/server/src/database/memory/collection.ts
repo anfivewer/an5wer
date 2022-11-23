@@ -12,8 +12,6 @@ import {SingletonAsyncTask} from '@-/util/src/async/singleton';
 import {sleep} from '@-/util/src/async/sleep';
 import {assertNonNullable} from '@-/types/src/assert/runtime';
 import {
-  CannotPutInManualCollectionError,
-  NextGenerationIsNotStartedError,
   NoSuchCursorError,
   NoSuchReaderError,
   OutdatedGenerationError,
@@ -27,11 +25,11 @@ import {
   MemoryStorageTraverser,
   TraverserInitialItemNotFoundError,
 } from './storage';
-import {StorageTraverser} from '../../util/database/traverse/storage';
 import {
   PersistCollection,
   PersistCollectionGeneration,
   PersistCollectionItems,
+  PersistCollectionPhantoms,
   PersistCollectionReaders,
   PersistDatabasePart,
 } from '@-/diffbelt-types/src/database/persist/parts';
@@ -39,6 +37,10 @@ import {IdlingStatus} from '@-/util/src/state/idling-status';
 import {RwLock} from '@-/util/src/async/rw-lock';
 import {CollectionGeneration} from './generation';
 import {binarySearch} from '@-/util/src/array/binary-search';
+import {Phantoms} from './phantoms/phantoms';
+import {createGetMethod} from './methods/get';
+import {CreateMethodOptions} from './methods/types';
+import {createPutMethod} from './methods/put';
 
 export class MemoryDatabaseCollection implements Collection {
   private name: string;
@@ -51,6 +53,7 @@ export class MemoryDatabaseCollection implements Collection {
   private queryCursors = new Map<string, CollectionQueryCursor>();
   private diffCursors = new Map<string, CollectionDiffCursor>();
   private cursorIdGenerator = new AlphaGenerationIdGenerator();
+  private phantoms = new Phantoms();
   private readers = new Map<
     string,
     {
@@ -151,33 +154,7 @@ export class MemoryDatabaseCollection implements Collection {
 
   get: Collection['get'] = this.wrapFn(
     {},
-    ({key, generationId: requiredGenerationId}) => {
-      let traverser: StorageTraverser;
-
-      try {
-        traverser = createMemoryStorageTraverser({
-          storage: this.storage,
-          key,
-          generationId: requiredGenerationId,
-        }).traverser;
-      } catch (error) {
-        if (error instanceof TraverserInitialItemNotFoundError) {
-          return Promise.resolve({
-            generationId: requiredGenerationId ?? this.generationId,
-            item: null,
-          });
-        }
-
-        throw error;
-      }
-
-      const {value, generationId} = traverser.getItem();
-
-      return Promise.resolve({
-        generationId,
-        item: value !== null ? {key, value} : null,
-      });
-    },
+    createGetMethod(this.getCreateMethodOptions()),
   );
   query: Collection['query'] = this.wrapFn({}, ({generationId} = {}) => {
     const createCursor = (
@@ -269,93 +246,10 @@ export class MemoryDatabaseCollection implements Collection {
 
   put: Collection['put'] = this.wrapFn(
     {isWriter: true},
-    ({key, value, ifNotPresent = false, generationId}) => {
-      if (typeof generationId === 'string') {
-        if (
-          !this.nextGeneration ||
-          generationId !== this.nextGeneration.getGenerationId()
-        ) {
-          throw new OutdatedGenerationError();
-        }
-      } else if (this._isManual) {
-        throw new CannotPutInManualCollectionError();
-      } else if (!this.nextGeneration) {
-        throw new NextGenerationIsNotStartedError();
-      }
-
-      const recordGenerationId: string =
-        generationId ?? this.nextGeneration.getGenerationId();
-      assertNonNullable(recordGenerationId, 'put');
-
-      if (!this.storage.length) {
-        this.nextGeneration.addKey(key);
-        this.scheduleNonManualCommit();
-        this.storage.push({key, value, generationId: recordGenerationId});
-        return Promise.resolve({generationId: recordGenerationId});
-      }
-
-      const {traverser, getIndex} = createMemoryStorageTraverser({
-        storage: this.storage,
-        key,
-        exactKey: false,
-        generationId: recordGenerationId,
-      });
-
-      const place = traverser.goToInsertPosition({
-        key,
-        generationId: recordGenerationId,
-      });
-
-      if (place === 0) {
-        if (ifNotPresent) {
-          const {generationId: itemGenerationId} = this.storage[getIndex()];
-          return Promise.resolve({generationId: itemGenerationId});
-        }
-
-        this.nextGeneration.addKey(key);
-        this.storage[getIndex()].value = value;
-      } else {
-        const index = getIndex() + (place < 0 ? 0 : 1);
-
-        if (ifNotPresent) {
-          const itemGenerationId = (() => {
-            // Insert position only can be at item itself or be next to it,
-            // so check current index and the previous one
-            const checkItemPresent = (index: number): string | undefined => {
-              const {key: itemKey, generationId: itemGenerationId} =
-                this.storage[index];
-
-              return itemKey === key && itemGenerationId <= recordGenerationId
-                ? itemGenerationId
-                : undefined;
-            };
-
-            return (
-              (index < this.storage.length
-                ? checkItemPresent(index)
-                : undefined) ??
-              (index >= 1 ? checkItemPresent(index - 1) : undefined)
-            );
-          })();
-
-          if (typeof itemGenerationId === 'string') {
-            return Promise.resolve({generationId: itemGenerationId});
-          }
-        }
-
-        this.nextGeneration.addKey(key);
-        this.storage.splice(index, 0, {
-          key,
-          value,
-          generationId: recordGenerationId,
-        });
-      }
-
-      this.scheduleNonManualCommit();
-
-      return Promise.resolve({generationId: recordGenerationId});
-    },
+    createPutMethod(this.getCreateMethodOptions()),
   );
+
+  // FIXME:
   putMany: Collection['putMany'] = this.wrapFn(
     {isWriter: true},
     async ({items, generationId}) => {
@@ -372,6 +266,7 @@ export class MemoryDatabaseCollection implements Collection {
       return {generationId: this.nextGeneration.getGenerationId()};
     },
   );
+
   diff: Collection['diff'] = this.wrapFn({}, (options) => {
     const {toGenerationId: toGenerationIdRaw} = options;
 
@@ -553,16 +448,6 @@ export class MemoryDatabaseCollection implements Collection {
     },
   );
 
-  startTransaction: Collection['startTransaction'] = this.wrapFn({}, () => {
-    throw new Error('not implemented yet');
-  });
-  commitTransaction: Collection['commitTransaction'] = this.wrapFn({}, () => {
-    throw new Error('not implemented yet');
-  });
-  abortTransaction: Collection['abortTransaction'] = this.wrapFn({}, () => {
-    throw new Error('not implemented yet');
-  });
-
   startGeneration: Collection['startGeneration'] = this.wrapFn(
     {isWriter: true},
     async ({generationId, abortOutdated = false}) => {
@@ -679,6 +564,15 @@ export class MemoryDatabaseCollection implements Collection {
     },
   );
 
+  startPhantom: Collection['startPhantom'] = this.wrapFn(
+    {isWriter: true},
+    this.phantoms.startPhantom.bind(this.phantoms),
+  );
+  dropPhantom: Collection['dropPhantom'] = this.wrapFn(
+    {isWriter: true},
+    this.phantoms.dropPhantom.bind(this.phantoms),
+  );
+
   async _dump({
     pushDumpPart,
     isClosed,
@@ -742,6 +636,12 @@ export class MemoryDatabaseCollection implements Collection {
       readers: Array.from(this.readers.values()),
     });
 
+    pushDumpPart({
+      type: 'phantoms',
+      collectionName: this.name,
+      lastPhantomId: this.phantoms._getLastPhantomId(),
+    });
+
     let processedSize = 0;
 
     let items: PersistCollectionItems['items'] = [];
@@ -759,8 +659,8 @@ export class MemoryDatabaseCollection implements Collection {
       items = [];
     };
 
-    for (const {key, value, generationId} of this.storage) {
-      items.push({key, value, generationId});
+    for (const {key, value, generationId, phantomId} of this.storage) {
+      items.push({key, value, generationId, phantomId});
 
       processedSize += key.length + (value?.length ?? 0) + generationId.length;
       if (processedSize >= 256) {
@@ -779,8 +679,8 @@ export class MemoryDatabaseCollection implements Collection {
   }
 
   _restoreItems({items}: PersistCollectionItems): void {
-    items.forEach((item) => {
-      this.storage.push(item);
+    items.forEach(({phantomId, ...item}) => {
+      this.storage.push({...item, phantomId});
     });
   }
 
@@ -838,6 +738,10 @@ export class MemoryDatabaseCollection implements Collection {
     });
   }
 
+  _restorePhantoms(phantoms: PersistCollectionPhantoms): void {
+    this.phantoms._restore(phantoms);
+  }
+
   _cleanup({oldestGenerationId}: {oldestGenerationId: string | undefined}) {
     // TODO: do not go through whole collection, use keys inside generations
     this.generationsList =
@@ -849,19 +753,49 @@ export class MemoryDatabaseCollection implements Collection {
 
     const generationToStay = oldestGenerationId ?? this.generationId;
 
-    this.storage = this.storage.filter(({key, generationId}, index) => {
-      if (index >= this.storage.length - 2) {
-        return true;
+    this.phantoms.dropAllPhantoms();
+
+    // Take items by pairs
+    this.storage = this.storage.filter(
+      ({key, generationId, value, phantomId}, index) => {
+        if (phantomId !== undefined) {
+          return false;
+        }
+
+        if (index >= this.storage.length - 1) {
+          // Ignore last item, it has no next
+          return true;
+        }
+
+        const {key: nextItemKey} = this.storage[index + 1];
+
+        if (generationId < generationToStay && value === null) {
+          // If item was removed, we can loose it's tombstone
+          return false;
+        }
+
+        if (key !== nextItemKey) {
+          // key is changed, it means we are at last version of item,
+          // no need to delete
+          return true;
+        }
+
+        // Key not changed, check generation actuality
+        return generationId >= generationToStay;
+      },
+    );
+
+    if (this.storage.length) {
+      // Check skipped last item
+      const {phantomId, generationId, value} =
+        this.storage[this.storage.length - 1];
+      if (
+        phantomId !== undefined ||
+        (generationId < generationToStay && value === null)
+      ) {
+        this.storage.pop();
       }
-
-      const {key: nextItemKey} = this.storage[index + 1];
-
-      if (key !== nextItemKey) {
-        return true;
-      }
-
-      return generationId >= generationToStay;
-    });
+    }
 
     return Promise.resolve();
   }
@@ -878,5 +812,22 @@ export class MemoryDatabaseCollection implements Collection {
 
       return this._idling.wrapTask(() => fun(...args));
     };
+  }
+
+  private createMethodOptions: CreateMethodOptions | undefined;
+  private getCreateMethodOptions(): CreateMethodOptions {
+    if (this.createMethodOptions) {
+      return this.createMethodOptions;
+    }
+
+    this.createMethodOptions = {
+      isManual: this._isManual,
+      getGenerationId: () => this.generationId,
+      getNextGeneration: () => this.nextGeneration,
+      getStorage: () => this.storage,
+      scheduleNonManualCommit: this.scheduleNonManualCommit.bind(this),
+    };
+
+    return this.createMethodOptions;
   }
 }

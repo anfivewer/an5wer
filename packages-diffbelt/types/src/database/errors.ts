@@ -19,3 +19,4 @@ export const CursorCrashedError = createCustomError('CursorCrashedError');
 export const UnsupportedActionOnNonManualCollectionError = createCustomError(
   'UnsupportedActionOnNonManualCollectionError',
 );
+export const NoSuchPhantomError = createCustomError('NoSuchPhantomError');

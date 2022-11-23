@@ -12,6 +12,7 @@ export type KeyValueRecord = {
   key: string;
   value: string | null;
   generationId: string;
+  phantomId: string | undefined;
 };
 
 export type QueryResult = {
@@ -62,17 +63,22 @@ export type Collection = {
   get: (options: {
     key: string;
     generationId?: string;
-    transactionId?: string;
+    phantomId?: string;
   }) => Promise<{generationId: string; item: KeyValue | null}>;
-  query: (options?: {generationId?: string}) => Promise<QueryResult>;
+  query: (options?: {
+    generationId?: string;
+    phantomId?: string;
+  }) => Promise<QueryResult>;
   readQueryCursor: (options: {cursorId: string}) => Promise<QueryResult>;
 
   put: (
-    options: KeyValueUpdate & {transactionId?: string; generationId?: string},
+    options: KeyValueUpdate & {
+      generationId?: string;
+      phantomId?: string;
+    },
   ) => Promise<PutResult>;
   putMany: (options: {
     items: KeyValueUpdate[];
-    transactionId?: string;
     generationId?: string;
   }) => Promise<PutResult>;
   diff: (options: DiffOptions) => Promise<DiffResult>;
@@ -98,15 +104,6 @@ export type Collection = {
   }) => Promise<void>;
   deleteReader: (options: {readerId: string}) => Promise<void>;
 
-  startTransaction: () => Promise<{
-    transactionId: string;
-    generationId: string;
-  }>;
-  commitTransaction: (options: {
-    transactionId: string;
-  }) => Promise<{generationId: string}>;
-  abortTransaction: (options: {transactionId: string}) => Promise<void>;
-
   startGeneration: (options: {
     generationId: string;
     abortOutdated?: boolean;
@@ -119,6 +116,9 @@ export type Collection = {
     }[];
   }) => Promise<void>;
   abortGeneration: (options: {generationId: string}) => Promise<void>;
+
+  startPhantom: () => Promise<{phantomId: string}>;
+  dropPhantom: (options: {phantomId: string}) => Promise<void>;
 };
 
 export type Database = {

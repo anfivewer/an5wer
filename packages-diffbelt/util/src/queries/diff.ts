@@ -43,7 +43,7 @@ export const diffCollection = async (
   (async () => {
     let currentCursor = cursorId;
 
-    while (currentCursor) {
+    while (currentCursor !== undefined) {
       const {generationId, items, cursorId} = await collection.readDiffCursor({
         cursorId: currentCursor,
       });

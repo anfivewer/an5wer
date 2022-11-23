@@ -3,6 +3,11 @@ import {
   DiffResultItems,
   DiffResultValues,
 } from '@-/diffbelt-types/src/database/types';
+import {
+  goNextGenerationInCurrentKey,
+  searchGenerationInCurrentKey,
+} from '../../util/database/traverse/generation';
+import {goNextKey} from '../../util/database/traverse/key';
 import {CollectionGeneration} from './generation';
 import {createMemoryStorageTraverser} from './storage';
 import {CursorStartKey, MemoryDatabaseStorage} from './types';
@@ -70,12 +75,12 @@ export class CollectionDiffCursor {
       };
     }
 
-    const traverser = (() => {
+    const api = (() => {
       if (!this.startKey) {
         return createMemoryStorageTraverser({
           storage: this.storage,
           initialPos: 0,
-        }).traverser;
+        }).api;
       }
 
       const {key, generationId} = this.startKey;
@@ -85,7 +90,7 @@ export class CollectionDiffCursor {
         key,
         generationId,
         exactGenerationId: true,
-      }).traverser;
+      }).api;
     })();
 
     const items: DiffResultItems = [];
@@ -94,14 +99,15 @@ export class CollectionDiffCursor {
     let finishedByEnd = false;
 
     outer: while (true) {
-      const found = traverser.findGenerationRecord({
+      const found = searchGenerationInCurrentKey({
+        api,
         generationId: this.fromGenerationId,
       });
 
-      const {key, value, generationId} = traverser.getItem();
+      const {key, value, generationId} = api.getItem();
 
       if (generationId > this.toGenerationId) {
-        const found = traverser.goNextKey();
+        const found = goNextKey({api});
         if (!found) {
           finishedByEnd = true;
           break;
@@ -128,16 +134,23 @@ export class CollectionDiffCursor {
 
       pushValue(value);
 
-      if (!traverser.peekNext()) {
+      if (!api.peekNext()) {
         finishedByEnd = true;
         pushItem();
         break;
       }
 
       while (true) {
-        const nextGen = traverser.goNextGeneration();
+        const nextGen = goNextGenerationInCurrentKey({api});
         if (!nextGen.found) {
           if (nextGen.isEnd) {
+            finishedByEnd = true;
+            pushItem();
+            break outer;
+          }
+
+          const found = goNextKey({api});
+          if (!found) {
             finishedByEnd = true;
             pushItem();
             break outer;
@@ -146,7 +159,7 @@ export class CollectionDiffCursor {
         }
 
         if (nextGen.item.generationId > this.toGenerationId) {
-          const found = traverser.goNextKey();
+          const found = goNextKey({api});
           if (!found) {
             finishedByEnd = true;
             pushItem();
@@ -173,14 +186,14 @@ export class CollectionDiffCursor {
       }
 
       if (!finishedByLimit) {
-        const hasNextKey = traverser.goNextKey();
+        const hasNextKey = goNextKey({api});
 
         if (!hasNextKey) {
           return 'end';
         }
       }
 
-      const {key, generationId} = traverser.getItem();
+      const {key, generationId} = api.getItem();
       return {key, generationId};
     })();
 

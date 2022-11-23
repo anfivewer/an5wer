@@ -67,6 +67,17 @@ export const restoreMemoryDatabase = async ({
           collection._restoreReaders(part);
           break;
         }
+        case 'phantoms': {
+          const {collectionName} = part;
+          const collection = database._getCollection(collectionName);
+
+          if (!collection) {
+            throw new Error(`bad dump, no such collection ${collectionName}`);
+          }
+
+          collection._restorePhantoms(part);
+          break;
+        }
         case 'end':
           break outer;
         default: {

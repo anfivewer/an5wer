@@ -1,3 +1,5 @@
+import {noop} from '../fn/noop';
+
 export class Defer<R = void> {
   public resolve!: (value: R) => void;
   public reject!: (error: unknown) => void;
@@ -15,6 +17,10 @@ export class Defer<R = void> {
         this._isFulfilled = true;
       };
     });
+
+    // To not get `unhandled promise rejection` in node
+    // if this defer is not used
+    this.promise.catch(noop);
   }
 
   isFulfilled(): boolean {
