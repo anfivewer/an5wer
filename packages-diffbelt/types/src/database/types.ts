@@ -52,6 +52,23 @@ export type DiffOptions = DiffOptionsFromGenerationInput & {
   toGenerationId?: string;
 };
 
+export type CollectionGetKeysAroundOptions = {
+  key: string;
+  requireKeyExistance: boolean;
+  limit: number;
+  generationId?: string;
+  phantomId?: string;
+};
+
+export type CollectionGetKeysAroundResult = {
+  generationId: string;
+  hasMoreOnTheLeft: boolean;
+  hasMoreOnTheRight: boolean;
+  left: string[];
+  right: string[];
+  foundKey: boolean;
+};
+
 export type Collection = {
   getName: () => string;
   isManual: () => boolean;
@@ -65,6 +82,9 @@ export type Collection = {
     generationId?: string;
     phantomId?: string;
   }) => Promise<{generationId: string; item: KeyValue | null}>;
+  getKeysAround: (
+    options: CollectionGetKeysAroundOptions,
+  ) => Promise<CollectionGetKeysAroundResult>;
   query: (options?: {
     generationId?: string;
     phantomId?: string;

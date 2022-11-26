@@ -12,6 +12,7 @@ import {CreateDatabaseFn} from './types';
 import {mapFilterTest} from './map-filter';
 import {aggregateByTimestampTest} from './aggregate-by-timestamp';
 import {uniqueCounterTest} from './unique-counter';
+import {percentilesTest} from './percentiles';
 
 export const databaseTest = <Db extends Database>({
   createDatabase,
@@ -213,6 +214,7 @@ export const databaseTest = <Db extends Database>({
   mapFilterTest({createDatabase});
   aggregateByTimestampTest({createDatabase});
   uniqueCounterTest({createDatabase});
+  percentilesTest({createDatabase});
 };
 
 const makeId = (ts: number) => String(ts).padStart(11, '0');

@@ -41,6 +41,7 @@ import {Phantoms} from './phantoms/phantoms';
 import {createGetMethod} from './methods/get';
 import {CreateMethodOptions} from './methods/types';
 import {createPutMethod} from './methods/put';
+import {getKeysAround} from './methods/get-keys-around';
 
 export class MemoryDatabaseCollection implements Collection {
   private name: string;
@@ -156,6 +157,18 @@ export class MemoryDatabaseCollection implements Collection {
     {},
     createGetMethod(this.getCreateMethodOptions()),
   );
+
+  getKeysAround: Collection['getKeysAround'] = this.wrapFn(
+    {},
+    (requestOptions) => {
+      return getKeysAround({
+        requestOptions,
+        currentGenerationId: this.generationId,
+        storage: this.storage,
+      });
+    },
+  );
+
   query: Collection['query'] = this.wrapFn(
     {},
     ({generationId, phantomId} = {}) => {

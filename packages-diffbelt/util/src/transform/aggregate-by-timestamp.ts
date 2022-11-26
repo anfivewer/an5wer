@@ -4,6 +4,8 @@ import {IdlingStatus} from '@-/util/src/state/idling-status';
 import {diffCollection} from '../queries/diff';
 import {Logger} from '@-/types/src/logging/logging';
 import {AggregateInterval, isItemChange, ItemChange} from './types';
+import {Defer} from '@-/util/src/async/defer';
+import {assertNonNullable} from '@-/types/src/assert/runtime';
 
 /** @deprecated */
 export {AggregateInterval};
@@ -11,6 +13,8 @@ export {AggregateInterval};
 type IntervalData<TargetItem> = {
   intervalTimestampMs: number;
   prevTargetItem: TargetItem | null;
+  fromGenerationId: string | null;
+  generationId: string;
 };
 
 export type BaseAggregateTransformOptions = {
@@ -24,12 +28,25 @@ export type BaseAggregateTransformOptions = {
   maxItemsForReduce?: number;
 };
 
+type MergeFn<TargetItem, ReducedItem> = (
+  options: IntervalData<TargetItem> & {
+    items: ReducedItem[];
+  },
+) => ReducedItem;
+
+type ApplyFn<TargetItem, ReducedItem> = (
+  options: IntervalData<TargetItem> & {
+    mergedItem: ReducedItem;
+  },
+) => TargetItem | null;
+
 type AggregateTransformOptions<
   Context,
   SourceItem,
   TargetItem,
   MappedItem,
   ReducedItem,
+  CustomData = unknown,
 > = BaseAggregateTransformOptions & {
   parseSourceItem: (value: string) => SourceItem;
   parseTargetItem: (value: string) => TargetItem;
@@ -62,8 +79,12 @@ type AggregateTransformOptions<
             items: ItemChange<MappedItem>[];
           },
         ) => ReducedItem;
+        merge: MergeFn<TargetItem, ReducedItem>;
+        apply: ApplyFn<TargetItem, ReducedItem>;
+        applyWithState?: never;
         getInitialAccumulator?: never;
         getEmptyAccumulator?: never;
+        sequentalReduceWithInitialAccumulator?: never;
       }
     | {
         parallelReduceWithInitialAccumulator: (
@@ -76,20 +97,36 @@ type AggregateTransformOptions<
           options: IntervalData<TargetItem>,
         ) => ReducedItem;
         getEmptyAccumulator: () => ReducedItem;
+        merge: MergeFn<TargetItem, ReducedItem>;
+        apply: ApplyFn<TargetItem, ReducedItem>;
+        applyWithState?: never;
+        sequentalReduceWithInitialAccumulator?: never;
       }
-  ) & {
-    merge: (
-      options: IntervalData<TargetItem> & {
-        items: ReducedItem[];
-      },
-    ) => ReducedItem;
-
-    apply: (
-      options: IntervalData<TargetItem> & {
-        mergedItem: ReducedItem;
-      },
-    ) => TargetItem | null;
-  };
+    | {
+        sequentalReduceWithInitialAccumulator: (
+          options: IntervalData<TargetItem> & {
+            accumulator: ReducedItem;
+            items: ItemChange<MappedItem>[];
+            state: CustomData;
+          },
+        ) => ReducedItem | Promise<ReducedItem>;
+        getInitialAccumulator: (
+          options: IntervalData<TargetItem>,
+        ) => ReducedItem;
+        getEmptyAccumulator?: never;
+        merge?: never;
+        getIntervalState: (
+          options: IntervalData<TargetItem> & {context: Context},
+        ) => CustomData | Promise<CustomData>;
+        apply?: never;
+        applyWithState: (
+          options: IntervalData<TargetItem> & {
+            mergedItem: ReducedItem;
+            state: CustomData;
+          },
+        ) => TargetItem | null;
+      }
+  );
 
 export const createAggregateByTimestampTransform = <
   Context,
@@ -97,13 +134,15 @@ export const createAggregateByTimestampTransform = <
   TargetItem,
   MappedItem,
   ReducedItem,
+  CustomData = unknown,
 >(
   options: AggregateTransformOptions<
     Context,
     SourceItem,
     TargetItem,
     MappedItem,
-    ReducedItem
+    ReducedItem,
+    CustomData
   >,
 ): ((options: {context: Context}) => Promise<void>) => {
   const {
@@ -121,7 +160,6 @@ export const createAggregateByTimestampTransform = <
     mapFilter,
     maxItemsForReduce = 100,
     merge,
-    apply,
   } = options;
 
   switch (interval) {
@@ -190,6 +228,9 @@ export const createAggregateByTimestampTransform = <
       reducedItems: Map<number, PendingReducedItem>;
       reducedItemsByNextTs: Map<number, PendingReducedItem>;
       pendingTasks: IdlingStatus;
+      sequentalChanges: Map<number, IntervalChanges>;
+      sequentalDefer: Defer;
+      state: CustomData | undefined;
     };
 
     const intervalsInProgress = new Map<number, IntervalProgressStatus>();
@@ -276,7 +317,8 @@ export const createAggregateByTimestampTransform = <
       prevTargetItem: TargetItem | null;
     }) => {
       let maybeProgressStatus = intervalsInProgress.get(intervalTimestampMs);
-      const allowInitialAccumulatorCreation = !maybeProgressStatus;
+      const isInitialPart = !maybeProgressStatus;
+      const allowInitialAccumulatorCreation = isInitialPart;
 
       if (!maybeProgressStatus) {
         maybeProgressStatus = {
@@ -285,6 +327,9 @@ export const createAggregateByTimestampTransform = <
           reducedItems: new Map(),
           reducedItemsByNextTs: new Map(),
           pendingTasks: new IdlingStatus(),
+          sequentalChanges: new Map(),
+          sequentalDefer: new Defer(),
+          state: undefined,
         };
         intervalsInProgress.set(intervalTimestampMs, maybeProgressStatus);
       }
@@ -293,6 +338,86 @@ export const createAggregateByTimestampTransform = <
 
       progressStatus.pendingTasks
         .wrapTask(async () => {
+          // It is outside of `reducesParallel` because we don't want to block
+          // changes reading, because it will deadblock this sequental processing
+          // FIXME: add some kind of limit here
+          if (options.sequentalReduceWithInitialAccumulator) {
+            const {
+              sequentalReduceWithInitialAccumulator,
+              getInitialAccumulator,
+              getIntervalState,
+            } = options;
+
+            const initialTimestampMs = changes.timestampMs;
+
+            if (isInitialPart) {
+              const state = await getIntervalState({
+                intervalTimestampMs,
+                prevTargetItem,
+                context,
+                fromGenerationId,
+                generationId,
+              });
+
+              progressStatus.state = state;
+
+              let accumulator = getInitialAccumulator({
+                intervalTimestampMs,
+                prevTargetItem,
+                fromGenerationId,
+                generationId,
+              });
+
+              let lastChanges = changes;
+
+              while (true) {
+                const {nextTimestampMs, items} = lastChanges;
+
+                accumulator = await sequentalReduceWithInitialAccumulator({
+                  accumulator,
+                  intervalTimestampMs,
+                  prevTargetItem,
+                  items,
+                  state,
+                  fromGenerationId,
+                  generationId,
+                });
+
+                if (typeof nextTimestampMs !== 'number') {
+                  // All items are reduced, it will be taken at finish part
+                  progressStatus.reducedItems.set(initialTimestampMs, {
+                    timestampMs: initialTimestampMs,
+                    nextTimestampMs: undefined,
+                    item: accumulator,
+                  });
+                  break;
+                }
+
+                // Wait for next batch availability and process it
+                lastChanges = await (async () => {
+                  while (true) {
+                    const changes =
+                      progressStatus.sequentalChanges.get(nextTimestampMs);
+
+                    if (changes) {
+                      return changes;
+                    }
+
+                    await progressStatus.sequentalDefer.promise;
+                    progressStatus.sequentalDefer = new Defer();
+                  }
+                })();
+              }
+
+              return;
+            }
+
+            progressStatus.sequentalChanges.set(changes.timestampMs, changes);
+            progressStatus.sequentalDefer.resolve();
+
+            return;
+          }
+
           const {timestampMs, nextTimestampMs, items} = changes;
 
           await reducesParallel.schedule(() => {
@@ -308,6 +433,8 @@ export const createAggregateByTimestampTransform = <
                   ? getInitialAccumulator({
                       intervalTimestampMs,
                       prevTargetItem,
+                      fromGenerationId,
+                      generationId,
                     })
                   : getEmptyAccumulator();
 
@@ -316,6 +443,8 @@ export const createAggregateByTimestampTransform = <
                   intervalTimestampMs,
                   prevTargetItem,
                   items,
+                  fromGenerationId,
+                  generationId,
                 });
               }
 
@@ -326,6 +455,8 @@ export const createAggregateByTimestampTransform = <
                 intervalTimestampMs,
                 prevTargetItem,
                 items,
+                fromGenerationId,
+                generationId,
               });
             })();
 
@@ -357,6 +488,8 @@ export const createAggregateByTimestampTransform = <
     }) => {
       const {intervalTimestampMs, prevTargetItem} = progressStatus;
 
+      assertNonNullable(merge, 'scheduleIntervalMerge: no merge');
+
       progressStatus.pendingTasks
         .wrapTask(async () => {
           await mergesParallel.schedule(() => {
@@ -364,6 +497,8 @@ export const createAggregateByTimestampTransform = <
               intervalTimestampMs,
               prevTargetItem,
               items: chain.map(({item}) => item),
+              fromGenerationId,
+              generationId,
             });
 
             const {timestampMs} = chain[0];
@@ -416,10 +551,17 @@ export const createAggregateByTimestampTransform = <
           const {value: pendingMergedItem} = iteratorResult;
           const {item: mergedItem} = pendingMergedItem;
 
-          const targetItem = apply({
+          const targetItem = (
+            options.sequentalReduceWithInitialAccumulator
+              ? options.applyWithState
+              : options.apply
+          )({
             intervalTimestampMs,
             prevTargetItem,
             mergedItem,
+            fromGenerationId,
+            generationId,
+            state: progressStatus.state!,
           });
 
           const key = getTargetKey(intervalTimestampMs);
@@ -540,6 +682,8 @@ export const createAggregateByTimestampTransform = <
           timestampMs: keyTs,
           sourceKey: key,
           sourceItem: prevValue,
+          fromGenerationId,
+          generationId,
         });
         const lastMappedItem = mapFilter({
           intervalTimestampMs: intervalTs,
@@ -547,9 +691,11 @@ export const createAggregateByTimestampTransform = <
           timestampMs: keyTs,
           sourceKey: key,
           sourceItem: lastValue,
+          fromGenerationId,
+          generationId,
         });
 
-        const change = {prev: prevMappedItem, next: lastMappedItem};
+        const change = {key, prev: prevMappedItem, next: lastMappedItem};
 
         if (!isItemChange(change)) {
           continue;

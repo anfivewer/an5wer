@@ -9,15 +9,16 @@ export const enum AggregateInterval {
   MONTH = 'month',
 }
 
-export type ItemChange<Item> =
-  // updated
+export type ItemChange<Item> = {key: string} & ( // updated
   | {prev: Item; next: Item}
   // created
   | {prev: null; next: Item}
   // removed
-  | {prev: Item; next: null};
+  | {prev: Item; next: null}
+);
 
 export const isItemChange = <Item>(value: {
+  key: string;
   prev: Item | null;
   next: Item | null;
 }): value is ItemChange<Item> => {
