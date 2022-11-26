@@ -36,6 +36,23 @@ export const goNextKey = ({api}: {api: TraverserApi}): boolean => {
   }
 };
 
+export const goToFirstRecordInCurrentKey = ({
+  api,
+}: {
+  api: TraverserApi;
+}): void => {
+  const {key} = api.getItem();
+  goPrevKey({api});
+  const {key: newKey} = api.getItem();
+
+  if (key === newKey) {
+    // `goPrevKey()` did nothing, so we are at the end
+    return;
+  }
+
+  api.goNext();
+};
+
 export const goToLastRecordInCurrentKey = ({
   api,
 }: {

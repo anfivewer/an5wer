@@ -3,11 +3,12 @@ import {
   DiffResultItems,
   DiffResultValues,
 } from '@-/diffbelt-types/src/database/types';
+import {goNextGenerationInCurrentKey} from '../../util/database/traverse/generation';
 import {
-  goNextGenerationInCurrentKey,
-  searchGenerationInCurrentKey,
-} from '../../util/database/traverse/generation';
-import {goNextKey} from '../../util/database/traverse/key';
+  goNextKey,
+  goToFirstRecordInCurrentKey,
+} from '../../util/database/traverse/key';
+import {searchPhantomInCurrentKey} from '../../util/database/traverse/phantom';
 import {CollectionGeneration} from './generation';
 import {createMemoryStorageTraverser} from './storage';
 import {CursorStartKey, MemoryDatabaseStorage} from './types';
@@ -17,6 +18,7 @@ export class CollectionDiffCursor {
   private storage: MemoryDatabaseStorage;
   private fromGenerationId: string | null;
   private toGenerationId: string;
+  private phantomId: string | undefined;
   // TODO: use for optimization, to not read whole collection
   private generationsList: CollectionGeneration[];
   private maxItemsInPack: number;
@@ -29,6 +31,7 @@ export class CollectionDiffCursor {
     storage,
     fromGenerationId,
     toGenerationId,
+    phantomId,
     generationsList,
     maxItemsInPack,
     createNextCursor,
@@ -37,6 +40,7 @@ export class CollectionDiffCursor {
     storage: MemoryDatabaseStorage;
     fromGenerationId: string | null;
     toGenerationId: string;
+    phantomId: string | undefined;
     generationsList: CollectionDiffCursor['generationsList'];
     maxItemsInPack: number;
     createNextCursor: (options: {nextStartKey: CursorStartKey}) => {
@@ -47,6 +51,7 @@ export class CollectionDiffCursor {
     this.storage = storage;
     this.fromGenerationId = fromGenerationId;
     this.toGenerationId = toGenerationId;
+    this.phantomId = phantomId;
     this.generationsList = generationsList;
     this.maxItemsInPack = maxItemsInPack;
     this.createNextCursor = createNextCursor;
@@ -83,13 +88,15 @@ export class CollectionDiffCursor {
         }).api;
       }
 
-      const {key, generationId} = this.startKey;
+      const {key, generationId, phantomId} = this.startKey;
 
       return createMemoryStorageTraverser({
         storage: this.storage,
         key,
         generationId,
         exactGenerationId: true,
+        phantomId,
+        exactPhantomId: true,
       }).api;
     })();
 
@@ -99,12 +106,20 @@ export class CollectionDiffCursor {
     let finishedByEnd = false;
 
     outer: while (true) {
-      const found = searchGenerationInCurrentKey({
-        api,
-        generationId: this.fromGenerationId,
-      });
+      const found = (() => {
+        if (this.fromGenerationId === null) {
+          goToFirstRecordInCurrentKey({api});
+          return true;
+        }
 
-      const {key, value, generationId} = api.getItem();
+        return searchPhantomInCurrentKey({
+          api,
+          generationId: this.fromGenerationId,
+          phantomId: this.phantomId,
+        });
+      })();
+
+      const {key, value, generationId, phantomId} = api.getItem();
 
       if (generationId > this.toGenerationId) {
         const found = goNextKey({api});
@@ -132,7 +147,9 @@ export class CollectionDiffCursor {
         pushValue(null);
       }
 
-      pushValue(value);
+      if (phantomId === this.phantomId) {
+        pushValue(value);
+      }
 
       if (!api.peekNext()) {
         finishedByEnd = true;
@@ -168,7 +185,9 @@ export class CollectionDiffCursor {
           break;
         }
 
-        pushValue(nextGen.item.value);
+        if (nextGen.item.phantomId === this.phantomId) {
+          pushValue(nextGen.item.value);
+        }
       }
 
       pushItem();
@@ -193,8 +212,8 @@ export class CollectionDiffCursor {
         }
       }
 
-      const {key, generationId} = api.getItem();
-      return {key, generationId};
+      const {key, generationId, phantomId} = api.getItem();
+      return {key, generationId, phantomId};
     })();
 
     const {cursorId} = this.createNextCursor({

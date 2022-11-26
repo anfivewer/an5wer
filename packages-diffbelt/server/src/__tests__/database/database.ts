@@ -73,9 +73,12 @@ export const databaseTest = <Db extends Database>({
 
     const initialItems = [
       {key: makeId(3), value: '2'},
+      {key: makeId(3), value: null, phantomId: 'A'},
       {key: makeId(65), value: '5'},
       {key: makeId(69), value: '11'},
       {key: makeId(70), value: '8'},
+      {key: makeId(70), value: '9', phantomId: 'A'},
+      {key: makeId(70), value: '11', phantomId: 'B'},
       {key: makeId(249), value: '13'},
       {key: makeId(270), value: '15'},
       {key: makeId(300), value: '42'},
@@ -95,7 +98,9 @@ export const databaseTest = <Db extends Database>({
       const {items, generationId} = await dumpCollection(colA);
       expect(generationId >= firstPutGenerationId).toBe(true);
 
-      expect(items).toStrictEqual(initialItems);
+      expect(items).toStrictEqual(
+        initialItems.filter((item) => item.phantomId === undefined),
+      );
     }
 
     await colB.createReader({

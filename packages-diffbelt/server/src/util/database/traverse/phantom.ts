@@ -8,7 +8,7 @@ const searchPhantomBackwardInCurrentKey = ({
 }: {
   api: TraverserApi;
   generationId: string;
-  phantomId: string;
+  phantomId: string | undefined;
 }): boolean => {
   const {
     key,
@@ -45,7 +45,7 @@ const searchPhantomForwardInCurrentKey = ({
 }: {
   api: TraverserApi;
   generationId: string;
-  phantomId: string;
+  phantomId: string | undefined;
 }): boolean => {
   const initialItem = api.getItem();
   const {key} = initialItem;
@@ -71,6 +71,7 @@ const searchPhantomForwardInCurrentKey = ({
       nextItem.generationId > generationId ||
       (nextItem.generationId === generationId &&
         nextItem.phantomId !== undefined &&
+        phantomId !== undefined &&
         nextItem.phantomId > phantomId)
     ) {
       if (lastSuitableMarker !== null) {
@@ -81,8 +82,8 @@ const searchPhantomForwardInCurrentKey = ({
       return false;
     }
 
-    updateLastSuitableMarker(nextItem);
     api.goNext();
+    updateLastSuitableMarker(nextItem);
   }
 };
 
@@ -97,7 +98,7 @@ export const searchPhantomInCurrentKey = ({
 }: {
   api: TraverserApi;
   generationId: string;
-  phantomId: string;
+  phantomId: string | undefined;
 }): boolean => {
   const {generationId: itemGenerationId} = api.getItem();
 

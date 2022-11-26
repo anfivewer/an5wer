@@ -52,9 +52,70 @@ const goToInsertPositionInCurrentKey = ({
     return -1;
   }
 
-  // FIXME: FIXME: ???
+  if (foundGeneration) {
+    // `itemGenerationId <= generationId`
+    const {
+      key,
+      generationId: itemGenerationId,
+      phantomId: itemPhantomId,
+    } = api.getItem();
 
-  return 0;
+    if (itemPhantomId === undefined || itemPhantomId <= phantomId) {
+      // go forward
+      let currentPhantomId = itemPhantomId;
+
+      while (true) {
+        if (currentPhantomId === phantomId) {
+          return 0;
+        }
+
+        const nextItem = api.peekNext();
+        if (
+          !nextItem ||
+          nextItem.phantomId === undefined ||
+          nextItem.phantomId > phantomId ||
+          nextItem.key !== key ||
+          nextItem.generationId !== itemGenerationId
+        ) {
+          return 1;
+        }
+
+        currentPhantomId = nextItem.phantomId;
+        api.goNext();
+      }
+    }
+
+    // go backward
+    let currentPhantomId = itemPhantomId;
+
+    while (true) {
+      if (currentPhantomId === phantomId) {
+        return 0;
+      }
+
+      const prevItem = api.peekPrev();
+      if (
+        !prevItem ||
+        prevItem.phantomId === undefined ||
+        prevItem.phantomId < phantomId ||
+        prevItem.key !== key ||
+        prevItem.generationId !== itemGenerationId
+      ) {
+        return -1;
+      }
+
+      currentPhantomId = prevItem.phantomId;
+      api.goPrev();
+    }
+  }
+
+  // itemGenerationId > generationId
+  // Skip phantoms, insert before current generation record
+  goBackwardToNonPhantomRecordInCurrentGeneration({
+    api,
+  });
+
+  return -1;
 };
 
 /**

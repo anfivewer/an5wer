@@ -105,4 +105,26 @@ describe('goToInsertPosition', () => {
     // if `place === -1`, then index should be 2
     expect(api.getIndex()).toBe(place === 1 ? 1 : 2);
   });
+
+  it('bug #2', () => {
+    const storage: MemoryDatabaseStorage = [
+      {
+        key: '00000000003',
+        value: '2',
+        generationId: '00000000001',
+        phantomId: undefined,
+      },
+    ];
+    const api = new MemoryStorageTraverserApi({storage, index: 0});
+
+    const place = goToInsertPosition({
+      api,
+      key: '00000000003',
+      generationId: '00000000001',
+      phantomId: 'A',
+    });
+
+    expect(api.getIndex()).toBe(0);
+    expect(place).toBe(1);
+  });
 });

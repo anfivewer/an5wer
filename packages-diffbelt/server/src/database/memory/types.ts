@@ -1,6 +1,7 @@
 export type MemoryDatabaseStorageKey = {
   key: string;
   generationId: string;
+  phantomId: string | undefined;
 };
 
 export type CursorStartKey = MemoryDatabaseStorageKey | 'end';

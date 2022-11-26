@@ -93,14 +93,21 @@ export class MemoryStorageTraverserApi implements TraverserApi {
   }
 
   getMarker() {
-    return {index: this.index} as MemoryStorageTraverserMarker;
+    return {
+      index: this.index,
+      item: this.storage[this.index],
+    } as MemoryStorageTraverserMarker;
   }
 
   goMarker(rawMarker: TraverserApiMarker) {
     const {index: markerIndex, item: expectedItem} =
       rawMarker as Partial<MemoryStorageTraverserMarker>;
     if (typeof markerIndex !== 'number' || !expectedItem) {
-      throw new Error('MemoryStorageTraverser: bad marker');
+      throw new Error(
+        `MemoryStorageTraverser: bad marker, index: ${markerIndex}, item: ${Boolean(
+          expectedItem,
+        )}`,
+      );
     }
 
     const actualItem = this.storage[markerIndex];

@@ -1,6 +1,6 @@
 import {KeyValue, QueryResult} from '@-/diffbelt-types/src/database/types';
-import {searchGenerationInCurrentKey} from '../../util/database/traverse/generation';
 import {goNextKey} from '../../util/database/traverse/key';
+import {searchPhantomInCurrentKey} from '../../util/database/traverse/phantom';
 import {createMemoryStorageTraverser} from './storage';
 import {CursorStartKey, MemoryDatabaseStorage} from './types';
 
@@ -8,6 +8,7 @@ export class CollectionQueryCursor {
   private startKey: CursorStartKey | undefined;
   private storage: MemoryDatabaseStorage;
   private generationId: string;
+  private phantomId: string | undefined;
   private maxItemsInPack: number;
   private createNextCursor: (options: {nextStartKey: CursorStartKey}) => {
     cursorId: string;
@@ -17,12 +18,14 @@ export class CollectionQueryCursor {
     startKey,
     storage,
     generationId,
+    phantomId,
     maxItemsInPack,
     createNextCursor,
   }: {
     startKey: CursorStartKey | undefined;
     storage: MemoryDatabaseStorage;
     generationId: string;
+    phantomId: string | undefined;
     maxItemsInPack: number;
     createNextCursor: (options: {nextStartKey: CursorStartKey}) => {
       cursorId: string;
@@ -31,6 +34,7 @@ export class CollectionQueryCursor {
     this.startKey = startKey;
     this.storage = storage;
     this.generationId = generationId;
+    this.phantomId = phantomId;
     this.maxItemsInPack = maxItemsInPack;
     this.createNextCursor = createNextCursor;
   }
@@ -64,14 +68,15 @@ export class CollectionQueryCursor {
         }).api;
       }
 
-      const {key, generationId} = this.startKey;
+      const {key, generationId, phantomId} = this.startKey;
 
       return createMemoryStorageTraverser({
         storage: this.storage,
         key,
         generationId,
         exactGenerationId: true,
-        // FIXME: FIXME:
+        phantomId,
+        exactPhantomId: true,
       }).api;
     })();
 
@@ -81,9 +86,10 @@ export class CollectionQueryCursor {
     const items: KeyValue[] = [];
 
     while (true) {
-      const found = searchGenerationInCurrentKey({
+      const found = searchPhantomInCurrentKey({
         api,
         generationId: this.generationId,
+        phantomId: this.phantomId,
       });
       if (!found) {
         const hasNextKey = goNextKey({api});
@@ -130,8 +136,8 @@ export class CollectionQueryCursor {
         }
       }
 
-      const {key, generationId} = api.getItem();
-      return {key, generationId};
+      const {key, generationId, phantomId} = api.getItem();
+      return {key, generationId, phantomId};
     })();
 
     const {cursorId} = this.createNextCursor({

@@ -156,36 +156,43 @@ export class MemoryDatabaseCollection implements Collection {
     {},
     createGetMethod(this.getCreateMethodOptions()),
   );
-  query: Collection['query'] = this.wrapFn({}, ({generationId} = {}) => {
-    const createCursor = (
-      prevCursorId: string | undefined,
-      startKey: CursorStartKey | undefined,
-    ) => {
-      const cursor = new CollectionQueryCursor({
-        startKey,
-        storage: this.storage,
-        generationId: generationId ?? this.generationId,
-        maxItemsInPack: this.maxItemsInPack,
-        createNextCursor: ({nextStartKey}) => {
-          if (typeof prevCursorId === 'string') {
-            this.queryCursors.delete(prevCursorId);
-          }
+  query: Collection['query'] = this.wrapFn(
+    {},
+    ({generationId, phantomId} = {}) => {
+      const createCursor = (
+        prevCursorId: string | undefined,
+        startKey: CursorStartKey | undefined,
+      ) => {
+        const cursor = new CollectionQueryCursor({
+          startKey,
+          storage: this.storage,
+          generationId: generationId ?? this.generationId,
+          phantomId,
+          maxItemsInPack: this.maxItemsInPack,
+          createNextCursor: ({nextStartKey}) => {
+            if (typeof prevCursorId === 'string') {
+              this.queryCursors.delete(prevCursorId);
+            }
 
-          const cursorId = this.cursorIdGenerator.generateNextId();
+            const cursorId = this.cursorIdGenerator.generateNextId();
 
-          this.queryCursors.set(cursorId, createCursor(cursorId, nextStartKey));
+            this.queryCursors.set(
+              cursorId,
+              createCursor(cursorId, nextStartKey),
+            );
 
-          return {cursorId};
-        },
-      });
+            return {cursorId};
+          },
+        });
 
-      return cursor;
-    };
+        return cursor;
+      };
 
-    const cursor = createCursor(undefined, undefined);
+      const cursor = createCursor(undefined, undefined);
 
-    return Promise.resolve(cursor.getCurrentPack());
-  });
+      return Promise.resolve(cursor.getCurrentPack());
+    },
+  );
 
   readQueryCursor: Collection['readQueryCursor'] = this.wrapFn(
     {},
@@ -357,6 +364,7 @@ export class MemoryDatabaseCollection implements Collection {
         storage: this.storage,
         fromGenerationId,
         toGenerationId,
+        phantomId: undefined,
         generationsList,
         maxItemsInPack: this.maxItemsInPack,
         createNextCursor: ({nextStartKey}) => {
@@ -755,19 +763,17 @@ export class MemoryDatabaseCollection implements Collection {
 
     this.phantoms.dropAllPhantoms();
 
-    // Take items by pairs
-    this.storage = this.storage.filter(
-      ({key, generationId, value, phantomId}, index) => {
-        if (phantomId !== undefined) {
-          return false;
-        }
-
-        if (index >= this.storage.length - 1) {
+    this.storage = this.storage
+      // Remove all phantoms
+      .filter((item) => item.phantomId === undefined)
+      // Take items by pairs
+      .filter(({key, generationId, value}, index, storage) => {
+        if (index >= storage.length - 1) {
           // Ignore last item, it has no next
           return true;
         }
 
-        const {key: nextItemKey} = this.storage[index + 1];
+        const {key: nextItemKey} = storage[index + 1];
 
         if (generationId < generationToStay && value === null) {
           // If item was removed, we can loose it's tombstone
@@ -782,8 +788,7 @@ export class MemoryDatabaseCollection implements Collection {
 
         // Key not changed, check generation actuality
         return generationId >= generationToStay;
-      },
-    );
+      });
 
     if (this.storage.length) {
       // Check skipped last item
