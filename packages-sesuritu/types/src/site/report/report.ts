@@ -1,7 +1,11 @@
 import {zodEnum, ZodInfer} from '@-/types/src/zod/zod';
 import {array, literal, number, object, string, union} from 'zod';
 
-export const ReportTypeEnum = zodEnum(['simpleTimeMetric', 'pieTimeMetric']);
+export const ReportTypeEnum = zodEnum([
+  'simpleTimeMetric',
+  'pieTimeMetric',
+  'percentileMetric',
+]);
 export const ReportType = ReportTypeEnum.enum;
 export type ReportType = ZodInfer<typeof ReportTypeEnum>;
 
@@ -34,8 +38,25 @@ export const PieTimeMetric = object({
 });
 export type PieTimeMetric = ZodInfer<typeof PieTimeMetric>;
 
+export const PercentileMetricDataItem = object({
+  tsMs: number(),
+  count: number(),
+  values: array(number()),
+});
+export type PercentileMetricDataItem = ZodInfer<
+  typeof PercentileMetricDataItem
+>;
+
+export const PercentileMetric = object({
+  type: literal(ReportType.percentileMetric),
+  name: string(),
+  percentiles: array(number()),
+  data: array(PercentileMetricDataItem),
+});
+export type PercentileMetric = ZodInfer<typeof PercentileMetric>;
+
 export const ReportData = object({
-  reports: array(union([SimpleTimeMetric, PieTimeMetric])),
+  reports: array(union([SimpleTimeMetric, PieTimeMetric, PercentileMetric])),
 });
 export type ReportData = ZodInfer<typeof ReportData>;
 

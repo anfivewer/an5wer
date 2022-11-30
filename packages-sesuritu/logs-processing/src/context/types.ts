@@ -8,4 +8,5 @@ export type Context = {
   config: Config;
   dependenciesGraph: DependenciesGraph;
   database: Database;
+  needDumpDatabaseOnStop: boolean;
 };

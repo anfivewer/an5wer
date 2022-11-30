@@ -22,7 +22,7 @@ export class PercentilesState {
   private percentiles: PercentilesStatePercentile[] | undefined;
   private initialPercentiles: number[];
   private collection: Collection;
-  private fromGenerationId: string | null;
+  private fromGenerationId: string;
   private generationId: string;
   private phantomId: string | undefined;
   private phantomChanges: (() => Promise<void>)[] = [];
@@ -42,7 +42,7 @@ export class PercentilesState {
   }) {
     this.initialPercentiles = percentiles;
     this.collection = collection;
-    this.fromGenerationId = fromGenerationId;
+    this.fromGenerationId = fromGenerationId !== null ? fromGenerationId : '';
     this.generationId = generationId;
 
     if (percentilesData) {
@@ -104,8 +104,7 @@ export class PercentilesState {
               key,
               requireKeyExistance: true,
               limit: AROUND_ITEMS_COUNT,
-              generationId:
-                this.fromGenerationId !== null ? this.fromGenerationId : '',
+              generationId: this.fromGenerationId,
               phantomId: this.phantomId,
             });
 
@@ -135,7 +134,7 @@ export class PercentilesState {
       await this.collection.put({
         key,
         value: '',
-        generationId: this.generationId,
+        generationId: this.fromGenerationId,
         phantomId: this.phantomId,
       });
     });
@@ -298,7 +297,7 @@ export class PercentilesState {
       await this.collection.put({
         key,
         value: null,
-        generationId: this.generationId,
+        generationId: this.fromGenerationId,
         phantomId: this.phantomId,
       });
     });

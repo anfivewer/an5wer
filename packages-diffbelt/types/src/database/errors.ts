@@ -20,3 +20,6 @@ export const UnsupportedActionOnNonManualCollectionError = createCustomError(
   'UnsupportedActionOnNonManualCollectionError',
 );
 export const NoSuchPhantomError = createCustomError('NoSuchPhantomError');
+export const PhantomPutWithoutGenerationError = createCustomError(
+  'PhantomPutWithoutGenerationError',
+);

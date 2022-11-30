@@ -6,6 +6,7 @@ import {Logger} from '@-/types/src/logging/logging';
 import {AggregateInterval, isItemChange, ItemChange} from './types';
 import {Defer} from '@-/util/src/async/defer';
 import {assertNonNullable} from '@-/types/src/assert/runtime';
+import {getIntervalTsMs} from '../intervals/get-interval-ts';
 
 /** @deprecated */
 export {AggregateInterval};
@@ -658,7 +659,7 @@ export const createAggregateByTimestampTransform = <
 
         const keyTs = getTimestampMs(key);
 
-        const intervalTs = keyTs - (keyTs % (interval * 1000));
+        const intervalTs = getIntervalTsMs({interval, timestampMs: keyTs});
 
         const prevTargetItem =
           fromGenerationId === null

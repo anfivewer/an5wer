@@ -12,4 +12,5 @@ export const createInitialContext: GetInitialContextFn<Config, Context> = ({
   logger,
   dependenciesGraph: new DependenciesGraph(),
   database: notInitializedContextValue,
+  needDumpDatabaseOnStop: false,
 });

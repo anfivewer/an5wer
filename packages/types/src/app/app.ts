@@ -42,6 +42,7 @@ export type App<Context> = {
   init: () => Promise<Context>;
   getContext: () => Context | undefined;
   stop: (options?: {
+    withTimeout?: boolean;
     timeoutMs?: number;
     printHandlesOnTimeout?: boolean;
   }) => Promise<void>;

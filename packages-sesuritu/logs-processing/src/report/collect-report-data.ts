@@ -1,10 +1,12 @@
 import {
+  PercentileMetric,
   ReportData,
   ReportType,
   SimpleTimeMetric,
 } from '@-/sesuritu-types/src/site/report/report';
 import {Context} from '../context/types';
 import {
+  HANDLE_UPDATE_PER_DAY_PERCENTILES_COLLECTION_NAME,
   KICKS_PER_DAY_COLLECTION_NAME,
   PARSED_LINES_PER_DAY_COLLECTION_NAME,
 } from '../database/structure';
@@ -13,6 +15,9 @@ import {AggregatedKicksCollectionItem} from '../types/collections/kicks';
 import {extractTimestampFromTimestampWithLoggerKey} from '../transforms/helpers/extract-timestamp';
 import {PieCollector} from './helpers/pie-collector';
 import {AggregatedParsedLinesPerDayCollectionItem} from '../types/collections/parsed-lines-per-day';
+import {PercentilesData} from '@-/diffbelt-types/src/transform/percentiles';
+import {UpdateHandleTargetItem} from '../types/collections/update-handle';
+import {UPDATE_HANDLE_PERCENTILES} from '../transforms/update-handle';
 
 export const collectReportData = async ({
   context,
@@ -52,6 +57,69 @@ export const collectReportData = async ({
         onItem?.({key, item, tsMs});
 
         metricItems.push({tsMs, value: item.count});
+      }
+    }
+
+    return metric;
+  };
+
+  const collectPercentileMetric = async <T>({
+    metricName,
+    collectionName,
+    percentiles,
+    itemParser,
+    getPercentilesData,
+    getValueFromKey,
+    onItem,
+  }: {
+    metricName: string;
+    collectionName: string;
+    percentiles: number[];
+    itemParser: {parse: (value: unknown) => T};
+    getPercentilesData: (item: T) => PercentilesData;
+    getValueFromKey: (key: string) => number;
+    onItem?: (options: {key: string; tsMs: number; item: T}) => void;
+  }) => {
+    const metric: PercentileMetric = {
+      type: ReportType.percentileMetric,
+      name: metricName,
+      percentiles,
+      data: [],
+    };
+    const metricItems = metric.data;
+
+    const collection = await diffbelt.getCollection(collectionName);
+
+    const {stream} = await queryCollection(collection);
+
+    for await (const items of stream) {
+      for (const {key, value} of items) {
+        const tsMs = extractTimestampFromTimestampWithLoggerKey(key);
+        const item = itemParser.parse(JSON.parse(value));
+        const {count, percentiles: percentilesFromData} =
+          getPercentilesData(item);
+
+        onItem?.({key, item, tsMs});
+
+        let percentileIndex = 0;
+        const values = percentiles.map((bigP) => {
+          while (true) {
+            if (percentileIndex >= percentilesFromData.length) {
+              return NaN;
+            }
+
+            const obj = percentilesFromData[percentileIndex];
+            percentileIndex++;
+
+            if (Math.abs(obj.p * 100 - bigP) > 0.5) {
+              continue;
+            }
+
+            return getValueFromKey(obj.key);
+          }
+        });
+
+        metricItems.push({tsMs, count, values});
       }
     }
 
@@ -99,6 +167,21 @@ export const collectReportData = async ({
       itemParser: AggregatedParsedLinesPerDayCollectionItem,
       onItem: ({tsMs, item}) => {
         logsPerDayLogKeysMetricCollector.addItem({tsMs, item});
+      },
+    }),
+    collectPercentileMetric({
+      metricName: 'update-handle:1d:p',
+      collectionName: HANDLE_UPDATE_PER_DAY_PERCENTILES_COLLECTION_NAME,
+      itemParser: UpdateHandleTargetItem,
+      percentiles: UPDATE_HANDLE_PERCENTILES,
+      getPercentilesData: ({percentilesData}) => percentilesData,
+      getValueFromKey: (key) => {
+        const match = /^[^\s]+\s(\d+\.\d+)\s/.exec(key);
+        if (!match) {
+          return NaN;
+        }
+
+        return parseFloat(match[1]);
       },
     }),
   ]);

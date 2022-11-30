@@ -2,6 +2,7 @@ import {
   CannotPutInManualCollectionError,
   NextGenerationIsNotStartedError,
   OutdatedGenerationError,
+  PhantomPutWithoutGenerationError,
 } from '@-/diffbelt-types/src/database/errors';
 import {Collection} from '@-/diffbelt-types/src/database/types';
 import {assertNonNullable} from '@-/types/src/assert/runtime';
@@ -20,10 +21,14 @@ export const createPutMethod =
     const nextGeneration = getNextGeneration();
     const storage = getStorage();
 
+    if (phantomId !== undefined && generationId === undefined) {
+      throw new PhantomPutWithoutGenerationError();
+    }
+
     if (typeof generationId === 'string') {
       if (
-        !nextGeneration ||
-        generationId !== nextGeneration.getGenerationId()
+        phantomId === undefined &&
+        (!nextGeneration || generationId !== nextGeneration.getGenerationId())
       ) {
         throw new OutdatedGenerationError();
       }
@@ -33,12 +38,12 @@ export const createPutMethod =
       throw new NextGenerationIsNotStartedError();
     }
 
-    const recordGenerationId: string =
-      generationId ?? nextGeneration.getGenerationId();
+    const recordGenerationId =
+      generationId ?? nextGeneration?.getGenerationId();
     assertNonNullable(recordGenerationId, 'put');
 
     if (!storage.length) {
-      nextGeneration.addKey(key);
+      nextGeneration?.addKey(key);
       scheduleNonManualCommit();
       storage.push({
         key,
@@ -69,7 +74,7 @@ export const createPutMethod =
         return Promise.resolve({generationId: itemGenerationId});
       }
 
-      nextGeneration.addKey(key);
+      nextGeneration?.addKey(key);
       storage[getIndex()].value = value;
     } else {
       const index = getIndex() + (place < 0 ? 0 : 1);
@@ -98,7 +103,7 @@ export const createPutMethod =
         }
       }
 
-      nextGeneration.addKey(key);
+      nextGeneration?.addKey(key);
       storage.splice(index, 0, {
         key,
         value,
@@ -107,7 +112,9 @@ export const createPutMethod =
       });
     }
 
-    scheduleNonManualCommit();
+    if (phantomId === undefined) {
+      scheduleNonManualCommit();
+    }
 
     return Promise.resolve({generationId: recordGenerationId});
   };

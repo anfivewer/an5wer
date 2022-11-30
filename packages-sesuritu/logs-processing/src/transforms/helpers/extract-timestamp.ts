@@ -1,12 +1,14 @@
 export const extractTimestampFromTimestampWithLoggerKey = (
   key: string,
 ): number => {
-  const match = /^([^\s]+)(?:\.\d\d\d\s.*)?$/.exec(key);
+  const match = /^([^\s]+)(?:\.\d\d\d\s)|^([^\s]+)/.exec(key);
   if (!match) {
     throw new Error(`Cannot extract timestamp from key: "${key}"`);
   }
 
-  const [, timestampString] = match;
+  const [, timestampStringA, timestampStringB] = match;
+
+  const timestampString = timestampStringA || timestampStringB;
 
   const date = new Date(timestampString);
   const timestamp = date.getTime();

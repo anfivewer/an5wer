@@ -55,6 +55,7 @@ class App<Logger extends LoggerInterface, Config, Context>
     afterInit,
   }: RegisterComponentOptions<Context>) {
     const component = getComponent({
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       logger: this.logger.fork(loggerKey || String(name)),
     });
     this.nonInitializedContext[name] = component;
@@ -71,6 +72,7 @@ class App<Logger extends LoggerInterface, Config, Context>
     }
 
     this.initTasks.push({
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       name: name || `onInit:${task.name}:${this.initTasks.length}`,
       task,
     });
@@ -136,9 +138,11 @@ class App<Logger extends LoggerInterface, Config, Context>
 
   private stopDefer: Defer | undefined;
   async stop({
+    withTimeout = true,
     timeoutMs = 3000,
     printHandlesOnTimeout = false,
   }: {
+    withTimeout?: boolean;
     timeoutMs?: number;
     printHandlesOnTimeout?: boolean;
   } = {}): Promise<void> {
@@ -156,6 +160,10 @@ class App<Logger extends LoggerInterface, Config, Context>
       const timeoutDefer = new Defer<void>();
 
       const timeoutId = setTimeout(() => {
+        if (!withTimeout) {
+          return;
+        }
+
         logger.error('shutdown:timeout');
 
         if (printHandlesOnTimeout) {
