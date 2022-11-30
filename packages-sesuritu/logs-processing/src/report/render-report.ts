@@ -11,7 +11,7 @@ export const renderReport = async ({context}: {context: Context}) => {
     config: {reportPath},
   } = context;
 
-  if (!reportPath) {
+  if (typeof reportPath !== 'string') {
     return;
   }
 

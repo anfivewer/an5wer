@@ -1,4 +1,6 @@
 import {KeyValue, QueryResult} from '@-/diffbelt-types/src/database/types';
+import {goNextKey} from '../../util/database/traverse/key';
+import {searchPhantomInCurrentKey} from '../../util/database/traverse/phantom';
 import {createMemoryStorageTraverser} from './storage';
 import {CursorStartKey, MemoryDatabaseStorage} from './types';
 
@@ -6,6 +8,7 @@ export class CollectionQueryCursor {
   private startKey: CursorStartKey | undefined;
   private storage: MemoryDatabaseStorage;
   private generationId: string;
+  private phantomId: string | undefined;
   private maxItemsInPack: number;
   private createNextCursor: (options: {nextStartKey: CursorStartKey}) => {
     cursorId: string;
@@ -15,12 +18,14 @@ export class CollectionQueryCursor {
     startKey,
     storage,
     generationId,
+    phantomId,
     maxItemsInPack,
     createNextCursor,
   }: {
     startKey: CursorStartKey | undefined;
     storage: MemoryDatabaseStorage;
     generationId: string;
+    phantomId: string | undefined;
     maxItemsInPack: number;
     createNextCursor: (options: {nextStartKey: CursorStartKey}) => {
       cursorId: string;
@@ -29,6 +34,7 @@ export class CollectionQueryCursor {
     this.startKey = startKey;
     this.storage = storage;
     this.generationId = generationId;
+    this.phantomId = phantomId;
     this.maxItemsInPack = maxItemsInPack;
     this.createNextCursor = createNextCursor;
   }
@@ -54,22 +60,24 @@ export class CollectionQueryCursor {
       };
     }
 
-    const traverser = (() => {
+    const api = (() => {
       if (!this.startKey) {
         return createMemoryStorageTraverser({
           storage: this.storage,
           initialPos: 0,
-        }).traverser;
+        }).api;
       }
 
-      const {key, generationId} = this.startKey;
+      const {key, generationId, phantomId} = this.startKey;
 
       return createMemoryStorageTraverser({
         storage: this.storage,
         key,
         generationId,
         exactGenerationId: true,
-      }).traverser;
+        phantomId,
+        exactPhantomId: true,
+      }).api;
     })();
 
     let finishedByLimit = false;
@@ -78,11 +86,13 @@ export class CollectionQueryCursor {
     const items: KeyValue[] = [];
 
     while (true) {
-      const found = traverser.findGenerationRecord({
+      const found = searchPhantomInCurrentKey({
+        api,
         generationId: this.generationId,
+        phantomId: this.phantomId,
       });
       if (!found) {
-        const hasNextKey = traverser.goNextKey();
+        const hasNextKey = goNextKey({api});
         if (!hasNextKey) {
           finishedByEnd = true;
           break;
@@ -91,8 +101,8 @@ export class CollectionQueryCursor {
         continue;
       }
 
-      const {key, value} = traverser.getItem();
-      const hasNextKey = traverser.goNextKey();
+      const {key, value} = api.getItem();
+      const hasNextKey = goNextKey({api});
 
       if (!hasNextKey) {
         finishedByEnd = true;
@@ -119,15 +129,15 @@ export class CollectionQueryCursor {
       }
 
       if (!finishedByLimit) {
-        const hasNextKey = traverser.goNextKey();
+        const hasNextKey = goNextKey({api});
 
         if (!hasNextKey) {
           return 'end';
         }
       }
 
-      const {key, generationId} = traverser.getItem();
-      return {key, generationId};
+      const {key, generationId, phantomId} = api.getItem();
+      return {key, generationId, phantomId};
     })();
 
     const {cursorId} = this.createNextCursor({

@@ -29,6 +29,7 @@ export const PersistCollectionItems = object({
       key: string(),
       value: string().nullable(),
       generationId: string(),
+      phantomId: string().optional(),
     }),
   ),
 });
@@ -59,6 +60,15 @@ export type PersistCollectionReaders = ZodInfer<
   typeof PersistCollectionReaders
 >;
 
+export const PersistCollectionPhantoms = object({
+  type: literal('phantoms'),
+  collectionName: string(),
+  lastPhantomId: string(),
+});
+export type PersistCollectionPhantoms = ZodInfer<
+  typeof PersistCollectionPhantoms
+>;
+
 export const PersistDatabasePart = union([
   PersistDatabaseHeader,
   PersistDatabaseFooter,
@@ -66,5 +76,6 @@ export const PersistDatabasePart = union([
   PersistCollectionItems,
   PersistCollectionGeneration,
   PersistCollectionReaders,
+  PersistCollectionPhantoms,
 ]);
 export type PersistDatabasePart = ZodInfer<typeof PersistDatabasePart>;

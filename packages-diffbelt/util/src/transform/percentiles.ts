@@ -3,8 +3,10 @@ import {Logger} from '@-/types/src/logging/logging';
 import {createAggregateByTimestampTransform} from './aggregate-by-timestamp';
 import {createMapFilterTransform} from './map-filter';
 import {AggregateInterval, ItemChange} from './types';
+import {PercentilesData} from '@-/diffbelt-types/src/transform/percentiles';
+import {PercentilesState} from './percentiles-state';
 
-type UniqueCounterTransformOptions<
+type PercentilesTransformOptions<
   Context,
   SourceItem,
   IntermediateItem,
@@ -12,19 +14,24 @@ type UniqueCounterTransformOptions<
   TargetItem,
 > = {
   interval: AggregateInterval;
-
   extractContext: (context: Context) => {database: Database; logger: Logger};
+
   sourceCollectionName: string;
   intermediateCollectionName: string;
   intermediateToSourceReaderName: string;
   targetCollectionName: string;
   targetToIntermediateReaderName: string;
 
+  /** Specified in percents, like [0, 50, 75, 90, 95, 100] */
+  percentiles: number[];
+
   parseSourceItem: (value: string) => SourceItem;
   parseIntermediateItem: (value: string) => IntermediateItem;
   serializeIntermediateItem: (item: IntermediateItem) => string;
   parseTargetItem: (value: string) => TargetItem;
   serializeTargetItem: (item: TargetItem) => string;
+
+  extractPercentilesDataFromTargetItem: (item: TargetItem) => PercentilesData;
 
   getIntermediateFromSource: (options: {
     key: string;
@@ -39,23 +46,20 @@ type UniqueCounterTransformOptions<
   getInitialIntermediateAccumulator: (options: {
     prevTargetItem: TargetItem | null;
   }) => ReducedItem;
-  getEmptyIntermediateAccumulator: () => ReducedItem;
 
-  reduceIntermediateWithInitialAccumulator: (options: {
+  reduceIntermediate: (options: {
     accumulator: ReducedItem;
     items: ItemChange<IntermediateItem>[];
   }) => ReducedItem;
 
-  mergeIntermediate: (options: {items: ReducedItem[]}) => ReducedItem;
-
-  applyDiffToTargetItem: (options: {
+  apply: (options: {
     prevTargetItem: TargetItem | null;
-    mergedItem: ReducedItem;
-    countDiff: number;
+    reducedItem: ReducedItem;
+    percentilesData: PercentilesData;
   }) => TargetItem | null;
 };
 
-export const createUniqueCounterTransform = <
+export const createPercentilesTransform = <
   Context,
   SourceItem,
   IntermediateItem,
@@ -69,20 +73,20 @@ export const createUniqueCounterTransform = <
   intermediateToSourceReaderName,
   targetCollectionName,
   targetToIntermediateReaderName,
+  percentiles,
   parseSourceItem,
   parseIntermediateItem,
   serializeIntermediateItem,
   parseTargetItem,
   serializeTargetItem,
+  extractPercentilesDataFromTargetItem,
   getIntermediateFromSource,
   getIntermediateTimestampMsFromKey,
   getTargetKeyFromTimestampMs,
   getInitialIntermediateAccumulator,
-  getEmptyIntermediateAccumulator,
-  reduceIntermediateWithInitialAccumulator,
-  mergeIntermediate,
-  applyDiffToTargetItem,
-}: UniqueCounterTransformOptions<
+  reduceIntermediate,
+  apply,
+}: PercentilesTransformOptions<
   Context,
   SourceItem,
   IntermediateItem,
@@ -117,7 +121,14 @@ export const createUniqueCounterTransform = <
     },
   });
 
-  const aggregateTransform = createAggregateByTimestampTransform({
+  const aggregateTransform = createAggregateByTimestampTransform<
+    Context,
+    IntermediateItem,
+    TargetItem,
+    IntermediateItem,
+    ReducedItem,
+    PercentilesState
+  >({
     interval,
     targetCollectionName,
     sourceCollectionName: intermediateCollectionName,
@@ -131,53 +142,71 @@ export const createUniqueCounterTransform = <
     mapFilter: ({sourceItem}) => {
       return sourceItem;
     },
-    parallelReduceWithInitialAccumulator: ({accumulator, items}) => {
-      const acc = reduceIntermediateWithInitialAccumulator({
-        accumulator: accumulator.acc,
-        items,
-      });
+    sequentalReduceWithInitialAccumulator: async ({
+      accumulator,
+      items,
+      state,
+    }) => {
+      const reduced = reduceIntermediate({accumulator, items});
 
-      let countDiff = 0;
+      for (const {key, prev, next} of items) {
+        const needFetch = (() => {
+          if (prev === null && next !== null) {
+            return state.keyAdded(key);
+          } else if (prev !== null && next === null) {
+            return state.keyRemoved(key);
+          }
 
-      items.forEach(({prev, next}) => {
-        if (prev !== null) {
-          countDiff--;
+          return false;
+        })();
+
+        if (needFetch) {
+          await state.fetchAround();
         }
-        if (next !== null) {
-          countDiff++;
-        }
+      }
+
+      return reduced;
+    },
+    getIntervalState: async ({
+      prevTargetItem,
+      fromGenerationId,
+      generationId,
+      context,
+    }) => {
+      const {database} = extractContext(context);
+
+      const collection = await database.getCollection(
+        intermediateCollectionName,
+      );
+
+      const state = new PercentilesState({
+        percentiles,
+        percentilesData:
+          prevTargetItem !== null
+            ? extractPercentilesDataFromTargetItem(prevTargetItem)
+            : undefined,
+        collection,
+        fromGenerationId,
+        generationId,
       });
 
-      return {
-        acc: acc,
-        countDiff,
-      };
-    },
-    getInitialAccumulator: ({prevTargetItem}) => ({
-      acc: getInitialIntermediateAccumulator({prevTargetItem}),
-      countDiff: 0,
-    }),
-    getEmptyAccumulator: () => ({
-      acc: getEmptyIntermediateAccumulator(),
-      countDiff: 0,
-    }),
-    merge: ({items}) => {
-      let countDiff = 0;
+      await state.fetchAround();
 
-      const acc = mergeIntermediate({
-        items: items.map(({acc, countDiff: diff}) => {
-          countDiff += diff;
-          return acc;
-        }),
-      });
-
-      return {acc, countDiff};
+      return state;
     },
-    apply: ({prevTargetItem, mergedItem: {acc, countDiff}}) => {
-      return applyDiffToTargetItem({
+    getInitialAccumulator: ({prevTargetItem}) =>
+      getInitialIntermediateAccumulator({prevTargetItem}),
+    applyWithState: ({prevTargetItem, mergedItem, state}) => {
+      const percentilesData = state.getPercentilesData();
+
+      if (percentilesData.count <= 0) {
+        return null;
+      }
+
+      return apply({
         prevTargetItem,
-        mergedItem: acc,
-        countDiff,
+        reducedItem: mergedItem,
+        percentilesData,
       });
     },
   });

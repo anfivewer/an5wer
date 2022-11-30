@@ -1,17 +1,17 @@
+import {KeyValueRecord} from '@-/diffbelt-types/src/database/types';
 import {createCustomError} from '@-/types/src/errors/util';
 import {binarySearch} from '@-/util/src/array/binary-search';
+import {findRecordInCurrentKey} from '../../util/database/traverse/record';
 import {
-  createStorageTraverser,
-  StorageTraverser,
-} from '../../util/database/traverse/storage';
+  TraverserApi,
+  TraverserApiMarker,
+} from '../../util/database/traverse/types';
 import {MemoryDatabaseStorage} from './types';
 
 type InitialPosProvided = {initialPos: number};
 type InitialPosByKey = {
   key: string;
   exactKey?: boolean;
-  generationId?: string;
-  exactGenerationId?: boolean;
 };
 const isInitialPosByKey = (
   value: InitialPosSource,
@@ -19,16 +19,145 @@ const isInitialPosByKey = (
   return Boolean((value as Partial<InitialPosByKey>).key);
 };
 
-type InitialPosSource = InitialPosProvided | InitialPosByKey;
+type InitialExactPosByKeyAndGeneration = InitialPosByKey & {
+  generationId: string;
+  exactGenerationId?: boolean;
+};
+const isInitialPosByKeyAndGeneration = (
+  value: InitialPosSource,
+): value is InitialExactPosByKeyAndGeneration => {
+  return (
+    typeof (value as Partial<InitialExactPosByKeyAndGeneration>)
+      .generationId === 'string'
+  );
+};
+
+type InitialExactPosByKeyGenerationAndPhantom = InitialPosByKey & {
+  generationId: string;
+  exactGenerationId?: boolean;
+  phantomId?: string;
+  exactPhantomId?: boolean;
+};
+const isInitialPosByKeyGenerationAndPhantom = (
+  value: InitialPosSource,
+): value is InitialExactPosByKeyGenerationAndPhantom => {
+  if (!isInitialPosByKeyAndGeneration(value)) {
+    return false;
+  }
+
+  const casted = value as Partial<InitialExactPosByKeyGenerationAndPhantom>;
+
+  return (
+    typeof casted.phantomId === 'string' ||
+    typeof casted.exactPhantomId === 'boolean'
+  );
+};
+
+type InitialPosSource =
+  | InitialPosProvided
+  | InitialPosByKey
+  | InitialExactPosByKeyAndGeneration
+  | InitialExactPosByKeyGenerationAndPhantom;
 
 export const TraverserInitialItemNotFoundError = createCustomError(
   'TraverserInitialItemNotFoundError',
 );
 
 export type MemoryStorageTraverser = {
-  traverser: StorageTraverser;
+  api: TraverserApi;
   getIndex: () => number;
 };
+
+type MemoryStorageTraverserMarker = TraverserApiMarker & {
+  index: number;
+  item: KeyValueRecord;
+};
+
+export class MemoryStorageTraverserApi implements TraverserApi {
+  private storage: MemoryDatabaseStorage;
+  private index: number;
+
+  constructor({
+    storage,
+    index,
+  }: {
+    storage: MemoryDatabaseStorage;
+    index: number;
+  }) {
+    this.storage = storage;
+    this.index = index;
+  }
+
+  getItem() {
+    return this.storage[this.index];
+  }
+
+  getMarker() {
+    return {
+      index: this.index,
+      item: this.storage[this.index],
+    } as MemoryStorageTraverserMarker;
+  }
+
+  goMarker(rawMarker: TraverserApiMarker) {
+    const {index: markerIndex, item: expectedItem} =
+      rawMarker as Partial<MemoryStorageTraverserMarker>;
+    if (typeof markerIndex !== 'number' || !expectedItem) {
+      throw new Error(
+        `MemoryStorageTraverser: bad marker, index: ${markerIndex}, item: ${Boolean(
+          expectedItem,
+        )}`,
+      );
+    }
+
+    const actualItem = this.storage[markerIndex];
+    if (actualItem !== expectedItem) {
+      throw new Error(
+        'MemoryStorageTraverser: marker invariant violation, storage is changed',
+      );
+    }
+
+    this.index = markerIndex;
+  }
+
+  hasPrev() {
+    return this.index > 0;
+  }
+
+  peekPrev() {
+    return this.index > 0 ? this.storage[this.index - 1] : null;
+  }
+
+  goPrev() {
+    if (this.index <= 0) {
+      throw new Error('MemoryStorageTraverser: no prev item');
+    }
+
+    this.index--;
+  }
+
+  hasNext() {
+    return this.index < this.storage.length - 1;
+  }
+
+  peekNext() {
+    return this.index < this.storage.length - 1
+      ? this.storage[this.index + 1]
+      : null;
+  }
+
+  goNext() {
+    if (this.index >= this.storage.length - 1) {
+      throw new Error('MemoryStorageTraverser: no next item');
+    }
+
+    this.index++;
+  }
+
+  getIndex() {
+    return this.index;
+  }
+}
 
 export const createMemoryStorageTraverser = (
   options: {
@@ -39,7 +168,7 @@ export const createMemoryStorageTraverser = (
 
   const result = (() => {
     if (isInitialPosByKey(options)) {
-      const {key, exactKey = true, generationId, exactGenerationId} = options;
+      const {key, exactKey = true} = options;
 
       const pos = binarySearch({
         sortedArray: storage,
@@ -59,45 +188,59 @@ export const createMemoryStorageTraverser = (
 
       return [
         pos >= storage.length ? storage.length - 1 : pos,
-        generationId
-          ? (traverser: StorageTraverser) => {
-              const found = traverser.findGenerationRecord({
+        (api: TraverserApi) => {
+          const found = (() => {
+            if (isInitialPosByKeyGenerationAndPhantom(options)) {
+              const {
                 generationId,
-                exact: exactGenerationId,
+                exactGenerationId = false,
+                phantomId,
+                exactPhantomId = false,
+              } = options;
+              return findRecordInCurrentKey({
+                api,
+                generationId,
+                exactGenerationId,
+                phantomId,
+                exactPhantomId,
               });
-
-              if (!found) {
-                throw new TraverserInitialItemNotFoundError(
-                  'memoryStorageTraverser: initialPos by generationId not found',
-                );
-              }
             }
-          : undefined,
+
+            if (isInitialPosByKeyAndGeneration(options)) {
+              const {generationId, exactGenerationId = false} = options;
+              return findRecordInCurrentKey({
+                api,
+                generationId,
+                exactGenerationId,
+              });
+            }
+
+            // Just by key
+            return true;
+          })();
+
+          if (!found) {
+            throw new TraverserInitialItemNotFoundError(
+              'memoryStorageTraverser: initialPos by generationId not found',
+            );
+          }
+        },
       ] as const;
     } else {
       return [options.initialPos, undefined] as const;
     }
   })();
 
-  let index = result[0];
+  const index = result[0];
   const postProcess = result[1];
 
-  const traverser = createStorageTraverser({
-    getItem: () => storage[index],
-    peekPrev: () => (index > 0 ? storage[index - 1] : null),
-    goPrev: () => {
-      index--;
-    },
-    peekNext: () => (index < storage.length - 1 ? storage[index + 1] : null),
-    goNext: () => {
-      index++;
-    },
-  });
+  const api = new MemoryStorageTraverserApi({storage, index});
 
-  postProcess?.(traverser);
+  postProcess?.(api);
 
+  // TODO: return just `api`
   return {
-    traverser,
-    getIndex: () => index,
+    api: api as TraverserApi,
+    getIndex: api.getIndex.bind(api),
   };
 };

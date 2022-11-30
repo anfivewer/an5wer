@@ -5,6 +5,7 @@ export const runApp = <Context extends {config: {isDebug: boolean}}>({
   rootLoggerKey = 'main',
   createApp,
   afterReady,
+  withTimeout,
 }: {
   rootLoggerKey?: string;
   createApp: (options: {logger: Logger}) => Promise<App<Context>>;
@@ -13,6 +14,7 @@ export const runApp = <Context extends {config: {isDebug: boolean}}>({
     logger: Logger;
     context: Context;
   }) => Promise<void>;
+  withTimeout?: boolean;
 }) => {
   const mainLogger = new Logger(rootLoggerKey);
   let appGlobal: App<Context> | undefined;
@@ -28,6 +30,7 @@ export const runApp = <Context extends {config: {isDebug: boolean}}>({
 
     app
       .stop({
+        withTimeout,
         printHandlesOnTimeout: context?.config.isDebug,
       })
       .then(

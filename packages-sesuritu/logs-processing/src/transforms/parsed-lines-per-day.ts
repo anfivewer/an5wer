@@ -68,7 +68,7 @@ export const aggregateParsedLinesPerDay = createAggregateByTimestampTransform<
       acc.count += count;
 
       for (const [logKey, count] of Object.entries(logKeys)) {
-        if (!count) {
+        if (typeof count !== 'number') {
           continue;
         }
 

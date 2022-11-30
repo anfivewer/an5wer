@@ -18,11 +18,14 @@ export class Database extends BaseComponent implements Component<Context> {
   private db!: MemoryDatabasePersisted;
   private batcher!: AsyncBatcher<NormalizedLogLine>;
   private linesCollection!: Collection;
+  private getNeedToDump!: () => boolean;
 
   async init({context}: {context: Context}) {
     const {
       config: {databaseDumpPath},
     } = context;
+
+    this.getNeedToDump = () => context.needDumpDatabaseOnStop;
 
     this.batcher = new AsyncBatcher<NormalizedLogLine>({
       maxItems: 64,
@@ -70,6 +73,10 @@ export class Database extends BaseComponent implements Component<Context> {
   }
 
   async stop() {
+    if (!this.getNeedToDump()) {
+      return;
+    }
+
     await this.batcher.onIdle();
     await this.db.onIdle();
 

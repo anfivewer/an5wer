@@ -15,8 +15,14 @@ import {
 import {processLogFile} from './logs/process-file';
 import {renderReport} from './report/render-report';
 import {aggregateParsedLinesPerDay} from './transforms/parsed-lines-per-day';
+import {aggregateUpdatesHandlingPerDay} from './transforms/update-handle';
+import {
+  calculateUniqueChats,
+  calculateUniqueUsers,
+} from './transforms/unique-count';
 
 runApp({
+  withTimeout: false,
   createApp: ({logger}) =>
     createApp({
       getLogger: () => logger,
@@ -74,15 +80,20 @@ runApp({
     // Run transforms
     await Promise.all([transformLogsLinesToParsedLines({context})]);
     await Promise.all(
-      [transformParsedLinesToKicks, aggregateParsedLinesPerDay].map((fun) =>
-        fun({context}),
-      ),
+      [
+        transformParsedLinesToKicks,
+        aggregateParsedLinesPerDay,
+        aggregateUpdatesHandlingPerDay,
+        calculateUniqueChats,
+        calculateUniqueUsers,
+      ].map((fun) => fun({context})),
     );
     await Promise.all([aggregateKicksPerHour].map((fun) => fun({context})));
     await Promise.all([aggregateKicksPerDay].map((fun) => fun({context})));
 
     await renderReport({context});
 
-    await app.stop();
+    context.needDumpDatabaseOnStop = true;
+    await app.stop({withTimeout: false});
   },
 });

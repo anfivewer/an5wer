@@ -5,6 +5,7 @@ import styles from './main.module.css';
 import {ReportType} from '@-/sesuritu-types/src/site/report/report';
 import {SimpleTimeMetric} from '../../simple-time-metric/simple-time-metric';
 import {PieTimeMetric} from '../../pie-time-metric/pie-time-metric';
+import {PercentileMetric} from '../../percentile-metric/percentile-metric';
 
 const MainPage: FC = () => {
   const store = useMainMst();
@@ -26,6 +27,9 @@ const MainPage: FC = () => {
           break;
         case ReportType.pieTimeMetric:
           result.push(<PieTimeMetric key={report.name} metric={report} />);
+          break;
+        case ReportType.percentileMetric:
+          result.push(<PercentileMetric key={report.name} metric={report} />);
           break;
         default: {
           const shouldBeNever: never = report;

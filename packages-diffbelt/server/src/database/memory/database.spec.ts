@@ -42,6 +42,8 @@ describe('MemoryDatabase', () => {
         '"collectionName":"colA","generationId":"00000000002",' +
         '"changedKeys":["00000000003","00000000066","00000000270"]}\n' +
         '{"type":"readers","collectionName":"colA","readers":[]}\n' +
+        '{"type":"phantoms","collectionName":"colA","lastPhantomId":' +
+        '"00000000000"}\n' +
         '{"type":"items","collectionName":"colA","items":[{"key":' +
         '"00000000003","value":null,"generationId":"00000000002"},{"key":' +
         '"00000000065","value":"5","generationId":"00000000001"},{"key":' +
@@ -55,6 +57,8 @@ describe('MemoryDatabase', () => {
         '"isManual":true}\n' +
         '{"type":"readers","collectionName":"colB","readers":[{"readerId":' +
         '"aToB","generationId":"00000000002","collectionName":"colA"}]}\n' +
+        '{"type":"phantoms","collectionName":"colB","lastPhantomId":' +
+        '"00000000000"}\n' +
         '{"type":"items","collectionName":"colB","items":[{"key":' +
         '"00000000000","value":"0","generationId":"00000000002"},{"key":' +
         '"00000000060","value":"31","generationId":"00000000002"},{"key":' +

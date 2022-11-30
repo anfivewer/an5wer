@@ -12,6 +12,7 @@ import {CreateDatabaseFn} from './types';
 import {mapFilterTest} from './map-filter';
 import {aggregateByTimestampTest} from './aggregate-by-timestamp';
 import {uniqueCounterTest} from './unique-counter';
+import {percentilesTest} from './percentiles';
 
 export const databaseTest = <Db extends Database>({
   createDatabase,
@@ -83,6 +84,15 @@ export const databaseTest = <Db extends Database>({
 
     const {generationId: firstPutGenerationId} = await colA.putMany({
       items: initialItems,
+    });
+
+    await colA.putMany({
+      items: [
+        {key: makeId(3), value: null, phantomId: 'A'},
+        {key: makeId(70), value: '9', phantomId: 'A'},
+        {key: makeId(70), value: '11', phantomId: 'B'},
+      ],
+      generationId: firstPutGenerationId,
     });
 
     commitRunner.makeCommits();
@@ -208,6 +218,7 @@ export const databaseTest = <Db extends Database>({
   mapFilterTest({createDatabase});
   aggregateByTimestampTest({createDatabase});
   uniqueCounterTest({createDatabase});
+  percentilesTest({createDatabase});
 };
 
 const makeId = (ts: number) => String(ts).padStart(11, '0');
