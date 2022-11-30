@@ -3,6 +3,7 @@ import {ReadOnlyStream} from '@-/types/src/stream/stream';
 export type KeyValueUpdate = {
   key: string;
   value: string | null;
+  phantomId?: string;
   ifNotPresent?: boolean;
 };
 export type KeyValue = {key: string; value: string};

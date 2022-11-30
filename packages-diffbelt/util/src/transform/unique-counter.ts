@@ -34,7 +34,7 @@ type UniqueCounterTransformOptions<
     value: IntermediateItem | null;
   } | null;
   getIntermediateTimestampMsFromKey: (key: string) => number;
-  getTargetKeyFromTimestampMs: (timestampMs: number) => string;
+  getTargetKeyFromTimestampMs?: (timestampMs: number) => string;
 
   getInitialIntermediateAccumulator: (options: {
     prevTargetItem: TargetItem | null;

@@ -9,6 +9,8 @@ import {
   HANDLE_UPDATE_PER_DAY_PERCENTILES_COLLECTION_NAME,
   KICKS_PER_DAY_COLLECTION_NAME,
   PARSED_LINES_PER_DAY_COLLECTION_NAME,
+  UNIQUE_CHATS_COLLECTIONS_DEF,
+  UNIQUE_USERS_COLLECTIONS_DEF,
 } from '../database/structure';
 import {queryCollection} from '@-/diffbelt-util/src/queries/dump';
 import {AggregatedKicksCollectionItem} from '../types/collections/kicks';
@@ -27,15 +29,17 @@ export const collectReportData = async ({
   const {database} = context;
   const diffbelt = database.getDiffbelt();
 
-  const collectCountMetric = async <T extends {count: number}>({
+  const collectCountMetric = async <T>({
     metricName,
     collectionName,
     itemParser,
+    getCount,
     onItem,
   }: {
     metricName: string;
     collectionName: string;
     itemParser: {parse: (value: unknown) => T};
+    getCount: (item: T) => number;
     onItem?: (options: {key: string; tsMs: number; item: T}) => void;
   }) => {
     const metric: SimpleTimeMetric = {
@@ -56,7 +60,7 @@ export const collectReportData = async ({
 
         onItem?.({key, item, tsMs});
 
-        metricItems.push({tsMs, value: item.count});
+        metricItems.push({tsMs, value: getCount(item)});
       }
     }
 
@@ -154,9 +158,38 @@ export const collectReportData = async ({
 
   const reports: ReportData['reports'] = await Promise.all([
     collectCountMetric({
+      metricName: 'uniqueChats:1d',
+      collectionName: UNIQUE_CHATS_COLLECTIONS_DEF.targetCollectionName,
+      itemParser: {
+        parse: (value) => {
+          if (typeof value !== 'number') {
+            throw new Error();
+          }
+
+          return value;
+        },
+      },
+      getCount: (count) => count,
+    }),
+    collectCountMetric({
+      metricName: 'uniqueUsers:1d',
+      collectionName: UNIQUE_USERS_COLLECTIONS_DEF.targetCollectionName,
+      itemParser: {
+        parse: (value) => {
+          if (typeof value !== 'number') {
+            throw new Error();
+          }
+
+          return value;
+        },
+      },
+      getCount: (count) => count,
+    }),
+    collectCountMetric({
       metricName: 'kicks:1d',
       collectionName: KICKS_PER_DAY_COLLECTION_NAME,
       itemParser: AggregatedKicksCollectionItem,
+      getCount: (item) => item.count,
       onItem: ({tsMs, item}) => {
         kicksPerDayReasonsMetricCollector.addItem({tsMs, item});
       },
@@ -165,6 +198,7 @@ export const collectReportData = async ({
       metricName: 'parsed-log-lines:1d',
       collectionName: PARSED_LINES_PER_DAY_COLLECTION_NAME,
       itemParser: AggregatedParsedLinesPerDayCollectionItem,
+      getCount: (item) => item.count,
       onItem: ({tsMs, item}) => {
         logsPerDayLogKeysMetricCollector.addItem({tsMs, item});
       },

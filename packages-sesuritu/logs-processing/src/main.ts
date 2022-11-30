@@ -16,6 +16,10 @@ import {processLogFile} from './logs/process-file';
 import {renderReport} from './report/render-report';
 import {aggregateParsedLinesPerDay} from './transforms/parsed-lines-per-day';
 import {aggregateUpdatesHandlingPerDay} from './transforms/update-handle';
+import {
+  calculateUniqueChats,
+  calculateUniqueUsers,
+} from './transforms/unique-count';
 
 runApp({
   withTimeout: false,
@@ -80,6 +84,8 @@ runApp({
         transformParsedLinesToKicks,
         aggregateParsedLinesPerDay,
         aggregateUpdatesHandlingPerDay,
+        calculateUniqueChats,
+        calculateUniqueUsers,
       ].map((fun) => fun({context})),
     );
     await Promise.all([aggregateKicksPerHour].map((fun) => fun({context})));
