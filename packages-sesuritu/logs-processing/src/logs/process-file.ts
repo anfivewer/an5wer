@@ -47,11 +47,6 @@ export const processLogFile = async ({
 
   for await (const line of linesStream) {
     const normalizedLine = linesNormalizer.normalizeLine(line);
-
-    if (!normalizedLine) {
-      continue;
-    }
-
     database.addLine(normalizedLine);
   }
 };
@@ -91,7 +86,7 @@ const processLogFileInternal = async ({
 
   const last = await findLastLineWithTimestamp({
     fd,
-    size,
+    position: size,
     getBuffer,
     resetBuffers,
   });
@@ -138,9 +133,11 @@ const processLogFileInternal = async ({
       break;
     }
 
+    const positionForFind = position;
+
     const maybeLine = await findLastLineWithTimestamp({
       fd,
-      size: position,
+      position: positionForFind,
       getBuffer,
       resetBuffers,
     });
@@ -158,6 +155,10 @@ const processLogFileInternal = async ({
         comparison: 1,
         hintLeftInclusive: nextLinePosition,
       }));
+
+      if (positionForFind === position) {
+        break;
+      }
       continue;
     }
 
@@ -172,6 +173,10 @@ const processLogFileInternal = async ({
       comparison: -1,
       hintRightInclusive: foundLinePosition - 1,
     }));
+
+    if (positionForFind === position) {
+      break;
+    }
   }
 
   if (!isFinite(lastLineStart)) {
@@ -219,12 +224,12 @@ const findFirstLineWithTimestamp = async ({
 
 const findLastLineWithTimestamp = async ({
   fd,
-  size,
+  position,
   getBuffer,
   resetBuffers,
 }: {
   fd: FileHandle;
-  size: number;
+  position: number;
   getBuffer: () => Buffer;
   resetBuffers: () => void;
 }): Promise<{
@@ -232,7 +237,7 @@ const findLastLineWithTimestamp = async ({
   position: number;
   nextLinePosition: number;
 } | null> => {
-  let pos = size;
+  let pos = position;
 
   while (true) {
     resetBuffers();
