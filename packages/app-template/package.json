@@ -14,10 +14,10 @@
     "@-/util": "workspace:*",
     "dotenv": "16.0.1",
     "ts-node": "10.8.1",
-    "typescript": "4.8.3"
+    "typescript": "4.9.5"
   },
   "devDependencies": {
-    "@types/node": "17.0.42",
+    "@types/node": "18.11.18",
     "nodemon": "2.0.18"
   }
 }

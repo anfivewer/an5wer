@@ -22,13 +22,13 @@
     "react": "18.1.0",
     "react-dom": "18.1.0",
     "sass": "1.55.0",
-    "typescript": "4.8.3",
+    "typescript": "4.9.5",
     "vite": "2.9.9",
     "vite-plugin-sass-dts": "git+https://github.com/Rulexec/vite-plugin-sass-dts.git#e649921b58c44f12d21298f7f676d5a2033b4a43",
     "zod": "3.17.3"
   },
   "devDependencies": {
-    "@types/node": "17.0.42",
+    "@types/node": "18.11.18",
     "@types/react": "18.0.15",
     "@types/react-dom": "18.0.6",
     "ts-node": "10.8.1"

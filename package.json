@@ -26,7 +26,7 @@
     "lint-staged": "11.0.0",
     "prettier": "2.7.1",
     "pretty-quick": "3.1.1",
-    "typescript": "4.8.3"
+    "typescript": "4.9.5"
   },
   "lint-staged": {
     "*.+(t|j)s+(x|)": [
