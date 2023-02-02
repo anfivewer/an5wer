@@ -187,9 +187,9 @@ export const percentilesTest = ({
               percentilesData: {
                 count: 3,
                 percentiles: [
-                  {p: 0, index: 0, key: makeIntermediateKey(5, 15)},
-                  {p: 0.5, index: 1, key: makeIntermediateKey(8, 20)},
-                  {p: 1, index: 2, key: makeIntermediateKey(14, 5)},
+                  {p: 0, index: 0, key: {key: makeIntermediateKey(5, 15)}},
+                  {p: 0.5, index: 1, key: {key: makeIntermediateKey(8, 20)}},
+                  {p: 1, index: 2, key: {key: makeIntermediateKey(14, 5)}},
                 ],
               },
             }),
@@ -233,9 +233,9 @@ export const percentilesTest = ({
               percentilesData: {
                 count: 5,
                 percentiles: [
-                  {p: 0, index: 0, key: makeIntermediateKey(5, 10)},
-                  {p: 0.5, index: 2, key: makeIntermediateKey(8, 20)},
-                  {p: 1, index: 4, key: makeIntermediateKey(14, 5)},
+                  {p: 0, index: 0, key: {key: makeIntermediateKey(5, 10)}},
+                  {p: 0.5, index: 2, key: {key: makeIntermediateKey(8, 20)}},
+                  {p: 1, index: 4, key: {key: makeIntermediateKey(14, 5)}},
                 ],
               },
             }),

@@ -119,7 +119,7 @@ export const collectReportData = async ({
               continue;
             }
 
-            return getValueFromKey(obj.key);
+            return getValueFromKey(obj.key.key);
           }
         });
 

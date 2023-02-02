@@ -14,9 +14,10 @@ export const mapFilterTest = ({
       const {database, commitRunner} = await createDatabase();
 
       const {generationId: initialGenerationId} =
-        await database.createCollection('initial');
+        await database.createCollection({name: 'initial'});
 
-      await database.createCollection('target', {
+      await database.createCollection({
+        name: 'target',
         generationId: initialGenerationId,
       });
       const [initialCollection, targetCollection] = await Promise.all([

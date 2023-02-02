@@ -101,10 +101,10 @@ export class MemoryDatabase extends BaseComponent implements Database {
     this.addCollectionDisposer(name, dispose);
   }
 
-  createCollection: Database['createCollection'] = async (
+  createCollection: Database['createCollection'] = async ({
     name,
-    {generationId} = {},
-  ) => {
+    generationId,
+  }) => {
     if (this.collections.has(name)) {
       throw new CollectionAlreadyExistsError();
     }

@@ -16,8 +16,10 @@ export const createSameKeyRecords = ({
   if (typeof prependKey === 'string') {
     result.push({
       key: prependKey,
+      keyEncoding: undefined,
       generationId: '0',
       value: '42',
+      valueEncoding: undefined,
       phantomId: undefined,
     });
   }
@@ -25,8 +27,10 @@ export const createSameKeyRecords = ({
   generations.forEach((generationId) => {
     const record: KeyValueRecord = {
       key,
+      keyEncoding: undefined,
       generationId,
       value: '42',
+      valueEncoding: undefined,
       phantomId: undefined,
     };
 
@@ -36,8 +40,10 @@ export const createSameKeyRecords = ({
   if (typeof appendKey === 'string') {
     result.push({
       key: appendKey,
+      keyEncoding: undefined,
       generationId: '0',
       value: '42',
+      valueEncoding: undefined,
       phantomId: undefined,
     });
   }

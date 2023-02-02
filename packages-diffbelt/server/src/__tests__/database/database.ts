@@ -32,10 +32,11 @@ export const databaseTest = <Db extends Database>({
       expect(collections).toStrictEqual([]);
     }
 
-    await database.createCollection('colA');
+    await database.createCollection({name: 'colA'});
     const colA = await database.getCollection('colA');
 
-    await database.createCollection('colB', {
+    await database.createCollection({
+      name: 'colB',
       generationId: await colA.getGeneration(),
     });
 
@@ -88,11 +89,16 @@ export const databaseTest = <Db extends Database>({
 
     await colA.putMany({
       items: [
-        {key: makeId(3), value: null, phantomId: 'A'},
-        {key: makeId(70), value: '9', phantomId: 'A'},
-        {key: makeId(70), value: '11', phantomId: 'B'},
+        {key: makeId(3), value: null},
+        {key: makeId(70), value: '9'},
       ],
       generationId: firstPutGenerationId,
+      phantomId: 'A',
+    });
+    await colA.putMany({
+      items: [{key: makeId(70), value: '11'}],
+      generationId: firstPutGenerationId,
+      phantomId: 'B',
     });
 
     commitRunner.makeCommits();

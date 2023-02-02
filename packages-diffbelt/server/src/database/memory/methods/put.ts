@@ -47,7 +47,9 @@ export const createPutMethod =
       scheduleNonManualCommit();
       storage.push({
         key,
+        keyEncoding: undefined,
         value,
+        valueEncoding: undefined,
         generationId: recordGenerationId,
         phantomId,
       });
@@ -106,7 +108,9 @@ export const createPutMethod =
       nextGeneration?.addKey(key);
       storage.splice(index, 0, {
         key,
+        keyEncoding: undefined,
         value,
+        valueEncoding: undefined,
         generationId: recordGenerationId,
         phantomId,
       });

@@ -11,8 +11,10 @@ describe('goNextGenerationInCurrentKey', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
     ];
@@ -30,14 +32,18 @@ describe('goNextGenerationInCurrentKey', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '2',
         value: '13',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '3',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
     ];
@@ -55,14 +61,18 @@ describe('goNextGenerationInCurrentKey', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '2',
         value: '13',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '3',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
     ];
@@ -80,20 +90,26 @@ describe('goNextGenerationInCurrentKey', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '2',
         value: '13',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '3',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
     ];
@@ -113,8 +129,10 @@ describe('searchGenerationInCurrentKey', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
     ];

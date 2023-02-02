@@ -1,19 +1,19 @@
-import {Collection} from '@-/diffbelt-types/src/database/types';
+import {Collection, EncodedKey} from '@-/diffbelt-types/src/database/types';
 import {
   PercentilesData,
   SinglePercentileData,
 } from '@-/diffbelt-types/src/transform/percentiles';
 import {binarySearch} from '@-/util/src/array/binary-search';
-import {basicCompare} from '@-/util/src/array/basic-sort';
 import {assertNonNullable} from '@-/types/src/assert/runtime';
+import {basicCompareKey, isGreaterThan, isLessThan} from '../keys/compare';
 
 const AROUND_ITEMS_COUNT = 200;
 
 type PercentilesStatePercentile = SinglePercentileData & {
   // TODO: reverse this array to simplify code
-  aroundLeft: string[];
+  aroundLeft: EncodedKey[];
   hasMoreOnTheLeft: boolean;
-  aroundRight: string[];
+  aroundRight: EncodedKey[];
   hasMoreOnTheRight: boolean;
 };
 
@@ -101,7 +101,8 @@ export class PercentilesState {
         (async () => {
           const {foundKey, left, right, hasMoreOnTheLeft, hasMoreOnTheRight} =
             await this.collection.getKeysAround({
-              key,
+              key: key.key,
+              keyEncoding: key.keyEncoding,
               requireKeyExistance: true,
               limit: AROUND_ITEMS_COUNT,
               generationId: this.fromGenerationId,
@@ -128,11 +129,12 @@ export class PercentilesState {
   }
 
   /** returns `true` if you need to call `fetchAround()` */
-  keyAdded(key: string): boolean {
+  keyAdded(key: EncodedKey): boolean {
     this.phantomChanges.push(async () => {
       assertNonNullable(this.phantomId);
       await this.collection.put({
-        key,
+        key: key.key,
+        keyEncoding: key.keyEncoding,
         value: '',
         generationId: this.fromGenerationId,
         phantomId: this.phantomId,
@@ -169,17 +171,17 @@ export class PercentilesState {
     this.percentiles.forEach((percentile) => {
       const {p, key: percentileKey, aroundLeft, aroundRight} = percentile;
 
-      if (key < percentileKey) {
+      if (isLessThan(key, percentileKey)) {
         if (!intervalFound) {
           intervalFound = true;
           indexDiff = 1;
         }
 
         if (aroundLeft.length) {
-          if (key > aroundLeft[0]) {
+          if (isGreaterThan(key, aroundLeft[0])) {
             const pos = binarySearch({
               sortedArray: aroundLeft,
-              comparator: (item) => basicCompare(key, item),
+              comparator: (item) => basicCompareKey(key, item),
               returnInsertPos: true,
             });
             aroundLeft.splice(pos, 0, key);
@@ -203,10 +205,10 @@ export class PercentilesState {
         }
       } else {
         if (aroundRight.length) {
-          if (key < aroundRight[aroundRight.length - 1]) {
+          if (isLessThan(key, aroundRight[aroundRight.length - 1])) {
             const pos = binarySearch({
               sortedArray: aroundRight,
-              comparator: (item) => basicCompare(key, item),
+              comparator: (item) => basicCompareKey(key, item),
               returnInsertPos: true,
             });
             aroundRight.splice(pos, 0, key);
@@ -287,7 +289,7 @@ export class PercentilesState {
   }
 
   /** returns `true` if you need to call `fetchAround()` */
-  keyRemoved(key: string): boolean {
+  keyRemoved(key: EncodedKey): boolean {
     if (!this.percentiles) {
       throw new Error('PercentilesState:keyRemoved but no percentiles');
     }
@@ -295,7 +297,8 @@ export class PercentilesState {
     this.phantomChanges.push(async () => {
       assertNonNullable(this.phantomId);
       await this.collection.put({
-        key,
+        key: key.key,
+        keyEncoding: key.keyEncoding,
         value: null,
         generationId: this.fromGenerationId,
         phantomId: this.phantomId,
@@ -311,17 +314,17 @@ export class PercentilesState {
     this.percentiles.forEach((percentile) => {
       const {p, key: percentileKey, aroundLeft, aroundRight} = percentile;
 
-      if (key < percentileKey) {
+      if (isLessThan(key, percentileKey)) {
         if (!intervalFound) {
           intervalFound = true;
           indexDiff = -1;
         }
 
         if (aroundLeft.length) {
-          if (key > aroundLeft[0]) {
+          if (isGreaterThan(key, aroundLeft[0])) {
             const pos = binarySearch({
               sortedArray: aroundLeft,
-              comparator: (item) => basicCompare(key, item),
+              comparator: (item) => basicCompareKey(key, item),
             });
 
             if (pos < 0) {
@@ -335,10 +338,10 @@ export class PercentilesState {
         }
       } else {
         if (aroundRight.length) {
-          if (key < aroundRight[aroundRight.length - 1]) {
+          if (isLessThan(key, aroundRight[aroundRight.length - 1])) {
             const pos = binarySearch({
               sortedArray: aroundRight,
-              comparator: (item) => basicCompare(key, item),
+              comparator: (item) => basicCompareKey(key, item),
             });
 
             if (pos < 0) {

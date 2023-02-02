@@ -1,6 +1,7 @@
 import {
   CollectionGetKeysAroundOptions,
   CollectionGetKeysAroundResult,
+  EncodedKey,
 } from '@-/diffbelt-types/src/database/types';
 import {goNextKey, goPrevKey} from '../../../util/database/traverse/key';
 import {searchPhantomInCurrentKey} from '../../../util/database/traverse/phantom';
@@ -69,8 +70,8 @@ export const getKeysAround = ({
     initialPos: traverser.getIndex(),
   }).api;
 
-  const left: string[] = [];
-  const right: string[] = [];
+  const left: EncodedKey[] = [];
+  const right: EncodedKey[] = [];
   let hasMoreOnTheLeft = true;
   let hasMoreOnTheRight = true;
 
@@ -100,7 +101,7 @@ export const getKeysAround = ({
       break;
     }
 
-    left.push(record.key);
+    left.push({key: record.key, keyEncoding: record.keyEncoding});
   }
 
   left.reverse();
@@ -131,7 +132,7 @@ export const getKeysAround = ({
       break;
     }
 
-    right.push(record.key);
+    right.push({key: record.key, keyEncoding: record.keyEncoding});
   }
 
   return Promise.resolve({

@@ -645,7 +645,7 @@ export const createAggregateByTimestampTransform = <
     };
 
     for await (const diffs of stream) {
-      for (const {key, values} of diffs) {
+      for (const {key, keyEncoding, values} of diffs) {
         const prevValueRaw = values[0];
         const lastValueRaw = values[values.length - 1];
 
@@ -697,7 +697,11 @@ export const createAggregateByTimestampTransform = <
           generationId,
         });
 
-        const change = {key, prev: prevMappedItem, next: lastMappedItem};
+        const change = {
+          key: {key, keyEncoding},
+          prev: prevMappedItem,
+          next: lastMappedItem,
+        };
 
         if (!isItemChange(change)) {
           continue;

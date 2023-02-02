@@ -7,8 +7,10 @@ describe('goToInsertPosition', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
     ];
@@ -29,8 +31,10 @@ describe('goToInsertPosition', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
     ];
@@ -51,8 +55,10 @@ describe('goToInsertPosition', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
     ];
@@ -73,19 +79,25 @@ describe('goToInsertPosition', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '00000000003',
+        keyEncoding: undefined,
         value: '2',
+        valueEncoding: undefined,
         generationId: '00000000001',
         phantomId: undefined,
       },
       {
         key: '00000000065',
+        keyEncoding: undefined,
         value: '5',
+        valueEncoding: undefined,
         generationId: '00000000001',
         phantomId: undefined,
       },
       {
         key: '00000000069',
+        keyEncoding: undefined,
         value: '11',
+        valueEncoding: undefined,
         generationId: '00000000001',
         phantomId: undefined,
       },
@@ -110,7 +122,9 @@ describe('goToInsertPosition', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '00000000003',
+        keyEncoding: undefined,
         value: '2',
+        valueEncoding: undefined,
         generationId: '00000000001',
         phantomId: undefined,
       },

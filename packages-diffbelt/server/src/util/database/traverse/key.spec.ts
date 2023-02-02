@@ -7,8 +7,10 @@ describe('goNextKey', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
     ];
@@ -24,14 +26,18 @@ describe('goNextKey', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
     ];
@@ -47,14 +53,18 @@ describe('goNextKey', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
     ];
@@ -70,26 +80,34 @@ describe('goNextKey', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '0',
         value: '12',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '1',
         value: '13',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
     ];
@@ -105,26 +123,34 @@ describe('goNextKey', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '0',
         value: '12',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '1',
         value: '13',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: 'A',
       },
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
     ];
@@ -140,20 +166,26 @@ describe('goNextKey', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '0',
         value: '12',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '1',
         value: '13',
+        valueEncoding: undefined,
         phantomId: 'A',
       },
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: 'B',
       },
     ];
@@ -171,8 +203,10 @@ describe('goPrevKey', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
     ];
@@ -188,14 +222,18 @@ describe('goPrevKey', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
     ];
@@ -211,14 +249,18 @@ describe('goPrevKey', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
     ];
@@ -234,26 +276,34 @@ describe('goPrevKey', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '0',
         value: '12',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '1',
         value: '13',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
     ];
@@ -269,26 +319,34 @@ describe('goPrevKey', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '5',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '0',
         value: '12',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '1',
         value: '13',
+        valueEncoding: undefined,
         phantomId: 'A',
       },
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: 'B',
       },
     ];
@@ -304,20 +362,26 @@ describe('goPrevKey', () => {
     const storage: MemoryDatabaseStorage = [
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '0',
         value: '12',
+        valueEncoding: undefined,
         phantomId: undefined,
       },
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '1',
         value: '13',
+        valueEncoding: undefined,
         phantomId: 'A',
       },
       {
         key: '7',
+        keyEncoding: undefined,
         generationId: '2',
         value: '42',
+        valueEncoding: undefined,
         phantomId: 'B',
       },
     ];

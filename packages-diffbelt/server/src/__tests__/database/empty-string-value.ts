@@ -10,7 +10,7 @@ export const testEmptyStringValue = async ({
   database: Database;
   commitRunner: NonManualCommitRunner;
 }) => {
-  await database.createCollection('testEmptyStringValue');
+  await database.createCollection({name: 'testEmptyStringValue'});
   const collection = await database.getCollection('testEmptyStringValue');
 
   const {generationId} = await collection.put({key: 'test', value: ''});

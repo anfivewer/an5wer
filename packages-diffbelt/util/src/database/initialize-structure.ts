@@ -21,7 +21,8 @@ export const initializeDatabaseStructure = async ({
     collections.map(
       async ({name, isManual = false, readers: expectedReaders}) => {
         const createCollection = () =>
-          database.createCollection(name, {
+          database.createCollection({
+            name,
             generationId: isManual ? '' : undefined,
           });
 
@@ -38,7 +39,7 @@ export const initializeDatabaseStructure = async ({
 
         const actualReaders = await collection.listReaders();
         const actualReadersMap = new Map(
-          actualReaders.map((reader) => [reader.readerId, reader]),
+          actualReaders.items.map((reader) => [reader.readerId, reader]),
         );
 
         const promises: Promise<void>[] = [];

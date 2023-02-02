@@ -1,45 +1,97 @@
 import {ReadOnlyStream} from '@-/types/src/stream/stream';
+import {zodEnum, ZodInfer} from '@-/types/src/zod/zod';
+import {array, boolean, object, string, union, number} from 'zod';
 
-export type KeyValueUpdate = {
-  key: string;
-  value: string | null;
-  phantomId?: string;
-  ifNotPresent?: boolean;
-};
-export type KeyValue = {key: string; value: string};
-type PutResult = {generationId: string};
+const EncodingTypeEnum = zodEnum(['utf8', 'base64']);
+export const EncodingType = EncodingTypeEnum.enum;
+export type EncodingType = ZodInfer<typeof EncodingTypeEnum>;
+
+export const KeyValueUpdate = object({
+  key: string(),
+  keyEncoding: EncodingTypeEnum.optional(),
+  ifNotPresent: boolean().optional(),
+  value: string().nullable(),
+  valueEncoding: EncodingTypeEnum.optional(),
+});
+export type KeyValueUpdate = ZodInfer<typeof KeyValueUpdate>;
+
+export const KeyValue = object({
+  key: string(),
+  keyEncoding: EncodingTypeEnum.optional(),
+  value: string(),
+  valueEncoding: EncodingTypeEnum.optional(),
+});
+export type KeyValue = ZodInfer<typeof KeyValue>;
+
+export const PutResult = object({
+  generationId: string(),
+  generationIdEncoding: EncodingTypeEnum.optional(),
+  wasPut: boolean().optional(),
+});
+export type PutResult = ZodInfer<typeof PutResult>;
 
 export type KeyValueRecord = {
   key: string;
+  keyEncoding: EncodingType | undefined;
   value: string | null;
+  valueEncoding: EncodingType | undefined;
   generationId: string;
   phantomId: string | undefined;
 };
 
-export type QueryResult = {
-  generationId: string;
-  items: KeyValue[];
-  cursorId?: string;
-};
+export const QueryResult = object({
+  generationId: string(),
+  generationIdEncoding: EncodingTypeEnum.optional(),
+  items: array(KeyValue),
+  cursorId: string().optional(),
+});
+export type QueryResult = ZodInfer<typeof QueryResult>;
 
-export type DiffResultValues = (string | null)[];
-export type DiffResultItems = {key: string; values: DiffResultValues}[];
+export const DiffResultValues = array(string().nullable());
+export type DiffResultValues = ZodInfer<typeof DiffResultValues>;
 
-export type DiffResult = {
-  fromGenerationId: string | null;
-  generationId: string;
-  items: DiffResultItems;
-  cursorId?: string;
-};
+export const DiffResultItems = array(
+  object({
+    key: string(),
+    keyEncoding: EncodingTypeEnum.optional(),
+    values: DiffResultValues,
+  }),
+);
+export type DiffResultItems = ZodInfer<typeof DiffResultItems>;
 
-type DiffOptionsFromGenerationInputProvided = {fromGenerationId: string};
-type DiffOptionsFromGenerationInputFromReader = {
-  readerId: string;
-  readerCollectionName: string | undefined;
-};
-type DiffOptionsFromGenerationInput =
-  | DiffOptionsFromGenerationInputProvided
-  | DiffOptionsFromGenerationInputFromReader;
+export const DiffResult = object({
+  fromGenerationId: string().nullable(),
+  fromGenerationIdEncoding: EncodingTypeEnum.optional(),
+  generationId: string(),
+  generationIdEncoding: EncodingTypeEnum.optional(),
+  items: DiffResultItems,
+  cursorId: string().optional(),
+});
+export type DiffResult = ZodInfer<typeof DiffResult>;
+
+export const DiffOptionsFromGenerationInputProvided = object({
+  fromGenerationId: string(),
+  fromGenerationIdEncoding: EncodingTypeEnum.optional(),
+});
+export type DiffOptionsFromGenerationInputProvided = ZodInfer<
+  typeof DiffOptionsFromGenerationInputProvided
+>;
+
+export const DiffOptionsFromGenerationInputFromReader = object({
+  readerId: string(),
+  readerCollectionName: string().optional(),
+});
+export type DiffOptionsFromGenerationInputFromReader = ZodInfer<
+  typeof DiffOptionsFromGenerationInputFromReader
+>;
+
+export const DiffOptionsFromGenerationInput = union([
+  DiffOptionsFromGenerationInputProvided,
+  DiffOptionsFromGenerationInputFromReader,
+]);
+export type DiffOptionsFromGenerationInput = ZodInfer<
+  typeof DiffOptionsFromGenerationInput
+>;
 
 export const isGenerationProvidedByReader = (
   value: DiffOptionsFromGenerationInput,
@@ -49,26 +101,193 @@ export const isGenerationProvidedByReader = (
   );
 };
 
-export type DiffOptions = DiffOptionsFromGenerationInput & {
-  toGenerationId?: string;
-};
+export const DiffOptions = DiffOptionsFromGenerationInput.and(
+  object({
+    toGenerationId: string().optional(),
+    toGenerationIdEncoding: EncodingTypeEnum.optional(),
+  }),
+);
+export type DiffOptions = ZodInfer<typeof DiffOptions>;
 
-export type CollectionGetKeysAroundOptions = {
-  key: string;
-  requireKeyExistance: boolean;
-  limit: number;
-  generationId?: string;
-  phantomId?: string;
-};
+export const CollectionGetKeysAroundOptions = object({
+  key: string(),
+  keyEncoding: EncodingTypeEnum.optional(),
+  requireKeyExistance: boolean(),
+  limit: number(),
+  generationId: string().optional(),
+  generationIdEncoding: EncodingTypeEnum.optional(),
+  phantomId: string().optional(),
+  phantomIdEncoding: EncodingTypeEnum.optional(),
+});
+export type CollectionGetKeysAroundOptions = ZodInfer<
+  typeof CollectionGetKeysAroundOptions
+>;
 
-export type CollectionGetKeysAroundResult = {
-  generationId: string;
-  hasMoreOnTheLeft: boolean;
-  hasMoreOnTheRight: boolean;
-  left: string[];
-  right: string[];
-  foundKey: boolean;
-};
+export const EncodedKey = object({
+  key: string(),
+  keyEncoding: EncodingTypeEnum.optional(),
+});
+export type EncodedKey = ZodInfer<typeof EncodedKey>;
+
+export const CollectionGetKeysAroundResult = object({
+  generationId: string(),
+  generationIdEncoding: EncodingTypeEnum.optional(),
+  hasMoreOnTheLeft: boolean(),
+  hasMoreOnTheRight: boolean(),
+  left: array(EncodedKey),
+  right: array(EncodedKey),
+  foundKey: boolean(),
+});
+export type CollectionGetKeysAroundResult = ZodInfer<
+  typeof CollectionGetKeysAroundResult
+>;
+
+export const GetOptions = object({
+  key: string(),
+  keyEncoding: EncodingTypeEnum.optional(),
+  generationId: string().optional(),
+  generationIdEncoding: EncodingTypeEnum.optional(),
+  phantomId: string().optional(),
+  phantomIdEncoding: EncodingTypeEnum.optional(),
+});
+export type GetOptions = ZodInfer<typeof GetOptions>;
+
+export const GetResult = object({
+  generationId: string(),
+  generationIdEncoding: EncodingTypeEnum.optional(),
+  item: KeyValue.nullable(),
+});
+export type GetResult = ZodInfer<typeof GetResult>;
+
+export const QueryOptions = object({
+  generationId: string().optional(),
+  generationIdEncoding: EncodingTypeEnum.optional(),
+  phantomId: string().optional(),
+  phantomIdEncoding: EncodingTypeEnum.optional(),
+});
+export type QueryOptions = ZodInfer<typeof QueryOptions>;
+
+export const ReadQueryCursorOptions = object({
+  cursorId: string(),
+});
+export type ReadQueryCursorOptions = ZodInfer<typeof ReadQueryCursorOptions>;
+
+export const PutOptions = KeyValueUpdate.and(
+  object({
+    generationId: string().optional(),
+    generationIdEncoding: EncodingTypeEnum.optional(),
+    phantomId: string().optional(),
+    phantomIdEncoding: EncodingTypeEnum.optional(),
+  }),
+);
+export type PutOptions = ZodInfer<typeof PutOptions>;
+
+export const PutManyOptions = object({
+  items: array(KeyValueUpdate),
+  generationId: string().optional(),
+  generationIdEncoding: EncodingTypeEnum.optional(),
+  phantomId: string().optional(),
+  phantomIdEncoding: EncodingTypeEnum.optional(),
+});
+export type PutManyOptions = ZodInfer<typeof PutManyOptions>;
+
+export const ReadDiffCursorOptions = object({
+  cursorId: string(),
+});
+export type ReadDiffCursorOptions = ZodInfer<typeof ReadDiffCursorOptions>;
+
+export const CloseCursorOptions = object({
+  cursorId: string(),
+});
+export type CloseCursorOptions = ZodInfer<typeof CloseCursorOptions>;
+
+export const ListReadersResult = object({
+  items: array(
+    object({
+      readerId: string(),
+      generationId: string().nullable(),
+      generationIdEncoding: EncodingTypeEnum.optional(),
+      collectionName: string().optional(),
+    }),
+  ),
+});
+export type ListReadersResult = ZodInfer<typeof ListReadersResult>;
+
+export const CreateReaderOptions = object({
+  readerId: string(),
+  generationId: string().nullable(),
+  generationIdEncoding: EncodingTypeEnum.optional(),
+  collectionName: string().optional(),
+});
+export type CreateReaderOptions = ZodInfer<typeof CreateReaderOptions>;
+
+export const UpdateReaderOptions = object({
+  readerId: string(),
+  generationId: string(),
+  generationIdEncoding: EncodingTypeEnum.optional(),
+});
+export type UpdateReaderOptions = ZodInfer<typeof UpdateReaderOptions>;
+
+export const DeleteReaderOptions = object({
+  readerId: string(),
+});
+export type DeleteReaderOptions = ZodInfer<typeof DeleteReaderOptions>;
+
+export const StartGenerationOptions = object({
+  generationId: string(),
+  generationIdEncoding: EncodingTypeEnum.optional(),
+  abortOutdated: boolean().optional(),
+});
+export type StartGenerationOptions = ZodInfer<typeof StartGenerationOptions>;
+
+export const CommitGenerationOptions = object({
+  generationId: string(),
+  generationIdEncoding: EncodingTypeEnum.optional(),
+  updateReaders: array(
+    object({
+      readerId: string(),
+      generationId: string(),
+      generationIdEncoding: EncodingTypeEnum.optional(),
+    }),
+  ).optional(),
+});
+export type CommitGenerationOptions = ZodInfer<typeof CommitGenerationOptions>;
+
+export const AbortGenerationOptions = object({
+  generationId: string(),
+  generationIdEncoding: EncodingTypeEnum.optional(),
+});
+export type AbortGenerationOptions = ZodInfer<typeof AbortGenerationOptions>;
+
+export const StartPhantomResult = object({
+  phantomId: string(),
+  phantomIdEncoding: EncodingTypeEnum.optional(),
+});
+export type StartPhantomResult = ZodInfer<typeof StartPhantomResult>;
+
+export const DropPhantomOptions = object({
+  phantomId: string(),
+  phantomIdEncoding: EncodingTypeEnum.optional(),
+});
+export type DropPhantomOptions = ZodInfer<typeof DropPhantomOptions>;
+
+export const CreateCollectionOptions = object({
+  name: string(),
+  generationId: string().optional(),
+  generationIdEncoding: EncodingTypeEnum.optional(),
+});
+export type CreateCollectionOptions = ZodInfer<typeof CreateCollectionOptions>;
+
+export const CreateCollectionResult = object({
+  generationId: string().optional(),
+  generationIdEncoding: EncodingTypeEnum.optional(),
+});
+export type CreateCollectionResult = ZodInfer<typeof CreateCollectionResult>;
+
+export const ListCollectionsResult = object({
+  collections: array(string()),
+});
+export type ListCollectionsResult = ZodInfer<typeof ListCollectionsResult>;
 
 export type Collection = {
   getName: () => string;
@@ -78,76 +297,38 @@ export type Collection = {
   getGenerationStream: () => ReadOnlyStream<string>;
   getPlannedGeneration: () => Promise<string | null>;
 
-  get: (options: {
-    key: string;
-    generationId?: string;
-    phantomId?: string;
-  }) => Promise<{generationId: string; item: KeyValue | null}>;
+  get: (options: GetOptions) => Promise<GetResult>;
   getKeysAround: (
     options: CollectionGetKeysAroundOptions,
   ) => Promise<CollectionGetKeysAroundResult>;
-  query: (options?: {
-    generationId?: string;
-    phantomId?: string;
-  }) => Promise<QueryResult>;
+  query: (options?: QueryOptions) => Promise<QueryResult>;
   readQueryCursor: (options: {cursorId: string}) => Promise<QueryResult>;
 
-  put: (
-    options: KeyValueUpdate & {
-      generationId?: string;
-      phantomId?: string;
-    },
-  ) => Promise<PutResult>;
-  putMany: (options: {
-    items: KeyValueUpdate[];
-    generationId?: string;
-  }) => Promise<PutResult>;
+  put: (options: PutOptions) => Promise<PutResult>;
+  putMany: (options: PutManyOptions) => Promise<PutResult>;
   diff: (options: DiffOptions) => Promise<DiffResult>;
-  readDiffCursor: (options: {cursorId: string}) => Promise<DiffResult>;
+  readDiffCursor: (options: ReadDiffCursorOptions) => Promise<DiffResult>;
 
-  closeCursor: (options: {cursorId: string}) => Promise<void>;
+  closeCursor: (options: CloseCursorOptions) => Promise<void>;
 
-  listReaders: () => Promise<
-    {
-      readerId: string;
-      generationId: string | null;
-      collectionName: string | undefined;
-    }[]
-  >;
-  createReader: (options: {
-    readerId: string;
-    generationId: string | null;
-    collectionName: string | undefined;
-  }) => Promise<void>;
-  updateReader: (options: {
-    readerId: string;
-    generationId: string;
-  }) => Promise<void>;
-  deleteReader: (options: {readerId: string}) => Promise<void>;
+  listReaders: () => Promise<ListReadersResult>;
+  createReader: (options: CreateReaderOptions) => Promise<void>;
+  updateReader: (options: UpdateReaderOptions) => Promise<void>;
+  deleteReader: (options: DeleteReaderOptions) => Promise<void>;
 
-  startGeneration: (options: {
-    generationId: string;
-    abortOutdated?: boolean;
-  }) => Promise<void>;
-  commitGeneration: (options: {
-    generationId: string;
-    updateReaders?: {
-      readerId: string;
-      generationId: string;
-    }[];
-  }) => Promise<void>;
-  abortGeneration: (options: {generationId: string}) => Promise<void>;
+  startGeneration: (options: StartGenerationOptions) => Promise<void>;
+  commitGeneration: (options: CommitGenerationOptions) => Promise<void>;
+  abortGeneration: (options: AbortGenerationOptions) => Promise<void>;
 
-  startPhantom: () => Promise<{phantomId: string}>;
-  dropPhantom: (options: {phantomId: string}) => Promise<void>;
+  startPhantom: () => Promise<StartPhantomResult>;
+  dropPhantom: (options: DropPhantomOptions) => Promise<void>;
 };
 
 export type Database = {
   createCollection: (
-    name: string,
-    options?: {generationId?: string},
-  ) => Promise<{generationId: string}>;
+    options: CreateCollectionOptions,
+  ) => Promise<CreateCollectionResult>;
   getCollection: (name: string) => Promise<Collection>;
-  listCollections: () => Promise<{collections: string[]}>;
+  listCollections: () => Promise<ListCollectionsResult>;
   deleteCollection: (name: string) => Promise<void>;
 };

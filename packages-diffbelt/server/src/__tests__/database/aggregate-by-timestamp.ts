@@ -27,12 +27,14 @@ export const aggregateByTimestampTest = ({
 
       // Initialize collections
       const {generationId: initialGenerationId} =
-        await database.createCollection('initial');
+        await database.createCollection({name: 'initial'});
 
-      await database.createCollection('byHour', {
+      await database.createCollection({
+        name: 'byHour',
         generationId: initialGenerationId,
       });
-      await database.createCollection('byDay', {
+      await database.createCollection({
+        name: 'byDay',
         generationId: initialGenerationId,
       });
 

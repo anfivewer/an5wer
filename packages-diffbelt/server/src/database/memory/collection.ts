@@ -272,13 +272,9 @@ export class MemoryDatabaseCollection implements Collection {
   // FIXME:
   putMany: Collection['putMany'] = this.wrapFn(
     {isWriter: true},
-    async ({items, generationId}) => {
+    async ({items, generationId, phantomId}) => {
       await Promise.all(
-        items.map((item) =>
-          this.put(
-            typeof generationId === 'string' ? {...item, generationId} : item,
-          ),
-        ),
+        items.map((item) => this.put({...item, generationId, phantomId})),
       );
 
       assertNonNullable(this.nextGeneration, 'putMany');
@@ -433,13 +429,13 @@ export class MemoryDatabaseCollection implements Collection {
   }
 
   listReaders: Collection['listReaders'] = this.wrapFn({}, () => {
-    const readers: Awaited<ReturnType<Collection['listReaders']>> = [];
+    const readers: Awaited<ReturnType<Collection['listReaders']>>['items'] = [];
 
     this.readers.forEach(({readerId, generationId, collectionName}) => {
       readers.push({readerId, generationId, collectionName});
     });
 
-    return Promise.resolve(readers);
+    return Promise.resolve({items: readers});
   });
   createReader: Collection['createReader'] = this.wrapFn(
     {isWriter: true},
@@ -701,7 +697,12 @@ export class MemoryDatabaseCollection implements Collection {
 
   _restoreItems({items}: PersistCollectionItems): void {
     items.forEach(({phantomId, ...item}) => {
-      this.storage.push({...item, phantomId});
+      this.storage.push({
+        ...item,
+        phantomId,
+        keyEncoding: undefined,
+        valueEncoding: undefined,
+      });
     });
   }
 

@@ -213,7 +213,7 @@ export class CollectionDiffCursor {
       }
 
       const {key, generationId, phantomId} = api.getItem();
-      return {key, generationId, phantomId};
+      return {key, keyEncoding: undefined, generationId, phantomId};
     })();
 
     const {cursorId} = this.createNextCursor({
