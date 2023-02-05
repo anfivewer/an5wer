@@ -101,7 +101,7 @@ export const getKeysAround = ({
       break;
     }
 
-    left.push({key: record.key, keyEncoding: record.keyEncoding});
+    left.push({key: record.key, encoding: record.keyEncoding});
   }
 
   left.reverse();
@@ -132,7 +132,7 @@ export const getKeysAround = ({
       break;
     }
 
-    right.push({key: record.key, keyEncoding: record.keyEncoding});
+    right.push({key: record.key, encoding: record.keyEncoding});
   }
 
   return Promise.resolve({

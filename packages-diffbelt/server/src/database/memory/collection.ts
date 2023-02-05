@@ -1,5 +1,6 @@
 import {
   Collection,
+  GetGenerationIdResult,
   isGenerationProvidedByReader,
 } from '@-/diffbelt-types/src/database/types';
 import {
@@ -46,7 +47,7 @@ import {getKeysAround} from './methods/get-keys-around';
 export class MemoryDatabaseCollection implements Collection {
   private name: string;
   private generationId: string;
-  private generationIdStream = createStream<string>();
+  private generationIdStream = createStream<GetGenerationIdResult>();
   private _isManual: boolean;
   private nextGeneration: CollectionGeneration | undefined;
   private generationsList: CollectionGeneration[] = [];
@@ -132,25 +133,31 @@ export class MemoryDatabaseCollection implements Collection {
   }
 
   getGeneration() {
-    return Promise.resolve(this.generationId);
+    return Promise.resolve({generationId: this.generationId});
   }
   getGenerationStream() {
     return this.generationIdStream.getGenerator();
   }
   getPlannedGeneration() {
     if (!this.nextGeneration) {
-      return Promise.resolve(null);
+      return Promise.resolve({
+        nextGenerationId: null,
+      });
     }
 
     if (this._isManual) {
-      return Promise.resolve(this.nextGeneration.getGenerationId());
+      return Promise.resolve({
+        nextGenerationId: this.nextGeneration.getGenerationId(),
+      });
     }
 
     if (!this.nextGeneration.hasChangedKeys()) {
-      return Promise.resolve(null);
+      return Promise.resolve({nextGenerationId: null});
     }
 
-    return Promise.resolve(this.nextGeneration.getGenerationId());
+    return Promise.resolve({
+      nextGenerationId: this.nextGeneration.getGenerationId(),
+    });
   }
 
   get: Collection['get'] = this.wrapFn(
@@ -252,7 +259,7 @@ export class MemoryDatabaseCollection implements Collection {
           this.nextGeneration = nextGeneration;
           this.generationsList.push(newGeneration);
 
-          this.generationIdStream.replace(this.generationId);
+          this.generationIdStream.replace({generationId: this.generationId});
 
           this.nonManualCommitDisposer?.();
           this.nonManualCommitDisposer = undefined;
@@ -528,7 +535,7 @@ export class MemoryDatabaseCollection implements Collection {
         }
       });
 
-      this.generationIdStream.replace(generationId);
+      this.generationIdStream.replace({generationId: generationId});
 
       return Promise.resolve();
     },

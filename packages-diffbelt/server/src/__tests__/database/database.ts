@@ -37,7 +37,7 @@ export const databaseTest = <Db extends Database>({
 
     await database.createCollection({
       name: 'colB',
-      generationId: await colA.getGeneration(),
+      generationId: (await colA.getGeneration()).generationId,
     });
 
     {
@@ -116,7 +116,7 @@ export const databaseTest = <Db extends Database>({
 
     await colB.createReader({
       readerId: 'aToB',
-      generationId: initialColAGenerationId,
+      generationId: initialColAGenerationId.generationId,
       collectionName: 'colA',
     });
 
@@ -133,7 +133,7 @@ export const databaseTest = <Db extends Database>({
           {key: makeId(270), values: [null, '15']},
           {key: makeId(300), values: [null, '42']},
         ],
-        expectedFromGenerationId: initialColAGenerationId,
+        expectedFromGenerationId: initialColAGenerationId.generationId,
       });
 
     commitRunner.makeCommits();

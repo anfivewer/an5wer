@@ -23,6 +23,20 @@ export const KeyValue = object({
 });
 export type KeyValue = ZodInfer<typeof KeyValue>;
 
+export const GetGenerationIdResult = object({
+  generationId: string(),
+  generationIdEncoding: EncodingTypeEnum.optional(),
+});
+export type GetGenerationIdResult = ZodInfer<typeof GetGenerationIdResult>;
+
+export const GetNextGenerationIdResult = object({
+  nextGenerationId: string().nullable(),
+  nextGenerationIdEncoding: EncodingTypeEnum.optional(),
+});
+export type GetNextGenerationIdResult = ZodInfer<
+  typeof GetNextGenerationIdResult
+>;
+
 export const PutResult = object({
   generationId: string(),
   generationIdEncoding: EncodingTypeEnum.optional(),
@@ -118,6 +132,7 @@ export const CollectionGetKeysAroundOptions = object({
   generationIdEncoding: EncodingTypeEnum.optional(),
   phantomId: string().optional(),
   phantomIdEncoding: EncodingTypeEnum.optional(),
+  encoding: EncodingTypeEnum.optional(),
 });
 export type CollectionGetKeysAroundOptions = ZodInfer<
   typeof CollectionGetKeysAroundOptions
@@ -125,7 +140,7 @@ export type CollectionGetKeysAroundOptions = ZodInfer<
 
 export const EncodedKey = object({
   key: string(),
-  keyEncoding: EncodingTypeEnum.optional(),
+  encoding: EncodingTypeEnum.optional(),
 });
 export type EncodedKey = ZodInfer<typeof EncodedKey>;
 
@@ -149,6 +164,7 @@ export const GetOptions = object({
   generationIdEncoding: EncodingTypeEnum.optional(),
   phantomId: string().optional(),
   phantomIdEncoding: EncodingTypeEnum.optional(),
+  encoding: EncodingTypeEnum.optional(),
 });
 export type GetOptions = ZodInfer<typeof GetOptions>;
 
@@ -293,16 +309,16 @@ export type Collection = {
   getName: () => string;
   isManual: () => boolean;
 
-  getGeneration: () => Promise<string>;
-  getGenerationStream: () => ReadOnlyStream<string>;
-  getPlannedGeneration: () => Promise<string | null>;
+  getGeneration: () => Promise<GetGenerationIdResult>;
+  getGenerationStream: () => ReadOnlyStream<GetGenerationIdResult>;
+  getPlannedGeneration: () => Promise<GetNextGenerationIdResult>;
 
   get: (options: GetOptions) => Promise<GetResult>;
   getKeysAround: (
     options: CollectionGetKeysAroundOptions,
   ) => Promise<CollectionGetKeysAroundResult>;
   query: (options?: QueryOptions) => Promise<QueryResult>;
-  readQueryCursor: (options: {cursorId: string}) => Promise<QueryResult>;
+  readQueryCursor: (options: ReadQueryCursorOptions) => Promise<QueryResult>;
 
   put: (options: PutOptions) => Promise<PutResult>;
   putMany: (options: PutManyOptions) => Promise<PutResult>;

@@ -10,7 +10,7 @@ export const waitForGeneration = async ({
   const stream = collection.getGenerationStream();
 
   for await (const currentGenerationId of stream) {
-    if (currentGenerationId >= generationId) {
+    if (currentGenerationId.generationId >= generationId) {
       return;
     }
   }

@@ -102,7 +102,7 @@ export class PercentilesState {
           const {foundKey, left, right, hasMoreOnTheLeft, hasMoreOnTheRight} =
             await this.collection.getKeysAround({
               key: key.key,
-              keyEncoding: key.keyEncoding,
+              keyEncoding: key.encoding,
               requireKeyExistance: true,
               limit: AROUND_ITEMS_COUNT,
               generationId: this.fromGenerationId,
@@ -134,7 +134,7 @@ export class PercentilesState {
       assertNonNullable(this.phantomId);
       await this.collection.put({
         key: key.key,
-        keyEncoding: key.keyEncoding,
+        keyEncoding: key.encoding,
         value: '',
         generationId: this.fromGenerationId,
         phantomId: this.phantomId,
@@ -298,7 +298,7 @@ export class PercentilesState {
       assertNonNullable(this.phantomId);
       await this.collection.put({
         key: key.key,
-        keyEncoding: key.keyEncoding,
+        keyEncoding: key.encoding,
         value: null,
         generationId: this.fromGenerationId,
         phantomId: this.phantomId,

@@ -59,11 +59,14 @@ export class Database extends BaseComponent implements Component<Context> {
 
   async onLinesSaved(): Promise<void> {
     const generationId = await this.linesCollection.getPlannedGeneration();
-    if (generationId === null) {
+    if (generationId.nextGenerationId === null) {
       return;
     }
 
-    await waitForGeneration({collection: this.linesCollection, generationId});
+    await waitForGeneration({
+      collection: this.linesCollection,
+      generationId: generationId.nextGenerationId,
+    });
   }
 
   private async handleBatch(lines: NormalizedLogLine[]) {

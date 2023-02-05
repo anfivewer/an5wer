@@ -28,6 +28,22 @@ importers:
       pretty-quick: 3.1.1_prettier@2.7.1
       typescript: 4.9.5
 
+  packages-diffbelt/client:
+    specifiers:
+      '@-/diffbelt-types': workspace:*
+      '@-/diffbelt-util': workspace:*
+      '@-/types': workspace:*
+      '@-/util': workspace:*
+      typescript: 4.9.5
+      zod: 3.17.3
+    dependencies:
+      '@-/diffbelt-types': link:../types
+      '@-/diffbelt-util': link:../util
+      '@-/types': link:../../packages/types
+      '@-/util': link:../../packages/util
+      typescript: 4.9.5
+      zod: 3.17.3
+
   packages-diffbelt/server:
     specifiers:
       '@-/diffbelt-types': workspace:*
