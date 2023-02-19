@@ -1,21 +1,22 @@
 import {Database, KeyValue} from '@-/diffbelt-types/src/database/types';
 import {queryCollection} from '@-/diffbelt-util/src/queries/dump';
-import {waitForGeneration} from '../../util/database/wait-for-generation';
 import {NonManualCommitRunner} from './non-manual-commit';
 
 export const testEmptyStringValue = async ({
   database,
-  commitRunner,
 }: {
   database: Database;
   commitRunner: NonManualCommitRunner;
 }) => {
-  await database.createCollection({name: 'testEmptyStringValue'});
+  await database.createCollection({
+    name: 'testEmptyStringValue',
+    generationId: '',
+  });
   const collection = await database.getCollection('testEmptyStringValue');
 
-  const {generationId} = await collection.put({key: 'test', value: ''});
-  commitRunner.makeCommits();
-  await waitForGeneration({collection, generationId});
+  await collection.startGeneration({generationId: '1'});
+  await collection.put({key: 'test', value: ''});
+  await collection.commitGeneration({generationId: '1'});
 
   const {stream} = await queryCollection(collection);
 

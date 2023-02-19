@@ -11,10 +11,10 @@ export const mapFilterTest = ({
 }) => {
   describe('mapFilter transform', () => {
     it('should map keys and values', async () => {
-      const {database, commitRunner} = await createDatabase();
+      const {database} = await createDatabase();
 
       const {generationId: initialGenerationId} =
-        await database.createCollection({name: 'initial'});
+        await database.createCollection({name: 'initial', generationId: ''});
 
       await database.createCollection({
         name: 'target',
@@ -56,6 +56,13 @@ export const mapFilterTest = ({
       const currentRecords = new Map<string, string>();
       const currentRecordsList: KeyValue[] = [];
 
+      let initialCollectionGenerationId = 0;
+
+      initialCollectionGenerationId++;
+      await initialCollection.startGeneration({
+        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+      });
+
       // Create initial records
       for (let i = 0; i < 10; i++) {
         const records: KeyValue[] = [];
@@ -72,11 +79,25 @@ export const mapFilterTest = ({
 
         await initialCollection.putMany({items: records});
         if (i === 0 || i === 3 || i === 8) {
-          await commitRunner.makeCommits();
+          await initialCollection.commitGeneration({
+            generationId: String(initialCollectionGenerationId).padStart(
+              11,
+              '0',
+            ),
+          });
+          initialCollectionGenerationId++;
+          await initialCollection.startGeneration({
+            generationId: String(initialCollectionGenerationId).padStart(
+              11,
+              '0',
+            ),
+          });
         }
       }
 
-      await commitRunner.makeCommits();
+      await initialCollection.commitGeneration({
+        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+      });
 
       const testInitialCollection = async ({
         expectedGenerationId,
@@ -155,6 +176,11 @@ export const mapFilterTest = ({
 
       await testMappedCollection({expectedGenerationId: '00000000004'});
 
+      initialCollectionGenerationId++;
+      await initialCollection.startGeneration({
+        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+      });
+
       const removedItemsA = currentRecordsList.splice(5, 250);
       await initialCollection.putMany({
         items: removedItemsA.map((item) => ({key: item.key, value: null})),
@@ -164,7 +190,14 @@ export const mapFilterTest = ({
         items: removedItemsB.map((item) => ({key: item.key, value: null})),
       });
 
-      await commitRunner.makeCommits();
+      await initialCollection.commitGeneration({
+        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+      });
+
+      initialCollectionGenerationId++;
+      await initialCollection.startGeneration({
+        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+      });
 
       const removedItemsC = currentRecordsList.splice(600, 150);
       await initialCollection.putMany({
@@ -189,7 +222,9 @@ export const mapFilterTest = ({
 
       await initialCollection.putMany({items: recordsToAdd});
 
-      await commitRunner.makeCommits();
+      await initialCollection.commitGeneration({
+        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+      });
 
       await testInitialCollection({expectedGenerationId: '00000000006'});
 

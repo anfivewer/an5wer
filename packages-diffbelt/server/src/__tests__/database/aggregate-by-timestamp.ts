@@ -21,13 +21,13 @@ export const aggregateByTimestampTest = ({
 }) => {
   describe('aggregateByTimestamp transform', () => {
     it('should sum values by time intervals', async () => {
-      const {database, commitRunner} = await createDatabase();
+      const {database} = await createDatabase();
       const testLogger = new TestLogger();
       const logger = testLogger.getLogger();
 
       // Initialize collections
       const {generationId: initialGenerationId} =
-        await database.createCollection({name: 'initial'});
+        await database.createCollection({name: 'initial', generationId: ''});
 
       await database.createCollection({
         name: 'byHour',
@@ -133,6 +133,8 @@ export const aggregateByTimestampTest = ({
       const randomGenerator = createRandomGenerator();
       const currentRecords = new Map<string, string>();
 
+      await initialCollection.startGeneration({generationId: '00000000001'});
+
       for (let i = 0; i < 10; i++) {
         const records: KeyValue[] = [];
 
@@ -149,7 +151,7 @@ export const aggregateByTimestampTest = ({
         await initialCollection.putMany({items: records});
       }
 
-      await commitRunner.makeCommits();
+      await initialCollection.commitGeneration({generationId: '00000000001'});
 
       // Run transforms
       await hourAggregateTransform({context: {database, logger}});
@@ -227,6 +229,8 @@ export const aggregateByTimestampTest = ({
           keyA < keyB ? -1 : keyA > keyB ? 1 : 0,
         );
 
+        await initialCollection.startGeneration({generationId: '00000000002'});
+
         const removedItemsA = currentRecordsList.splice(0, 3);
         await initialCollection.putMany({
           items: removedItemsA.map((item) => ({key: item.key, value: null})),
@@ -262,7 +266,7 @@ export const aggregateByTimestampTest = ({
 
         await initialCollection.putMany({items: recordsToAdd});
 
-        await commitRunner.makeCommits();
+        await initialCollection.commitGeneration({generationId: '00000000002'});
       }
 
       // Run transforms after updates

@@ -1,5 +1,4 @@
 import {cloneStream} from '@-/util/src/stream/clone';
-import {waitForGeneration} from '../../util/database/wait-for-generation';
 import {databaseTest} from '../../__tests__/database/database';
 import {NonManualCommitRunner} from '../../__tests__/database/non-manual-commit';
 import {MemoryDatabase} from './database';
@@ -16,13 +15,11 @@ describe('MemoryDatabase', () => {
       });
       database = new MemoryDatabase({
         maxItemsInPack: 100,
-        waitForNonManualGenerationCommit:
-          commitRunner.waitForNonManualGenerationCommit.bind(commitRunner),
       });
 
       return Promise.resolve({database, commitRunner});
     },
-    afterComplexTest: async ({database, commitRunner}) => {
+    afterComplexTest: async ({database}) => {
       const stream = await dumpMemoryDatabase({database});
 
       const buffers: Buffer[] = [];
@@ -34,8 +31,7 @@ describe('MemoryDatabase', () => {
       const expectedDump =
         '{"type":"header","version":1}\n' +
         '{"type":"collection","name":"colA","generationId":"00000000002",' +
-        '"nextGenerationId":"00000000003",' +
-        '"isManual":false}\n{"type":"generation","collectionName":"colA",' +
+        '"isManual":true}\n{"type":"generation","collectionName":"colA",' +
         '"generationId":"00000000001","changedKeys":["00000000003",' +
         '"00000000065","00000000069","00000000070","00000000249",' +
         '"00000000270","00000000300"]}\n{"type":"generation",' +
@@ -72,10 +68,12 @@ describe('MemoryDatabase', () => {
 
       // Change some value
       let colA = await database.getCollection('colA');
+
+      await colA.startGeneration({generationId: '00000000003'});
+
       const {generationId} = await colA.put({key: '00000000070', value: '100'});
 
-      await commitRunner.makeCommits();
-      await waitForGeneration({collection: colA, generationId});
+      await colA.commitGeneration({generationId: '00000000003'});
 
       await restoreMemoryDatabase({database, dump: stream});
 
