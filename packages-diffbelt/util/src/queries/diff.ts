@@ -2,6 +2,7 @@ import {
   Collection,
   DiffOptions,
   DiffResultItems,
+  EncodedValue,
 } from '@-/diffbelt-types/src/database/types';
 import {FinishableStream} from '@-/types/src/stream/stream';
 import {createFinishableStream} from '@-/util/src/stream/finishable-stream';
@@ -18,7 +19,7 @@ export const diffCollection = async (
     onReadCursor?: (options: {generationId: string}) => void;
   },
 ): Promise<{
-  fromGenerationId: string | null;
+  fromGenerationId: EncodedValue | null;
   generationId: string;
   stream: FinishableStream<DiffResultItems>;
 }> => {

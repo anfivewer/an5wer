@@ -14,5 +14,8 @@
     "@-/util": "workspace:*",
     "typescript": "4.9.5",
     "zod": "3.17.3"
+  },
+  "devDependencies": {
+    "@types/node": "18.11.18"
   }
 }

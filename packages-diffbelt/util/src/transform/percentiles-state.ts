@@ -1,4 +1,8 @@
-import {Collection, EncodedKey} from '@-/diffbelt-types/src/database/types';
+import {
+  Collection,
+  EncodedKey,
+  EncodedValue,
+} from '@-/diffbelt-types/src/database/types';
 import {
   PercentilesData,
   SinglePercentileData,
@@ -22,7 +26,7 @@ export class PercentilesState {
   private percentiles: PercentilesStatePercentile[] | undefined;
   private initialPercentiles: number[];
   private collection: Collection;
-  private fromGenerationId: string;
+  private fromGenerationId: EncodedValue;
   private generationId: string;
   private phantomId: string | undefined;
   private phantomChanges: (() => Promise<void>)[] = [];
@@ -37,12 +41,13 @@ export class PercentilesState {
     percentiles: number[];
     percentilesData: PercentilesData | undefined;
     collection: Collection;
-    fromGenerationId: string | null;
+    fromGenerationId: EncodedValue | null;
     generationId: string;
   }) {
     this.initialPercentiles = percentiles;
     this.collection = collection;
-    this.fromGenerationId = fromGenerationId !== null ? fromGenerationId : '';
+    this.fromGenerationId =
+      fromGenerationId !== null ? fromGenerationId : {value: ''};
     this.generationId = generationId;
 
     if (percentilesData) {
@@ -105,7 +110,8 @@ export class PercentilesState {
               keyEncoding: key.encoding,
               requireKeyExistance: true,
               limit: AROUND_ITEMS_COUNT,
-              generationId: this.fromGenerationId,
+              generationId: this.fromGenerationId.value,
+              generationIdEncoding: this.fromGenerationId.encoding,
               phantomId: this.phantomId,
             });
 
@@ -136,7 +142,8 @@ export class PercentilesState {
         key: key.key,
         keyEncoding: key.encoding,
         value: '',
-        generationId: this.fromGenerationId,
+        generationId: this.fromGenerationId.value,
+        generationIdEncoding: this.fromGenerationId.encoding,
         phantomId: this.phantomId,
       });
     });
@@ -300,7 +307,8 @@ export class PercentilesState {
         key: key.key,
         keyEncoding: key.encoding,
         value: null,
-        generationId: this.fromGenerationId,
+        generationId: this.fromGenerationId.value,
+        generationIdEncoding: this.fromGenerationId.encoding,
         phantomId: this.phantomId,
       });
     });

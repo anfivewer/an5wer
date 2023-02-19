@@ -41,21 +41,28 @@ export const createMapFilterTransform = <Context, SourceItem>({
     for await (const diffs of stream) {
       const updates: KeyValueUpdate[] = [];
 
-      for (const {key, values} of diffs) {
-        const prevValue = values[0];
-        const lastValue = values[values.length - 1];
+      for (const {key, fromValue, toValue} of diffs) {
+        if (
+          fromValue?.encoding === 'base64' ||
+          toValue?.encoding === 'base64'
+        ) {
+          throw new Error('base64 is not supported yet');
+        }
+
+        const prevValue = fromValue?.value ?? null;
+        const lastValue = toValue?.value ?? null;
 
         let prevKey: string | undefined;
         let newFiltered: FilterResult = null;
 
-        if (prevValue) {
+        if (prevValue !== null) {
           const sourceItem = parseSourceCollectionItem(prevValue);
           const filtered = mapFilter({key, value: sourceItem});
 
           prevKey = filtered?.key;
         }
 
-        if (lastValue) {
+        if (lastValue !== null) {
           const sourceItem = parseSourceCollectionItem(lastValue);
           newFiltered = mapFilter({key, value: sourceItem});
         }
@@ -68,7 +75,7 @@ export const createMapFilterTransform = <Context, SourceItem>({
           continue;
         }
 
-        if (prevKey && newFiltered.key !== prevKey) {
+        if (prevKey !== undefined && newFiltered.key !== prevKey) {
           updates.push({key: prevKey, value: null});
         }
 

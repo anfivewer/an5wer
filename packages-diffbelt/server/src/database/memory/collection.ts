@@ -319,7 +319,7 @@ export class MemoryDatabaseCollection implements Collection {
 
     if (fromGenerationId === toGenerationId) {
       return Promise.resolve({
-        fromGenerationId,
+        fromGenerationId: {value: fromGenerationId},
         generationId: toGenerationId,
         items: [],
         cursorId: undefined,

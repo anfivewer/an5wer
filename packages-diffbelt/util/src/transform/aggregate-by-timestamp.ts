@@ -1,4 +1,4 @@
-import {Database} from '@-/diffbelt-types/src/database/types';
+import {Database, EncodedValue} from '@-/diffbelt-types/src/database/types';
 import {Parallel} from '@-/util/src/async/parallel';
 import {IdlingStatus} from '@-/util/src/state/idling-status';
 import {diffCollection} from '../queries/diff';
@@ -14,7 +14,7 @@ export {AggregateInterval};
 type IntervalData<TargetItem> = {
   intervalTimestampMs: number;
   prevTargetItem: TargetItem | null;
-  fromGenerationId: string | null;
+  fromGenerationId: EncodedValue | null;
   generationId: string;
 };
 
@@ -645,9 +645,16 @@ export const createAggregateByTimestampTransform = <
     };
 
     for await (const diffs of stream) {
-      for (const {key, keyEncoding, values} of diffs) {
-        const prevValueRaw = values[0];
-        const lastValueRaw = values[values.length - 1];
+      for (const {key, keyEncoding, fromValue, toValue} of diffs) {
+        if (
+          fromValue?.encoding === 'base64' ||
+          toValue?.encoding === 'base64'
+        ) {
+          throw new Error('base64 is not supported yet');
+        }
+
+        const prevValueRaw = fromValue?.value ?? null;
+        const lastValueRaw = toValue?.value ?? null;
 
         if (prevValueRaw === lastValueRaw) {
           continue;
@@ -670,7 +677,8 @@ export const createAggregateByTimestampTransform = <
 
                 const {item: prevTargetItemRaw} = await targetCollection.get({
                   key: targetKey,
-                  generationId: fromGenerationId,
+                  generationId: fromGenerationId?.value,
+                  generationIdEncoding: fromGenerationId?.encoding,
                 });
 
                 return prevTargetItemRaw

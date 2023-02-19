@@ -34,6 +34,7 @@ importers:
       '@-/diffbelt-util': workspace:*
       '@-/types': workspace:*
       '@-/util': workspace:*
+      '@types/node': 18.11.18
       typescript: 4.9.5
       zod: 3.17.3
     dependencies:
@@ -43,9 +44,12 @@ importers:
       '@-/util': link:../../packages/util
       typescript: 4.9.5
       zod: 3.17.3
+    devDependencies:
+      '@types/node': 18.11.18
 
   packages-diffbelt/server:
     specifiers:
+      '@-/diffbelt-client': workspace:*
       '@-/diffbelt-types': workspace:*
       '@-/diffbelt-util': workspace:*
       '@-/types': workspace:*
@@ -60,6 +64,7 @@ importers:
       typescript: 4.9.5
       zod: 3.17.3
     dependencies:
+      '@-/diffbelt-client': link:../client
       '@-/diffbelt-types': link:../types
       '@-/diffbelt-util': link:../util
       '@-/types': link:../../packages/types

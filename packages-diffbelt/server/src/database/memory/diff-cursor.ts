@@ -1,7 +1,7 @@
 import {
   DiffResult,
   DiffResultItems,
-  DiffResultValues,
+  EncodedValue,
 } from '@-/diffbelt-types/src/database/types';
 import {goNextGenerationInCurrentKey} from '../../util/database/traverse/generation';
 import {
@@ -60,7 +60,10 @@ export class CollectionDiffCursor {
   getCurrentPack(): DiffResult {
     if (this.startKey === 'end') {
       return {
-        fromGenerationId: this.fromGenerationId,
+        fromGenerationId:
+          this.fromGenerationId !== null
+            ? {value: this.fromGenerationId}
+            : null,
         generationId: this.toGenerationId,
         items: [],
         cursorId: undefined,
@@ -73,7 +76,10 @@ export class CollectionDiffCursor {
       });
 
       return {
-        fromGenerationId: this.fromGenerationId,
+        fromGenerationId:
+          this.fromGenerationId !== null
+            ? {value: this.fromGenerationId}
+            : null,
         generationId: this.toGenerationId,
         items: [],
         cursorId,
@@ -131,15 +137,36 @@ export class CollectionDiffCursor {
         continue;
       }
 
-      const values: DiffResultValues = [];
+      const values: (EncodedValue | null)[] = [];
       const pushValue = (value: string | null) => {
-        if (value !== values[values.length - 1]) {
-          values.push(value);
+        if (!values.length) {
+          values.push(value !== null ? {value} : null);
+          return;
+        }
+
+        const lastValue = values[values.length - 1];
+
+        if (value === null && lastValue === null) {
+          return;
+        }
+
+        if (value === null || lastValue === null) {
+          values.push(value !== null ? {value} : null);
+          return;
+        }
+
+        if (value !== lastValue.value) {
+          values.push(value !== null ? {value} : null);
         }
       };
       const pushItem = () => {
         if (values.length >= 2) {
-          items.push({key, values});
+          items.push({
+            key,
+            fromValue: values[0],
+            toValue: values[values.length - 1],
+            intermediateValues: values.slice(1, -1),
+          });
         }
       };
 
@@ -221,7 +248,8 @@ export class CollectionDiffCursor {
     });
 
     return {
-      fromGenerationId: this.fromGenerationId,
+      fromGenerationId:
+        this.fromGenerationId !== null ? {value: this.fromGenerationId} : null,
       generationId: this.toGenerationId,
       items,
       cursorId,

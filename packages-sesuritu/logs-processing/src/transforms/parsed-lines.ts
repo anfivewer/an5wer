@@ -36,7 +36,7 @@ export const transformLogsLinesToParsedLines = async ({
   for await (const diffs of stream) {
     const updates: KeyValueUpdate[] = [];
 
-    for (const {key, values} of diffs) {
+    for (const {key, toValue} of diffs) {
       const parsedLine = maybeParseLogLine(key);
       if (!parsedLine) {
         continue;
@@ -47,7 +47,7 @@ export const transformLogsLinesToParsedLines = async ({
       const loggerKeyFirstPart = loggerKey.replace(/:.*$/, '');
 
       const parsedKey = `${timestampString} ${loggerKeyFirstPart}`;
-      const isDeleted = values[values.length - 1] === null;
+      const isDeleted = toValue === null;
 
       if (isDeleted) {
         updates.push({key: parsedKey, value: null});

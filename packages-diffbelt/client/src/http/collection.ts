@@ -1,6 +1,5 @@
 import {
   AbortGenerationOptions,
-  CloseCursorOptions,
   Collection as ICollection,
   CollectionGetKeysAroundOptions,
   CollectionGetKeysAroundResult,
@@ -9,7 +8,6 @@ import {
   DeleteReaderOptions,
   DiffOptions,
   DiffResult,
-  DropPhantomOptions,
   GetGenerationIdResult,
   GetNextGenerationIdResult,
   GetOptions,
@@ -27,13 +25,9 @@ import {
   UpdateReaderOptions,
 } from '@-/diffbelt-types/src/database/types';
 import {ReadOnlyStream, StreamIsClosedError} from '@-/types/src/stream/stream';
-import {CallApiFn} from './types';
+import {CallApiFn, VoidParser} from './types';
 import {createStream} from '@-/util/src/stream/stream';
-import {
-  GetKeysAroundRequestBody,
-  GetRequestBody,
-  QueryRequestBody,
-} from '../types/client';
+import {GetKeysAroundRequestBody, GetRequestBody} from '../types/client';
 
 export type CollectionOptions = {
   call: CallApiFn;
@@ -165,49 +159,109 @@ export class Collection implements ICollection {
   }
 
   put(options: PutOptions): Promise<PutResult> {
-    throw new Error();
+    return this.call({
+      method: 'POST',
+      path: `/collections/${encodeURIComponent(this.name)}/put`,
+      parser: PutResult,
+      body: options,
+    });
   }
   putMany(options: PutManyOptions): Promise<PutResult> {
-    throw new Error();
+    return this.call({
+      method: 'POST',
+      path: `/collections/${encodeURIComponent(this.name)}/putMany`,
+      parser: PutResult,
+      body: options,
+    });
   }
   diff(options: DiffOptions): Promise<DiffResult> {
-    throw new Error();
+    return this.call({
+      method: 'POST',
+      path: `/collections/${encodeURIComponent(this.name)}/diff/start`,
+      parser: DiffResult,
+      body: options,
+    });
   }
   readDiffCursor(options: ReadDiffCursorOptions): Promise<DiffResult> {
-    throw new Error();
+    return this.call({
+      method: 'POST',
+      path: `/collections/${encodeURIComponent(this.name)}/diff/next`,
+      parser: DiffResult,
+      body: options,
+    });
   }
 
-  closeCursor(options: CloseCursorOptions): Promise<void> {
-    throw new Error();
+  closeCursor(): Promise<void> {
+    return Promise.resolve();
   }
 
   listReaders(): Promise<ListReadersResult> {
-    throw new Error();
+    return this.call({
+      method: 'POST',
+      path: `/collections/${encodeURIComponent(this.name)}/reader/list`,
+      parser: ListReadersResult,
+      body: {},
+    });
   }
   createReader(options: CreateReaderOptions): Promise<void> {
-    throw new Error();
+    return this.call({
+      method: 'POST',
+      path: `/collections/${encodeURIComponent(this.name)}/reader/create`,
+      parser: VoidParser,
+      body: options,
+    });
   }
   updateReader(options: UpdateReaderOptions): Promise<void> {
-    throw new Error();
+    return this.call({
+      method: 'POST',
+      path: `/collections/${encodeURIComponent(this.name)}/reader/update`,
+      parser: VoidParser,
+      body: options,
+    });
   }
   deleteReader(options: DeleteReaderOptions): Promise<void> {
-    throw new Error();
+    return this.call({
+      method: 'POST',
+      path: `/collections/${encodeURIComponent(this.name)}/reader/delete`,
+      parser: VoidParser,
+      body: options,
+    });
   }
 
   startGeneration(options: StartGenerationOptions): Promise<void> {
-    throw new Error();
+    return this.call({
+      method: 'POST',
+      path: `/collections/${encodeURIComponent(this.name)}/generation/start`,
+      parser: VoidParser,
+      body: options,
+    });
   }
   commitGeneration(options: CommitGenerationOptions): Promise<void> {
-    throw new Error();
+    return this.call({
+      method: 'POST',
+      path: `/collections/${encodeURIComponent(this.name)}/generation/commit`,
+      parser: VoidParser,
+      body: options,
+    });
   }
   abortGeneration(options: AbortGenerationOptions): Promise<void> {
-    throw new Error();
+    return this.call({
+      method: 'POST',
+      path: `/collections/${encodeURIComponent(this.name)}/generation/abort`,
+      parser: VoidParser,
+      body: options,
+    });
   }
 
   startPhantom(): Promise<StartPhantomResult> {
-    throw new Error();
+    return this.call({
+      method: 'POST',
+      path: `/collections/${encodeURIComponent(this.name)}/phantom/start`,
+      parser: StartPhantomResult,
+      body: {},
+    });
   }
-  dropPhantom(options: DropPhantomOptions): Promise<void> {
-    throw new Error();
+  dropPhantom(): Promise<void> {
+    return Promise.resolve();
   }
 }

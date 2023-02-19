@@ -2,9 +2,21 @@ import {ReadOnlyStream} from '@-/types/src/stream/stream';
 import {zodEnum, ZodInfer} from '@-/types/src/zod/zod';
 import {array, boolean, object, string, union, number} from 'zod';
 
-const EncodingTypeEnum = zodEnum(['utf8', 'base64']);
+export const EncodingTypeEnum = zodEnum(['utf8', 'base64']);
 export const EncodingType = EncodingTypeEnum.enum;
 export type EncodingType = ZodInfer<typeof EncodingTypeEnum>;
+
+export const EncodedKey = object({
+  key: string(),
+  encoding: EncodingTypeEnum.optional(),
+});
+export type EncodedKey = ZodInfer<typeof EncodedKey>;
+
+export const EncodedValue = object({
+  value: string(),
+  encoding: EncodingTypeEnum.optional(),
+});
+export type EncodedValue = ZodInfer<typeof EncodedValue>;
 
 export const KeyValueUpdate = object({
   key: string(),
@@ -61,21 +73,19 @@ export const QueryResult = object({
 });
 export type QueryResult = ZodInfer<typeof QueryResult>;
 
-export const DiffResultValues = array(string().nullable());
-export type DiffResultValues = ZodInfer<typeof DiffResultValues>;
-
 export const DiffResultItems = array(
   object({
     key: string(),
     keyEncoding: EncodingTypeEnum.optional(),
-    values: DiffResultValues,
+    fromValue: EncodedValue.nullable(),
+    intermediateValues: array(EncodedValue.nullable()),
+    toValue: EncodedValue.nullable(),
   }),
 );
 export type DiffResultItems = ZodInfer<typeof DiffResultItems>;
 
 export const DiffResult = object({
-  fromGenerationId: string().nullable(),
-  fromGenerationIdEncoding: EncodingTypeEnum.optional(),
+  fromGenerationId: EncodedValue.nullable(),
   generationId: string(),
   generationIdEncoding: EncodingTypeEnum.optional(),
   items: DiffResultItems,
@@ -137,12 +147,6 @@ export const CollectionGetKeysAroundOptions = object({
 export type CollectionGetKeysAroundOptions = ZodInfer<
   typeof CollectionGetKeysAroundOptions
 >;
-
-export const EncodedKey = object({
-  key: string(),
-  encoding: EncodingTypeEnum.optional(),
-});
-export type EncodedKey = ZodInfer<typeof EncodedKey>;
 
 export const CollectionGetKeysAroundResult = object({
   generationId: string(),
@@ -325,6 +329,7 @@ export type Collection = {
   diff: (options: DiffOptions) => Promise<DiffResult>;
   readDiffCursor: (options: ReadDiffCursorOptions) => Promise<DiffResult>;
 
+  // FIXME: split to closeQueryCursor/closeDiffCursor
   closeCursor: (options: CloseCursorOptions) => Promise<void>;
 
   listReaders: () => Promise<ListReadersResult>;
