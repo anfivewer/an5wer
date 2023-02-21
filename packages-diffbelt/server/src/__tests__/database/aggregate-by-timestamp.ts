@@ -27,33 +27,36 @@ export const aggregateByTimestampTest = ({
 
       // Initialize collections
       const {generationId: initialGenerationId} =
-        await database.createCollection({name: 'initial', generationId: ''});
+        await database.createCollection({
+          name: 'aggregateByTimeStampInitial',
+          generationId: '',
+        });
 
       await database.createCollection({
-        name: 'byHour',
+        name: 'aggregateByTimeStampByHour',
         generationId: initialGenerationId,
       });
       await database.createCollection({
-        name: 'byDay',
+        name: 'aggregateByTimeStampByDay',
         generationId: initialGenerationId,
       });
 
       const [initialCollection, hourCollection, dayCollection] =
         await Promise.all([
-          database.getCollection('initial'),
-          database.getCollection('byHour'),
-          database.getCollection('byDay'),
+          database.getCollection('aggregateByTimeStampInitial'),
+          database.getCollection('aggregateByTimeStampByHour'),
+          database.getCollection('aggregateByTimeStampByDay'),
         ]);
 
       hourCollection.createReader({
         readerId: 'fromInitial',
         generationId: null,
-        collectionName: 'initial',
+        collectionName: 'aggregateByTimeStampInitial',
       });
       dayCollection.createReader({
         readerId: 'fromHour',
         generationId: null,
-        collectionName: 'initial',
+        collectionName: 'aggregateByTimeStampInitial',
       });
 
       // Sums collection to intervals
@@ -117,15 +120,15 @@ export const aggregateByTimestampTest = ({
 
       const hourAggregateTransform = createTransform({
         interval: AggregateInterval.HOUR,
-        targetCollectionName: 'byHour',
-        sourceCollectionName: 'initial',
+        targetCollectionName: 'aggregateByTimeStampByHour',
+        sourceCollectionName: 'aggregateByTimeStampInitial',
         targetFromSourceReaderName: 'fromInitial',
       });
 
       const dayAggregateTransform = createTransform({
         interval: AggregateInterval.DAY,
-        targetCollectionName: 'byDay',
-        sourceCollectionName: 'byHour',
+        targetCollectionName: 'aggregateByTimeStampByDay',
+        sourceCollectionName: 'aggregateByTimeStampByHour',
         targetFromSourceReaderName: 'fromHour',
       });
 
@@ -148,7 +151,10 @@ export const aggregateByTimestampTest = ({
           records.push({key, value});
         }
 
-        await initialCollection.putMany({items: records});
+        await initialCollection.putMany({
+          items: records,
+          generationId: '00000000001',
+        });
       }
 
       await initialCollection.commitGeneration({generationId: '00000000001'});
@@ -234,15 +240,18 @@ export const aggregateByTimestampTest = ({
         const removedItemsA = currentRecordsList.splice(0, 3);
         await initialCollection.putMany({
           items: removedItemsA.map((item) => ({key: item.key, value: null})),
+          generationId: '00000000002',
         });
         const removedItemsB = currentRecordsList.splice(100, 2);
         await initialCollection.putMany({
           items: removedItemsB.map((item) => ({key: item.key, value: null})),
+          generationId: '00000000002',
         });
 
         const removedItemsC = currentRecordsList.splice(600, 150);
         await initialCollection.putMany({
           items: removedItemsC.map((item) => ({key: item.key, value: null})),
+          generationId: '00000000002',
         });
 
         [removedItemsA, removedItemsB, removedItemsC].forEach(
@@ -264,7 +273,10 @@ export const aggregateByTimestampTest = ({
           recordsToAdd.push({key, value});
         }
 
-        await initialCollection.putMany({items: recordsToAdd});
+        await initialCollection.putMany({
+          items: recordsToAdd,
+          generationId: '00000000002',
+        });
 
         await initialCollection.commitGeneration({generationId: '00000000002'});
       }

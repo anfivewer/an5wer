@@ -104,8 +104,6 @@ export const getKeysAround = ({
     left.push({key: record.key, encoding: record.keyEncoding});
   }
 
-  left.reverse();
-
   while (true) {
     const foundKey = goNextKey({api: rightTraverser});
     if (!foundKey) {

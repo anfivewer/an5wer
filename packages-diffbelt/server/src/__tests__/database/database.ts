@@ -85,6 +85,7 @@ export const databaseTest = <Db extends Database>({
 
     const {generationId: firstPutGenerationId} = await colA.putMany({
       items: initialItems,
+      generationId: '00000000001',
     });
 
     await colA.putMany({
@@ -184,13 +185,14 @@ export const databaseTest = <Db extends Database>({
     await colA.startGeneration({generationId: '00000000002'});
 
     // Add
-    await colA.put({key: makeId(66), value: '7'});
+    await colA.put({key: makeId(66), value: '7', generationId: '00000000002'});
     // Remove
-    await colA.put({key: makeId(3), value: null});
+    await colA.put({key: makeId(3), value: null, generationId: '00000000002'});
     // Update
     const {generationId: updateValueGenerationId} = await colA.put({
       key: makeId(270),
       value: '12',
+      generationId: '00000000002',
     });
 
     await colA.commitGeneration({generationId: '00000000002'});
@@ -288,11 +290,19 @@ const doTransformFromAtoB = async ({
     cursorId: initialCursorId,
   } = await colA.diff({readerId: 'aToB', readerCollectionName: 'colB'});
 
-  expect(
-    fromGenerationId !== null
-      ? {encoding: undefined, ...fromGenerationId}
-      : null,
-  ).toStrictEqual(expectedFromGenerationId);
+  const normalizeGenerationId = (
+    generationId: EncodedValue | null,
+  ): EncodedValue => {
+    if (generationId === null) {
+      return {value: '', encoding: undefined};
+    }
+
+    return {encoding: undefined, ...generationId};
+  };
+
+  expect(normalizeGenerationId(fromGenerationId)).toStrictEqual(
+    normalizeGenerationId(expectedFromGenerationId),
+  );
 
   const dumpedBeforeGeneration = await dumpCollection(colB);
 

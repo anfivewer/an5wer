@@ -15,7 +15,7 @@ export const testEmptyStringValue = async ({
   const collection = await database.getCollection('testEmptyStringValue');
 
   await collection.startGeneration({generationId: '1'});
-  await collection.put({key: 'test', value: ''});
+  await collection.put({key: 'test', value: '', generationId: '1'});
   await collection.commitGeneration({generationId: '1'});
 
   const {stream} = await queryCollection(collection);

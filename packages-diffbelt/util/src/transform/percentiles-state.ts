@@ -2,6 +2,7 @@ import {
   Collection,
   EncodedKey,
   EncodedValue,
+  EncodingType,
 } from '@-/diffbelt-types/src/database/types';
 import {
   PercentilesData,
@@ -29,6 +30,7 @@ export class PercentilesState {
   private fromGenerationId: EncodedValue;
   private generationId: string;
   private phantomId: string | undefined;
+  private phantomIdEncoding: EncodingType | undefined;
   private phantomChanges: (() => Promise<void>)[] = [];
 
   constructor({
@@ -72,8 +74,10 @@ export class PercentilesState {
     }
 
     if (this.phantomId === undefined) {
-      const {phantomId} = await this.collection.startPhantom();
+      const {phantomId, phantomIdEncoding} =
+        await this.collection.startPhantom();
       this.phantomId = phantomId;
+      this.phantomIdEncoding = phantomIdEncoding;
     }
 
     // TODO: do it in a parallel, no need to wait for `fetchAround`,
@@ -113,13 +117,14 @@ export class PercentilesState {
               generationId: this.fromGenerationId.value,
               generationIdEncoding: this.fromGenerationId.encoding,
               phantomId: this.phantomId,
+              phantomIdEncoding: this.phantomIdEncoding,
             });
 
           if (!foundKey) {
             throw new Error('PercentilesState:fetchAround key not found');
           }
 
-          percentileObj.aroundLeft = left;
+          percentileObj.aroundLeft = left.reverse();
           percentileObj.aroundRight = right;
           percentileObj.hasMoreOnTheLeft = hasMoreOnTheLeft;
           percentileObj.hasMoreOnTheRight = hasMoreOnTheRight;
@@ -145,6 +150,7 @@ export class PercentilesState {
         generationId: this.fromGenerationId.value,
         generationIdEncoding: this.fromGenerationId.encoding,
         phantomId: this.phantomId,
+        phantomIdEncoding: this.phantomIdEncoding,
       });
     });
 
@@ -310,6 +316,7 @@ export class PercentilesState {
         generationId: this.fromGenerationId.value,
         generationIdEncoding: this.fromGenerationId.encoding,
         phantomId: this.phantomId,
+        phantomIdEncoding: this.phantomIdEncoding,
       });
     });
 

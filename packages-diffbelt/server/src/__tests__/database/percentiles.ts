@@ -6,7 +6,6 @@ import {dumpCollection} from '@-/diffbelt-util/src/queries/dump';
 import {createPercentilesTransform} from '@-/diffbelt-util/src/transform/percentiles';
 import {AggregateInterval} from '@-/diffbelt-util/src/transform/types';
 import {Logger} from '@-/types/src/logging/logging';
-import {NonManualCommitRunner} from './non-manual-commit';
 import {number, object} from 'zod';
 import {PercentilesData} from '@-/diffbelt-types/src/transform/percentiles';
 
@@ -31,7 +30,6 @@ export const percentilesTest = ({
 }) => {
   describe('percentiles transform', () => {
     let database!: Database;
-    let commitRunner!: NonManualCommitRunner;
     let testLogger!: TestLogger;
     let logger!: Logger;
     let initialCollection!: Collection;
@@ -47,19 +45,21 @@ export const percentilesTest = ({
       await initializeDatabaseStructure({
         database,
         collections: [
-          {name: 'initial'},
+          {name: 'percentilesInitial', isManual: true},
           {
-            name: 'intermediate',
+            name: 'percentilesIntermediate',
             isManual: true,
-            readers: [{name: 'fromInitial', collectionName: 'initial'}],
+            readers: [
+              {name: 'fromInitial', collectionName: 'percentilesInitial'},
+            ],
           },
           {
-            name: 'target',
+            name: 'percentilesTarget',
             isManual: true,
             readers: [
               {
                 name: 'fromIntermediate',
-                collectionName: 'intermediate',
+                collectionName: 'percentilesIntermediate',
               },
             ],
           },
@@ -68,9 +68,9 @@ export const percentilesTest = ({
 
       [initialCollection, intermediateCollection, targetCollection] =
         await Promise.all([
-          database.getCollection('initial'),
-          database.getCollection('intermediate'),
-          database.getCollection('target'),
+          database.getCollection('percentilesInitial'),
+          database.getCollection('percentilesIntermediate'),
+          database.getCollection('percentilesTarget'),
         ]);
 
       const innerTransform = createPercentilesTransform({
@@ -86,10 +86,10 @@ export const percentilesTest = ({
           database,
           logger,
         }),
-        sourceCollectionName: 'initial',
-        intermediateCollectionName: 'intermediate',
+        sourceCollectionName: 'percentilesInitial',
+        intermediateCollectionName: 'percentilesIntermediate',
         intermediateToSourceReaderName: 'fromInitial',
-        targetCollectionName: 'target',
+        targetCollectionName: 'percentilesTarget',
         targetToIntermediateReaderName: 'fromIntermediate',
         parseSourceItem: (value) => parseInt(value, 10),
         parseIntermediateItem: (value) => parseInt(value, 10),
@@ -152,6 +152,8 @@ export const percentilesTest = ({
     });
 
     it('should calculate simple case', async () => {
+      await initialCollection.startGeneration({generationId: '01'});
+
       await initialCollection.putMany({
         items: [
           {key: makeKey(4), value: '12'}, // should be ignored, % 5 !== 0
@@ -160,8 +162,10 @@ export const percentilesTest = ({
           {key: makeKey(13), value: '11'}, // ignored
           {key: makeKey(14), value: '5'},
         ],
+        generationId: '01',
       });
-      await commitRunner.makeCommits();
+
+      await initialCollection.commitGeneration({generationId: '01'});
 
       await transform();
 
@@ -197,6 +201,8 @@ export const percentilesTest = ({
         ]);
       }
 
+      await initialCollection.startGeneration({generationId: '02'});
+
       await initialCollection.putMany({
         items: [
           {key: makeKey(4), value: '14'}, // still ignored
@@ -204,8 +210,10 @@ export const percentilesTest = ({
           {key: makeKey(7), value: '35'},
           {key: makeKey(9), value: '45'},
         ],
+        generationId: '02',
       });
-      await commitRunner.makeCommits();
+
+      await initialCollection.commitGeneration({generationId: '02'});
 
       await transform();
 

@@ -16,7 +16,7 @@ export const uniqueCounterTest = ({
 }) => {
   describe('uniqueCounter transform', () => {
     it('should count items', async () => {
-      const {database, commitRunner} = await createDatabase();
+      const {database} = await createDatabase();
       const testLogger = new TestLogger();
       const logger = testLogger.getLogger();
 
@@ -25,19 +25,19 @@ export const uniqueCounterTest = ({
       await initializeDatabaseStructure({
         database,
         collections: [
-          {name: 'initial'},
+          {name: 'uniqueInitial', isManual: true},
           {
-            name: 'intermediate',
+            name: 'uniqueIntermediate',
             isManual: true,
-            readers: [{name: 'fromInitial', collectionName: 'initial'}],
+            readers: [{name: 'fromInitial', collectionName: 'uniqueInitial'}],
           },
           {
-            name: 'target',
+            name: 'uniqueTarget',
             isManual: true,
             readers: [
               {
                 name: 'fromIntermediate',
-                collectionName: 'intermediate',
+                collectionName: 'uniqueIntermediate',
               },
             ],
           },
@@ -45,13 +45,15 @@ export const uniqueCounterTest = ({
       });
 
       const [initialCollection, targetCollection] = await Promise.all([
-        database.getCollection('initial'),
-        database.getCollection('target'),
+        database.getCollection('uniqueInitial'),
+        database.getCollection('uniqueTarget'),
       ]);
 
       // Fill initial collection
       const randomGenerator = createRandomGenerator();
       const currentRecords = new Map<string, string>();
+
+      await initialCollection.startGeneration({generationId: '00000000001'});
 
       for (let i = 0; i < 10; i++) {
         const records: KeyValue[] = [];
@@ -66,10 +68,13 @@ export const uniqueCounterTest = ({
           records.push({key, value});
         }
 
-        await initialCollection.putMany({items: records});
+        await initialCollection.putMany({
+          items: records,
+          generationId: '00000000001',
+        });
       }
 
-      await commitRunner.makeCommits();
+      await initialCollection.commitGeneration({generationId: '00000000001'});
 
       const transform = createUniqueCounterTransform({
         interval: AggregateInterval.DAY,
@@ -83,10 +88,10 @@ export const uniqueCounterTest = ({
           database,
           logger,
         }),
-        sourceCollectionName: 'initial',
-        intermediateCollectionName: 'intermediate',
+        sourceCollectionName: 'uniqueInitial',
+        intermediateCollectionName: 'uniqueIntermediate',
         intermediateToSourceReaderName: 'fromInitial',
-        targetCollectionName: 'target',
+        targetCollectionName: 'uniqueTarget',
         targetToIntermediateReaderName: 'fromIntermediate',
         parseSourceItem: (value) => parseInt(value, 10),
         parseIntermediateItem: (value) => parseInt(value, 10),
@@ -223,18 +228,23 @@ export const uniqueCounterTest = ({
           keyA < keyB ? -1 : keyA > keyB ? 1 : 0,
         );
 
+        await initialCollection.startGeneration({generationId: '00000000002'});
+
         const removedItemsA = currentRecordsList.splice(0, 3);
         await initialCollection.putMany({
           items: removedItemsA.map((item) => ({key: item.key, value: null})),
+          generationId: '00000000002',
         });
         const removedItemsB = currentRecordsList.splice(100, 2);
         await initialCollection.putMany({
           items: removedItemsB.map((item) => ({key: item.key, value: null})),
+          generationId: '00000000002',
         });
 
         const removedItemsC = currentRecordsList.splice(600, 150);
         await initialCollection.putMany({
           items: removedItemsC.map((item) => ({key: item.key, value: null})),
+          generationId: '00000000002',
         });
 
         [removedItemsA, removedItemsB, removedItemsC].forEach(
@@ -256,9 +266,12 @@ export const uniqueCounterTest = ({
           recordsToAdd.push({key, value});
         }
 
-        await initialCollection.putMany({items: recordsToAdd});
+        await initialCollection.putMany({
+          items: recordsToAdd,
+          generationId: '00000000002',
+        });
 
-        await commitRunner.makeCommits();
+        await initialCollection.commitGeneration({generationId: '00000000002'});
       }
 
       await transform({context: {database, logger}});

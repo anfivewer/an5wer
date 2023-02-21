@@ -11,7 +11,7 @@ import {
   ListCollectionsResponse,
   VoidParser,
 } from './types';
-import {request} from 'http';
+import {IncomingMessage, request} from 'http';
 import {Defer} from '@-/util/src/async/defer';
 import {readWholeStream} from '@-/util/src/stream/read-whole-stream';
 import {assertNonNullish} from '@-/util/src/assert/assert-non-nullish';
@@ -107,7 +107,7 @@ export class Database implements IDatabase {
       return `?${result.slice(1)}`;
     })();
 
-    const defer = new Defer<Buffer>();
+    const defer = new Defer<IncomingMessage>();
 
     const req = request(
       `${this.url}${path}${paramsStr}`,
@@ -115,26 +115,7 @@ export class Database implements IDatabase {
         method,
       },
       (res) => {
-        readWholeStream(res).then((content) => {
-          if (res.statusCode !== 200) {
-            const data: unknown = JSON.parse(content.toString('utf8'));
-            const error =
-              // eslint-disable-next-line no-restricted-syntax
-              typeof data === 'object' && data && 'error' in data && data.error;
-
-            switch (error) {
-              case 'noSuchCollection':
-                defer.reject(new NoSuchCollectionError());
-                return;
-            }
-
-            console.error(`${method} ${path}`, content.toString('utf8'));
-            defer.reject(Object.assign(new Error('status is not 200')));
-            return;
-          }
-
-          defer.resolve(content);
-        }, defer.reject.bind(defer));
+        defer.resolve(res);
       },
     );
 
@@ -148,7 +129,24 @@ export class Database implements IDatabase {
 
     req.end();
 
-    const buffer = await defer.promise;
+    const res = await defer.promise;
+
+    const buffer = await readWholeStream(res);
+
+    if (res.statusCode !== 200) {
+      const data: unknown = JSON.parse(buffer.toString('utf8'));
+      const error =
+        // eslint-disable-next-line no-restricted-syntax
+        typeof data === 'object' && data && 'error' in data && data.error;
+
+      switch (error) {
+        case 'noSuchCollection':
+          throw new NoSuchCollectionError();
+      }
+
+      console.error(`${method} ${path}`, buffer.toString('utf8'), body);
+      throw Object.assign(new Error('status is not 200'));
+    }
 
     const content = buffer.toString('utf8');
 

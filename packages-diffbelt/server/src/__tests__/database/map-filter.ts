@@ -14,21 +14,24 @@ export const mapFilterTest = ({
       const {database} = await createDatabase();
 
       const {generationId: initialGenerationId} =
-        await database.createCollection({name: 'initial', generationId: ''});
+        await database.createCollection({
+          name: 'mapFilterInitial',
+          generationId: '',
+        });
 
       await database.createCollection({
-        name: 'target',
+        name: 'mapFilterTarget',
         generationId: initialGenerationId,
       });
       const [initialCollection, targetCollection] = await Promise.all([
-        database.getCollection('initial'),
-        database.getCollection('target'),
+        database.getCollection('mapFilterInitial'),
+        database.getCollection('mapFilterTarget'),
       ]);
 
       targetCollection.createReader({
         readerId: 'fromInitial',
         generationId: null,
-        collectionName: 'initial',
+        collectionName: 'mapFilterInitial',
       });
 
       const mapFilter = ({key, value}: {key: string; value: number}) => {
@@ -43,8 +46,8 @@ export const mapFilterTest = ({
       };
 
       const myMapFilterTransform = createMapFilterTransform({
-        sourceCollectionName: 'initial',
-        targetCollectionName: 'target',
+        sourceCollectionName: 'mapFilterInitial',
+        targetCollectionName: 'mapFilterTarget',
         targetCollectionReaderName: 'fromInitial',
         getDatabaseFromContext: ({database}: {database: Database}) => database,
         parseSourceCollectionItem: (value) => parseInt(value, 10),
@@ -77,7 +80,11 @@ export const mapFilterTest = ({
           currentRecordsList.push({key, value: String(b)});
         }
 
-        await initialCollection.putMany({items: records});
+        await initialCollection.putMany({
+          items: records,
+          generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+        });
+
         if (i === 0 || i === 3 || i === 8) {
           await initialCollection.commitGeneration({
             generationId: String(initialCollectionGenerationId).padStart(
@@ -184,10 +191,12 @@ export const mapFilterTest = ({
       const removedItemsA = currentRecordsList.splice(5, 250);
       await initialCollection.putMany({
         items: removedItemsA.map((item) => ({key: item.key, value: null})),
+        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
       });
       const removedItemsB = currentRecordsList.splice(100, 2);
       await initialCollection.putMany({
         items: removedItemsB.map((item) => ({key: item.key, value: null})),
+        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
       });
 
       await initialCollection.commitGeneration({
@@ -202,6 +211,7 @@ export const mapFilterTest = ({
       const removedItemsC = currentRecordsList.splice(600, 150);
       await initialCollection.putMany({
         items: removedItemsC.map((item) => ({key: item.key, value: null})),
+        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
       });
 
       [removedItemsA, removedItemsB, removedItemsC].forEach((removedItems) => {
@@ -220,7 +230,10 @@ export const mapFilterTest = ({
         recordsToAdd.push({key, value: String(b)});
       }
 
-      await initialCollection.putMany({items: recordsToAdd});
+      await initialCollection.putMany({
+        items: recordsToAdd,
+        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+      });
 
       await initialCollection.commitGeneration({
         generationId: String(initialCollectionGenerationId).padStart(11, '0'),
