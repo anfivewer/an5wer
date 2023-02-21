@@ -24,9 +24,12 @@ import {
   StartPhantomResult,
   UpdateReaderOptions,
 } from '@-/diffbelt-types/src/database/types';
-import {ReadOnlyStream, StreamIsClosedError} from '@-/types/src/stream/stream';
+import {
+  FinishableStream,
+  StreamIsClosedError,
+} from '@-/types/src/stream/stream';
 import {CallApiFn, VoidParser} from './types';
-import {createStream} from '@-/util/src/stream/stream';
+import {createFinishableStream} from '@-/util/src/stream/finishable-stream';
 import {GetKeysAroundRequestBody, GetRequestBody} from '../types/client';
 
 export type CollectionOptions = {
@@ -60,8 +63,8 @@ export class Collection implements ICollection {
       parser: GetGenerationIdResult,
     });
   }
-  getGenerationStream(): ReadOnlyStream<GetGenerationIdResult> {
-    const stream = createStream<GetGenerationIdResult>();
+  getGenerationStream(): FinishableStream<GetGenerationIdResult> {
+    const stream = createFinishableStream<GetGenerationIdResult>();
 
     (async () => {
       let prevGenerationId = await this.call({
@@ -73,6 +76,10 @@ export class Collection implements ICollection {
       stream.push(prevGenerationId);
 
       while (true) {
+        if (stream.isClosed()) {
+          return;
+        }
+
         const newGenerationId = await this.call({
           method: 'GET',
           path: `/collections/${this.name}/generationId/stream`,

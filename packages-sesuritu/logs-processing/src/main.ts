@@ -75,10 +75,17 @@ runApp({
       }),
     );
 
+    logger.info('logRead:finish');
+
     await database.onLinesSaved();
+
+    logger.info('linesSaved');
 
     // Run transforms
     await Promise.all([transformLogsLinesToParsedLines({context})]);
+
+    logger.info('parsedLines:done');
+
     await Promise.all(
       [
         transformParsedLinesToKicks,
@@ -88,10 +95,20 @@ runApp({
         calculateUniqueUsers,
       ].map((fun) => fun({context})),
     );
+
+    logger.info('aggregations:1:done');
+
     await Promise.all([aggregateKicksPerHour].map((fun) => fun({context})));
+
+    logger.info('aggregations:kicks:perHour:done');
+
     await Promise.all([aggregateKicksPerDay].map((fun) => fun({context})));
 
+    logger.info('aggregations:kicks:perDay:done');
+
     await renderReport({context});
+
+    logger.info('renderReport:done');
 
     context.needDumpDatabaseOnStop = true;
     await app.stop({withTimeout: false});

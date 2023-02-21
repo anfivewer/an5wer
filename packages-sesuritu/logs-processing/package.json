@@ -11,7 +11,7 @@
   "author": "Alexander Ruliov <alexander.rulov@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "@-/diffbelt-server": "workspace:*",
+    "@-/diffbelt-client": "workspace:*",
     "@-/diffbelt-types": "workspace:*",
     "@-/diffbelt-util": "workspace:*",
     "@-/sesuritu-types": "workspace:*",

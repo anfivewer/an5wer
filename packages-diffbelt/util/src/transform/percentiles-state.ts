@@ -29,6 +29,7 @@ export class PercentilesState {
   private collection: Collection;
   private fromGenerationId: EncodedValue;
   private generationId: string;
+  private generationIdEncoding: EncodingType | undefined;
   private phantomId: string | undefined;
   private phantomIdEncoding: EncodingType | undefined;
   private phantomChanges: (() => Promise<void>)[] = [];
@@ -39,18 +40,21 @@ export class PercentilesState {
     collection,
     fromGenerationId,
     generationId,
+    generationIdEncoding,
   }: {
     percentiles: number[];
     percentilesData: PercentilesData | undefined;
     collection: Collection;
     fromGenerationId: EncodedValue | null;
     generationId: string;
+    generationIdEncoding: EncodingType | undefined;
   }) {
     this.initialPercentiles = percentiles;
     this.collection = collection;
     this.fromGenerationId =
       fromGenerationId !== null ? fromGenerationId : {value: ''};
     this.generationId = generationId;
+    this.generationIdEncoding = generationIdEncoding;
 
     if (percentilesData) {
       const {count, percentiles} = percentilesData;

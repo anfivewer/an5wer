@@ -150,6 +150,8 @@ export class Database implements IDatabase {
 
     const content = buffer.toString('utf8');
 
+    console.log(`${method} ${path}`, params, body, content);
+
     const data = JSON.parse(content);
     let result: T;
 

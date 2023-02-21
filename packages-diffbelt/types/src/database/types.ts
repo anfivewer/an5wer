@@ -1,4 +1,4 @@
-import {ReadOnlyStream} from '@-/types/src/stream/stream';
+import {FinishableStream} from '@-/types/src/stream/stream';
 import {zodEnum, ZodInfer} from '@-/types/src/zod/zod';
 import {array, boolean, object, string, union, number} from 'zod';
 
@@ -85,7 +85,7 @@ export const DiffResultItems = array(
 export type DiffResultItems = ZodInfer<typeof DiffResultItems>;
 
 export const DiffResult = object({
-  fromGenerationId: EncodedValue.nullable(),
+  fromGenerationId: EncodedValue,
   generationId: string(),
   generationIdEncoding: EncodingTypeEnum.optional(),
   items: DiffResultItems,
@@ -314,7 +314,7 @@ export type Collection = {
   isManual: () => boolean;
 
   getGeneration: () => Promise<GetGenerationIdResult>;
-  getGenerationStream: () => ReadOnlyStream<GetGenerationIdResult>;
+  getGenerationStream: () => FinishableStream<GetGenerationIdResult>;
   getPlannedGeneration: () => Promise<GetNextGenerationIdResult>;
 
   get: (options: GetOptions) => Promise<GetResult>;

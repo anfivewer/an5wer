@@ -1,4 +1,4 @@
-import {MemoryDatabasePersisted} from '@-/diffbelt-server/src/database/memory/database-persisted';
+import {Database as DatabaseClient} from '@-/diffbelt-client/src/http/database';
 import {BaseComponent, Component} from '@-/types/src/app/component';
 import {Context} from '../context/types';
 import {NormalizedLogLine} from '../logs/lines-normalizer';
@@ -10,21 +10,20 @@ import {AsyncBatcher} from '@-/util/src/async/batch';
 import {
   Database as DiffbeltDatabase,
   Collection,
+  EncodedKey,
 } from '@-/diffbelt-types/src/database/types';
-import {waitForGeneration} from '@-/diffbelt-server/src/util/database/wait-for-generation';
+import {waitForGeneration} from '@-/diffbelt-util/src/collection/wait-for-generation';
 import {initializeDatabaseStructure} from '@-/diffbelt-util/src/database/initialize-structure';
+import {isGreaterThan} from '@-/diffbelt-util/src/keys/compare';
 
 export class Database extends BaseComponent implements Component<Context> {
-  private db!: MemoryDatabasePersisted;
+  private db!: DatabaseClient;
   private batcher!: AsyncBatcher<NormalizedLogLine>;
   private linesCollection!: Collection;
   private getNeedToDump!: () => boolean;
+  private lastLinesPutGenerationId: EncodedKey | undefined;
 
   async init({context}: {context: Context}) {
-    const {
-      config: {databaseDumpPath},
-    } = context;
-
     this.getNeedToDump = () => context.needDumpDatabaseOnStop;
 
     this.batcher = new AsyncBatcher<NormalizedLogLine>({
@@ -36,8 +35,7 @@ export class Database extends BaseComponent implements Component<Context> {
       },
     });
 
-    this.db = new MemoryDatabasePersisted({dumpPath: databaseDumpPath});
-    await this.db.init();
+    this.db = new DatabaseClient({url: 'http://127.0.0.1:3030'});
 
     await initializeDatabaseStructure({
       database: this.db,
@@ -58,21 +56,36 @@ export class Database extends BaseComponent implements Component<Context> {
   }
 
   async onLinesSaved(): Promise<void> {
-    const generationId = await this.linesCollection.getPlannedGeneration();
-    if (generationId.nextGenerationId === null) {
+    await this.batcher.onIdle();
+
+    if (!this.lastLinesPutGenerationId) {
       return;
     }
 
     await waitForGeneration({
       collection: this.linesCollection,
-      generationId: generationId.nextGenerationId,
+      generationId: this.lastLinesPutGenerationId.key,
+      generationIdEncoding: this.lastLinesPutGenerationId.encoding,
     });
   }
 
   private async handleBatch(lines: NormalizedLogLine[]) {
-    await this.linesCollection.putMany({
-      items: lines.map((line) => ({key: line, value: '', ifNotPresent: true})),
-    });
+    const {generationId, generationIdEncoding} =
+      await this.linesCollection.putMany({
+        items: lines.map((line) => ({
+          key: line,
+          value: '',
+          ifNotPresent: true,
+        })),
+      });
+
+    const key: EncodedKey = {key: generationId, encoding: generationIdEncoding};
+
+    if (!this.lastLinesPutGenerationId) {
+      this.lastLinesPutGenerationId = key;
+    } else if (isGreaterThan(key, this.lastLinesPutGenerationId)) {
+      this.lastLinesPutGenerationId = key;
+    }
   }
 
   async stop() {
@@ -81,8 +94,5 @@ export class Database extends BaseComponent implements Component<Context> {
     }
 
     await this.batcher.onIdle();
-    await this.db.onIdle();
-
-    await this.db.stop();
   }
 }

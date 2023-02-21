@@ -171,6 +171,7 @@ export const createPercentilesTransform = <
       prevTargetItem,
       fromGenerationId,
       generationId,
+      generationIdEncoding,
       context,
     }) => {
       const {database} = extractContext(context);
@@ -188,6 +189,7 @@ export const createPercentilesTransform = <
         collection,
         fromGenerationId,
         generationId,
+        generationIdEncoding,
       });
 
       await state.fetchAround();

@@ -18,7 +18,7 @@ export const PieTimeMetric: FC<{metric: PieTimeMetricType}> = ({metric}) => {
       });
     });
 
-    const keysTotalSum = keysTotal.reduce((a, b) => a + b);
+    const keysTotalSum = keysTotal.reduce((a, b) => a + b, 0);
     let tailSum = 0;
     let tailIndex = keys.length - 1;
     let withFakeTail = false;

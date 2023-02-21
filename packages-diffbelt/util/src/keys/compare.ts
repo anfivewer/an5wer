@@ -14,41 +14,39 @@ export const toBase64Key = (key: EncodedKey): EncodedKey => {
   };
 };
 
-export const isLessThan = (a: EncodedKey, b: EncodedKey) => {
+export const isEqual = (a: EncodedKey, b: EncodedKey) => {
   if (a.encoding === b.encoding) {
-    return a.key < b.key;
+    return a.key === b.key;
   }
 
   const aBase64 = a.encoding === 'base64' ? a.key : toBase64(a.key);
   const bBase64 = b.encoding === 'base64' ? b.key : toBase64(b.key);
 
-  return aBase64 < bBase64;
+  return aBase64 === bBase64;
+};
+
+const toBytes = ({key, encoding}: EncodedKey): Buffer => {
+  if (encoding === 'base64') {
+    return Buffer.from(key, 'base64');
+  }
+
+  return Buffer.from(key, 'utf-8');
+};
+
+export const isLessThan = (a: EncodedKey, b: EncodedKey) => {
+  return Buffer.compare(toBytes(a), toBytes(b)) < 0;
 };
 
 export const isGreaterThan = (a: EncodedKey, b: EncodedKey) => {
-  if (a.encoding === b.encoding) {
-    return a.key > b.key;
-  }
+  return Buffer.compare(toBytes(a), toBytes(b)) > 0;
+};
 
-  const aBase64 = a.encoding === 'base64' ? a.key : toBase64(a.key);
-  const bBase64 = b.encoding === 'base64' ? b.key : toBase64(b.key);
-
-  return aBase64 > bBase64;
+export const isGreaterOrEqualThan = (a: EncodedKey, b: EncodedKey) => {
+  return Buffer.compare(toBytes(a), toBytes(b)) >= 0;
 };
 
 export const basicCompareKey = (a: EncodedKey, b: EncodedKey) => {
-  if (a.encoding === b.encoding) {
-    if (a.key < b.key) return -1;
-    if (a.key > b.key) return 1;
-    return 0;
-  }
-
-  const aBase64 = a.encoding === 'base64' ? a.key : toBase64(a.key);
-  const bBase64 = b.encoding === 'base64' ? b.key : toBase64(b.key);
-
-  if (aBase64 < bBase64) return -1;
-  if (bBase64 > aBase64) return 1;
-  return 0;
+  return Buffer.compare(toBytes(a), toBytes(b));
 };
 
 function _typeChecks(encoding: EncodingType) {

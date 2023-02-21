@@ -1,6 +1,6 @@
 import {PercentileMetric as PercentileMetricType} from '@-/sesuritu-types/src/site/report/report';
 import {NoSsr} from '@-/util-react/src/components/no-ssr';
-import React, {FC, useCallback} from 'react';
+import React, {FC, useCallback, useMemo} from 'react';
 import {CartesianGrid, Line, LineChart, Tooltip, XAxis, YAxis} from 'recharts';
 import {Formatter} from 'recharts/types/component/DefaultTooltipContent';
 import {timestampMsToChartTick} from '../../util/timestamp-to-chart-tick';
@@ -8,7 +8,20 @@ import {timestampMsToChartTick} from '../../util/timestamp-to-chart-tick';
 export const PercentileMetric: FC<{metric: PercentileMetricType}> = ({
   metric,
 }) => {
-  const {name, percentiles, data} = metric;
+  const {name, percentiles, data: dataRaw} = metric;
+
+  const percentileColors = useMemo(() => {
+    return percentiles.map((n) => {
+      return `hsl(${100 - n}deg 71% 48% / 50%)`;
+    });
+  }, [percentiles]);
+
+  const data = useMemo(() => {
+    return dataRaw.map((d) => ({
+      ...d,
+      values: d.values.map((n) => (n === 0 ? 1 : n)),
+    }));
+  }, [dataRaw]);
 
   const tooltipFormatter = useCallback<Formatter<number, string>>(
     (value, field) => {
@@ -63,6 +76,7 @@ export const PercentileMetric: FC<{metric: PercentileMetricType}> = ({
             stroke="#9cadce"
             xAxisId={0}
             yAxisId={1}
+            dot={false}
           />
           {percentiles.map((p, index) => {
             return (
@@ -70,9 +84,10 @@ export const PercentileMetric: FC<{metric: PercentileMetricType}> = ({
                 key={p}
                 type="monotone"
                 dataKey={`values.${index}`}
-                stroke="#387908"
+                stroke={percentileColors[index]}
                 xAxisId={0}
                 yAxisId={0}
+                dot={false}
               />
             );
           })}

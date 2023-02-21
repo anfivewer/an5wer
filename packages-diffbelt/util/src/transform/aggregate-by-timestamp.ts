@@ -1,4 +1,8 @@
-import {Database, EncodedValue} from '@-/diffbelt-types/src/database/types';
+import {
+  Database,
+  EncodedValue,
+  EncodingType,
+} from '@-/diffbelt-types/src/database/types';
 import {Parallel} from '@-/util/src/async/parallel';
 import {IdlingStatus} from '@-/util/src/state/idling-status';
 import {diffCollection} from '../queries/diff';
@@ -7,6 +11,7 @@ import {AggregateInterval, isItemChange, ItemChange} from './types';
 import {Defer} from '@-/util/src/async/defer';
 import {assertNonNullable} from '@-/types/src/assert/runtime';
 import {getIntervalTsMs} from '../intervals/get-interval-ts';
+import {isEqual} from '../keys/compare';
 
 /** @deprecated */
 export {AggregateInterval};
@@ -16,6 +21,7 @@ type IntervalData<TargetItem> = {
   prevTargetItem: TargetItem | null;
   fromGenerationId: EncodedValue | null;
   generationId: string;
+  generationIdEncoding: EncodingType | undefined;
 };
 
 export type BaseAggregateTransformOptions = {
@@ -173,7 +179,7 @@ export const createAggregateByTimestampTransform = <
     throw new Error('fullRecalculationRequired is not implemented yet');
   }
 
-  return async ({context}) => {
+  const run = async ({context}: {context: Context}): Promise<boolean> => {
     const {database: db, logger: rootLogger} = extractContext(context);
 
     const logger = rootLogger.fork(
@@ -185,18 +191,26 @@ export const createAggregateByTimestampTransform = <
       db.getCollection(targetCollectionName),
     ]);
 
-    const {stream, fromGenerationId, generationId} = await diffCollection(
-      sourceCollection,
-      {
+    const {stream, fromGenerationId, generationId, generationIdEncoding} =
+      await diffCollection(sourceCollection, {
         diffOptions: {
           readerId: targetFromSourceReaderName,
           readerCollectionName: targetCollectionName,
         },
-      },
-    );
+      });
+
+    if (
+      isEqual(
+        {key: fromGenerationId.value, encoding: fromGenerationId.encoding},
+        {key: generationId, encoding: generationIdEncoding},
+      )
+    ) {
+      return false;
+    }
 
     await targetCollection.startGeneration({
       generationId,
+      generationIdEncoding,
       abortOutdated: true,
     });
 
@@ -354,6 +368,7 @@ export const createAggregateByTimestampTransform = <
                 context,
                 fromGenerationId,
                 generationId,
+                generationIdEncoding,
               });
 
               progressStatus.state = state;
@@ -363,6 +378,7 @@ export const createAggregateByTimestampTransform = <
                 prevTargetItem,
                 fromGenerationId,
                 generationId,
+                generationIdEncoding,
               });
 
               let lastChanges = changes;
@@ -378,6 +394,7 @@ export const createAggregateByTimestampTransform = <
                   state,
                   fromGenerationId,
                   generationId,
+                  generationIdEncoding,
                 });
 
                 if (typeof nextKey !== 'string') {
@@ -432,6 +449,7 @@ export const createAggregateByTimestampTransform = <
                       prevTargetItem,
                       fromGenerationId,
                       generationId,
+                      generationIdEncoding,
                     })
                   : getEmptyAccumulator();
 
@@ -442,6 +460,7 @@ export const createAggregateByTimestampTransform = <
                   items,
                   fromGenerationId,
                   generationId,
+                  generationIdEncoding,
                 });
               }
 
@@ -454,6 +473,7 @@ export const createAggregateByTimestampTransform = <
                 items,
                 fromGenerationId,
                 generationId,
+                generationIdEncoding,
               });
             })();
 
@@ -496,6 +516,7 @@ export const createAggregateByTimestampTransform = <
               items: chain.map(({item}) => item),
               fromGenerationId,
               generationId,
+              generationIdEncoding,
             });
 
             const {startKey} = chain[0];
@@ -563,6 +584,7 @@ export const createAggregateByTimestampTransform = <
             mergedItem,
             fromGenerationId,
             generationId,
+            generationIdEncoding,
             state: progressStatus.state!,
           });
 
@@ -570,7 +592,12 @@ export const createAggregateByTimestampTransform = <
           const value =
             targetItem !== null ? serializeTargetItem(targetItem) : null;
 
-          await targetCollection.put({key, value, generationId});
+          await targetCollection.put({
+            key,
+            value,
+            generationId,
+            generationIdEncoding,
+          });
         })
         .catch((error) => {
           logger.error('finish', {intervalTimestampMs}, {error});
@@ -694,6 +721,7 @@ export const createAggregateByTimestampTransform = <
           sourceItem: prevValue,
           fromGenerationId,
           generationId,
+          generationIdEncoding,
         });
         const lastMappedItem = mapFilter({
           intervalTimestampMs: intervalTs,
@@ -703,6 +731,7 @@ export const createAggregateByTimestampTransform = <
           sourceItem: lastValue,
           fromGenerationId,
           generationId,
+          generationIdEncoding,
         });
 
         const change = {
@@ -761,7 +790,22 @@ export const createAggregateByTimestampTransform = <
 
     await targetCollection.commitGeneration({
       generationId,
-      updateReaders: [{readerId: targetFromSourceReaderName, generationId}],
+      generationIdEncoding,
+      updateReaders: [
+        {
+          readerId: targetFromSourceReaderName,
+          generationId,
+          generationIdEncoding,
+        },
+      ],
     });
+
+    return true;
+  };
+
+  return async (args: {context: Context}) => {
+    while (await run(args)) {
+      //
+    }
   };
 };
