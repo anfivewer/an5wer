@@ -14,9 +14,11 @@ type EventsSectionProps = {
 };
 
 const EventRow: FC<{
+  className?: string;
   event: CarEvent;
   onClick?: (event: CarEvent) => void;
-}> = ({event, onClick}) => {
+  isLast?: boolean;
+}> = ({className, event, onClick, isLast = false}) => {
   const {mileageKm, title, date} = event;
 
   const mileageStr = mileageToStr(mileageKm || undefined);
@@ -29,18 +31,18 @@ const EventRow: FC<{
   return (
     <div
       className={cn(
+        className,
         styles.eventRow,
         typoStyles.regular24_24,
         utilStyles.marginTop4,
+        isLast && styles.isLast,
       )}
       onClick={handleClick}
     >
       {mileageStr}
-      {mileageStr ? (
-        <span className={utilStyles.colorTextSecondary}> — </span>
-      ) : null}
+      {mileageStr ? <span className={styles.textSecondary}> — </span> : null}
       {dateStr && (
-        <span className={utilStyles.colorTextSecondary}>
+        <span className={styles.textSecondary}>
           {dateStr}
           {title ? ', ' : null}
         </span>
@@ -62,10 +64,17 @@ export const EventsSection: FC<EventsSectionProps> = ({
 
   return (
     <div className={cn(className, utilStyles.flexCol)}>
-      <h2 className={typoStyles.header32_32}>{title}</h2>
+      <h2 className={cn(styles.eventsTitle, typoStyles.header32_32)}>
+        {title}
+      </h2>
       <div className={styles.eventsList}>
-        {events.map((event, i) => (
-          <EventRow key={i} event={event} onClick={onEventClick} />
+        {events.slice(0, 10).map((event, i) => (
+          <EventRow
+            key={i}
+            event={event}
+            onClick={onEventClick}
+            isLast={i === 9}
+          />
         ))}
       </div>
     </div>
