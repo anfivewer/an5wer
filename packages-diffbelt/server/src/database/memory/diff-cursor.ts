@@ -63,7 +63,7 @@ export class CollectionDiffCursor {
         fromGenerationId:
           this.fromGenerationId !== null
             ? {value: this.fromGenerationId}
-            : null,
+            : {value: ''},
         generationId: this.toGenerationId,
         items: [],
         cursorId: undefined,
@@ -79,7 +79,7 @@ export class CollectionDiffCursor {
         fromGenerationId:
           this.fromGenerationId !== null
             ? {value: this.fromGenerationId}
-            : null,
+            : {value: ''},
         generationId: this.toGenerationId,
         items: [],
         cursorId,
@@ -249,7 +249,9 @@ export class CollectionDiffCursor {
 
     return {
       fromGenerationId:
-        this.fromGenerationId !== null ? {value: this.fromGenerationId} : null,
+        this.fromGenerationId !== null
+          ? {value: this.fromGenerationId}
+          : {value: ''},
       generationId: this.toGenerationId,
       items,
       cursorId,

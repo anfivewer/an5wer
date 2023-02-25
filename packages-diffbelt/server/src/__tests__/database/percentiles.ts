@@ -38,7 +38,7 @@ export const percentilesTest = ({
     let transform!: () => Promise<void>;
 
     beforeEach(async () => {
-      ({database, commitRunner} = await createDatabase());
+      ({database} = await createDatabase());
       testLogger = new TestLogger();
       logger = testLogger.getLogger();
 

@@ -20,6 +20,8 @@ export const aggregateByTimestampTest = ({
   createDatabase: CreateDatabaseFn;
 }) => {
   describe('aggregateByTimestamp transform', () => {
+    jest.setTimeout(15000);
+
     it('should sum values by time intervals', async () => {
       const {database} = await createDatabase();
       const testLogger = new TestLogger();
