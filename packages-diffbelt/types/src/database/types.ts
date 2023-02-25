@@ -6,12 +6,6 @@ export const EncodingTypeEnum = zodEnum(['utf8', 'base64']);
 export const EncodingType = EncodingTypeEnum.enum;
 export type EncodingType = ZodInfer<typeof EncodingTypeEnum>;
 
-export const EncodedKey = object({
-  key: string(),
-  encoding: EncodingTypeEnum.optional(),
-});
-export type EncodedKey = ZodInfer<typeof EncodedKey>;
-
 export const EncodedValue = object({
   value: string(),
   encoding: EncodingTypeEnum.optional(),
@@ -19,55 +13,45 @@ export const EncodedValue = object({
 export type EncodedValue = ZodInfer<typeof EncodedValue>;
 
 export const KeyValueUpdate = object({
-  key: string(),
-  keyEncoding: EncodingTypeEnum.optional(),
+  key: EncodedValue,
   ifNotPresent: boolean().optional(),
-  value: string().nullable(),
-  valueEncoding: EncodingTypeEnum.optional(),
+  value: EncodedValue.nullable(),
 });
 export type KeyValueUpdate = ZodInfer<typeof KeyValueUpdate>;
 
 export const KeyValue = object({
-  key: string(),
-  keyEncoding: EncodingTypeEnum.optional(),
-  value: string(),
-  valueEncoding: EncodingTypeEnum.optional(),
+  key: EncodedValue,
+  value: EncodedValue,
 });
 export type KeyValue = ZodInfer<typeof KeyValue>;
 
 export const GetGenerationIdResult = object({
-  generationId: string(),
-  generationIdEncoding: EncodingTypeEnum.optional(),
+  generationId: EncodedValue,
 });
 export type GetGenerationIdResult = ZodInfer<typeof GetGenerationIdResult>;
 
 export const GetNextGenerationIdResult = object({
-  nextGenerationId: string().nullable(),
-  nextGenerationIdEncoding: EncodingTypeEnum.optional(),
+  nextGenerationId: EncodedValue.nullable(),
 });
 export type GetNextGenerationIdResult = ZodInfer<
   typeof GetNextGenerationIdResult
 >;
 
 export const PutResult = object({
-  generationId: string(),
-  generationIdEncoding: EncodingTypeEnum.optional(),
+  generationId: EncodedValue,
   wasPut: boolean().optional(),
 });
 export type PutResult = ZodInfer<typeof PutResult>;
 
 export type KeyValueRecord = {
-  key: string;
-  keyEncoding: EncodingType | undefined;
-  value: string | null;
-  valueEncoding: EncodingType | undefined;
-  generationId: string;
-  phantomId: string | undefined;
+  key: EncodedValue;
+  value: EncodedValue | null;
+  generationId: EncodedValue;
+  phantomId: EncodedValue | undefined;
 };
 
 export const QueryResult = object({
-  generationId: string(),
-  generationIdEncoding: EncodingTypeEnum.optional(),
+  generationId: EncodedValue,
   items: array(KeyValue),
   cursorId: string().optional(),
 });
@@ -75,8 +59,7 @@ export type QueryResult = ZodInfer<typeof QueryResult>;
 
 export const DiffResultItems = array(
   object({
-    key: string(),
-    keyEncoding: EncodingTypeEnum.optional(),
+    key: EncodedValue,
     fromValue: EncodedValue.nullable(),
     intermediateValues: array(EncodedValue.nullable()),
     toValue: EncodedValue.nullable(),
@@ -86,24 +69,24 @@ export type DiffResultItems = ZodInfer<typeof DiffResultItems>;
 
 export const DiffResult = object({
   fromGenerationId: EncodedValue,
-  generationId: string(),
-  generationIdEncoding: EncodingTypeEnum.optional(),
+  toGenerationId: EncodedValue,
   items: DiffResultItems,
   cursorId: string().optional(),
 });
 export type DiffResult = ZodInfer<typeof DiffResult>;
 
 export const DiffOptionsFromGenerationInputProvided = object({
-  fromGenerationId: string(),
-  fromGenerationIdEncoding: EncodingTypeEnum.optional(),
+  fromGenerationId: EncodedValue,
 });
 export type DiffOptionsFromGenerationInputProvided = ZodInfer<
   typeof DiffOptionsFromGenerationInputProvided
 >;
 
 export const DiffOptionsFromGenerationInputFromReader = object({
-  readerId: string(),
-  readerCollectionName: string().optional(),
+  fromReader: object({
+    readerId: string(),
+    collectionName: string().optional(),
+  }),
 });
 export type DiffOptionsFromGenerationInputFromReader = ZodInfer<
   typeof DiffOptionsFromGenerationInputFromReader
@@ -121,40 +104,34 @@ export const isGenerationProvidedByReader = (
   value: DiffOptionsFromGenerationInput,
 ): value is DiffOptionsFromGenerationInputFromReader => {
   return Boolean(
-    (value as Partial<DiffOptionsFromGenerationInputFromReader>).readerId,
+    (value as Partial<DiffOptionsFromGenerationInputFromReader>).fromReader,
   );
 };
 
 export const DiffOptions = DiffOptionsFromGenerationInput.and(
   object({
-    toGenerationId: string().optional(),
-    toGenerationIdEncoding: EncodingTypeEnum.optional(),
+    toGenerationId: EncodedValue.optional(),
   }),
 );
 export type DiffOptions = ZodInfer<typeof DiffOptions>;
 
 export const CollectionGetKeysAroundOptions = object({
-  key: string(),
-  keyEncoding: EncodingTypeEnum.optional(),
+  key: EncodedValue,
   requireKeyExistance: boolean(),
   limit: number(),
-  generationId: string().optional(),
-  generationIdEncoding: EncodingTypeEnum.optional(),
-  phantomId: string().optional(),
-  phantomIdEncoding: EncodingTypeEnum.optional(),
-  encoding: EncodingTypeEnum.optional(),
+  generationId: EncodedValue.optional(),
+  phantomId: EncodedValue.optional(),
 });
 export type CollectionGetKeysAroundOptions = ZodInfer<
   typeof CollectionGetKeysAroundOptions
 >;
 
 export const CollectionGetKeysAroundResult = object({
-  generationId: string(),
-  generationIdEncoding: EncodingTypeEnum.optional(),
+  generationId: EncodedValue,
   hasMoreOnTheLeft: boolean(),
   hasMoreOnTheRight: boolean(),
-  left: array(EncodedKey),
-  right: array(EncodedKey),
+  left: array(EncodedValue),
+  right: array(EncodedValue),
   foundKey: boolean(),
 });
 export type CollectionGetKeysAroundResult = ZodInfer<
@@ -162,28 +139,21 @@ export type CollectionGetKeysAroundResult = ZodInfer<
 >;
 
 export const GetOptions = object({
-  key: string(),
-  keyEncoding: EncodingTypeEnum.optional(),
-  generationId: string().optional(),
-  generationIdEncoding: EncodingTypeEnum.optional(),
-  phantomId: string().optional(),
-  phantomIdEncoding: EncodingTypeEnum.optional(),
-  encoding: EncodingTypeEnum.optional(),
+  key: EncodedValue,
+  generationId: EncodedValue.optional(),
+  phantomId: EncodedValue.optional(),
 });
 export type GetOptions = ZodInfer<typeof GetOptions>;
 
 export const GetResult = object({
-  generationId: string(),
-  generationIdEncoding: EncodingTypeEnum.optional(),
+  generationId: EncodedValue,
   item: KeyValue.nullable(),
 });
 export type GetResult = ZodInfer<typeof GetResult>;
 
 export const QueryOptions = object({
-  generationId: string().optional(),
-  generationIdEncoding: EncodingTypeEnum.optional(),
-  phantomId: string().optional(),
-  phantomIdEncoding: EncodingTypeEnum.optional(),
+  generationId: EncodedValue.optional(),
+  phantomId: EncodedValue.optional(),
 });
 export type QueryOptions = ZodInfer<typeof QueryOptions>;
 
@@ -192,22 +162,17 @@ export const ReadQueryCursorOptions = object({
 });
 export type ReadQueryCursorOptions = ZodInfer<typeof ReadQueryCursorOptions>;
 
-export const PutOptions = KeyValueUpdate.and(
-  object({
-    generationId: string().optional(),
-    generationIdEncoding: EncodingTypeEnum.optional(),
-    phantomId: string().optional(),
-    phantomIdEncoding: EncodingTypeEnum.optional(),
-  }),
-);
+export const PutOptions = object({
+  item: KeyValueUpdate,
+  generationId: EncodedValue.optional(),
+  phantomId: EncodedValue.optional(),
+});
 export type PutOptions = ZodInfer<typeof PutOptions>;
 
 export const PutManyOptions = object({
   items: array(KeyValueUpdate),
-  generationId: string().optional(),
-  generationIdEncoding: EncodingTypeEnum.optional(),
-  phantomId: string().optional(),
-  phantomIdEncoding: EncodingTypeEnum.optional(),
+  generationId: EncodedValue.optional(),
+  phantomId: EncodedValue.optional(),
 });
 export type PutManyOptions = ZodInfer<typeof PutManyOptions>;
 
@@ -225,8 +190,7 @@ export const ListReadersResult = object({
   items: array(
     object({
       readerId: string(),
-      generationId: string().nullable(),
-      generationIdEncoding: EncodingTypeEnum.optional(),
+      generationId: EncodedValue.nullable(),
       collectionName: string().optional(),
     }),
   ),
@@ -235,16 +199,14 @@ export type ListReadersResult = ZodInfer<typeof ListReadersResult>;
 
 export const CreateReaderOptions = object({
   readerId: string(),
-  generationId: string().nullable(),
-  generationIdEncoding: EncodingTypeEnum.optional(),
+  generationId: EncodedValue.nullable(),
   collectionName: string().optional(),
 });
 export type CreateReaderOptions = ZodInfer<typeof CreateReaderOptions>;
 
 export const UpdateReaderOptions = object({
   readerId: string(),
-  generationId: string(),
-  generationIdEncoding: EncodingTypeEnum.optional(),
+  generationId: EncodedValue,
 });
 export type UpdateReaderOptions = ZodInfer<typeof UpdateReaderOptions>;
 
@@ -254,53 +216,45 @@ export const DeleteReaderOptions = object({
 export type DeleteReaderOptions = ZodInfer<typeof DeleteReaderOptions>;
 
 export const StartGenerationOptions = object({
-  generationId: string(),
-  generationIdEncoding: EncodingTypeEnum.optional(),
+  generationId: EncodedValue,
   abortOutdated: boolean().optional(),
 });
 export type StartGenerationOptions = ZodInfer<typeof StartGenerationOptions>;
 
 export const CommitGenerationOptions = object({
-  generationId: string(),
-  generationIdEncoding: EncodingTypeEnum.optional(),
+  generationId: EncodedValue,
   updateReaders: array(
     object({
       readerId: string(),
-      generationId: string(),
-      generationIdEncoding: EncodingTypeEnum.optional(),
+      generationId: EncodedValue,
     }),
   ).optional(),
 });
 export type CommitGenerationOptions = ZodInfer<typeof CommitGenerationOptions>;
 
 export const AbortGenerationOptions = object({
-  generationId: string(),
-  generationIdEncoding: EncodingTypeEnum.optional(),
+  generationId: EncodedValue,
 });
 export type AbortGenerationOptions = ZodInfer<typeof AbortGenerationOptions>;
 
 export const StartPhantomResult = object({
-  phantomId: string(),
-  phantomIdEncoding: EncodingTypeEnum.optional(),
+  phantomId: EncodedValue,
 });
 export type StartPhantomResult = ZodInfer<typeof StartPhantomResult>;
 
 export const DropPhantomOptions = object({
-  phantomId: string(),
-  phantomIdEncoding: EncodingTypeEnum.optional(),
+  phantomId: EncodedValue,
 });
 export type DropPhantomOptions = ZodInfer<typeof DropPhantomOptions>;
 
 export const CreateCollectionOptions = object({
   name: string(),
-  generationId: string().optional(),
-  generationIdEncoding: EncodingTypeEnum.optional(),
+  generationId: EncodedValue.optional(),
 });
 export type CreateCollectionOptions = ZodInfer<typeof CreateCollectionOptions>;
 
 export const CreateCollectionResult = object({
-  generationId: string().optional(),
-  generationIdEncoding: EncodingTypeEnum.optional(),
+  generationId: EncodedValue.optional(),
 });
 export type CreateCollectionResult = ZodInfer<typeof CreateCollectionResult>;
 

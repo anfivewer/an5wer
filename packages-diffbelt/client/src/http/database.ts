@@ -32,9 +32,9 @@ export class Database implements IDatabase {
   createCollection(
     options: CreateCollectionOptions,
   ): Promise<CreateCollectionResult> {
-    const {name, generationId, generationIdEncoding} = options;
+    const {name, generationId} = options;
 
-    const isManual = typeof generationId === 'string';
+    const isManual = Boolean(generationId);
 
     return this.call({
       method: 'POST',
@@ -43,7 +43,6 @@ export class Database implements IDatabase {
         collectionId: name,
         isManual,
         initialGenerationId: generationId,
-        initialGenerationIdEncoding: generationIdEncoding,
       },
       parser: CreateCollectionResult,
     });

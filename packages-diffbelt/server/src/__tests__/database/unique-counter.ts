@@ -2,12 +2,17 @@ import {TestLogger} from '@-/util/src/logging/test-logger';
 import {initializeDatabaseStructure} from '@-/diffbelt-util/src/database/initialize-structure';
 import {CreateDatabaseFn} from './types';
 import {createRandomGenerator} from './util';
-import {Database, KeyValue} from '@-/diffbelt-types/src/database/types';
+import {
+  Database,
+  EncodedValue,
+  KeyValue,
+} from '@-/diffbelt-types/src/database/types';
 import {dumpCollection} from '@-/diffbelt-util/src/queries/dump';
 import {createUniqueCounterTransform} from '@-/diffbelt-util/src/transform/unique-counter';
 import {AggregateInterval} from '@-/diffbelt-util/src/transform/types';
 import {Logger} from '@-/types/src/logging/logging';
 import {assertNonNullable} from '@-/types/src/assert/runtime';
+import {toString} from '@-/diffbelt-util/src/keys/encoding';
 
 export const uniqueCounterTest = ({
   createDatabase,
@@ -53,7 +58,9 @@ export const uniqueCounterTest = ({
       const randomGenerator = createRandomGenerator();
       const currentRecords = new Map<string, string>();
 
-      await initialCollection.startGeneration({generationId: '00000000001'});
+      await initialCollection.startGeneration({
+        generationId: {value: '00000000001'},
+      });
 
       for (let i = 0; i < 10; i++) {
         const records: KeyValue[] = [];
@@ -65,16 +72,18 @@ export const uniqueCounterTest = ({
           const value = String(b % 256);
 
           currentRecords.set(key, value);
-          records.push({key, value});
+          records.push({key: {value: key}, value: {value}});
         }
 
         await initialCollection.putMany({
           items: records,
-          generationId: '00000000001',
+          generationId: {value: '00000000001'},
         });
       }
 
-      await initialCollection.commitGeneration({generationId: '00000000001'});
+      await initialCollection.commitGeneration({
+        generationId: {value: '00000000001'},
+      });
 
       const transform = createUniqueCounterTransform({
         interval: AggregateInterval.DAY,
@@ -93,11 +102,11 @@ export const uniqueCounterTest = ({
         intermediateToSourceReaderName: 'fromInitial',
         targetCollectionName: 'uniqueTarget',
         targetToIntermediateReaderName: 'fromIntermediate',
-        parseSourceItem: (value) => parseInt(value, 10),
-        parseIntermediateItem: (value) => parseInt(value, 10),
-        serializeIntermediateItem: (item) => String(item),
+        parseSourceItem: (value) => parseInt(toString(value), 10),
+        parseIntermediateItem: (value) => parseInt(toString(value), 10),
+        serializeIntermediateItem: (item) => ({value: String(item)}),
         parseTargetItem: (value) => {
-          const match = /^(\d+) (\d+)$/.exec(value);
+          const match = /^(\d+) (\d+)$/.exec(toString(value));
           assertNonNullable(match);
 
           return {
@@ -105,28 +114,30 @@ export const uniqueCounterTest = ({
             sum: parseInt(match[2], 10),
           };
         },
-        serializeTargetItem: ({count, sum}) => `${count} ${sum}`,
+        serializeTargetItem: ({count, sum}) => ({value: `${count} ${sum}`}),
         getIntermediateFromSource: ({key, sourceItem}) => {
           if (sourceItem % 5 !== 0) {
             return null;
           }
 
           return {
-            key: `${key} ${sourceItem}`,
+            key: {value: `${toString(key)} ${sourceItem}`},
             value: sourceItem,
           };
         },
         getIntermediateTimestampMsFromKey: (key) => {
-          return parseInt(key.split(' ', 1)[0], 10) * 1000;
+          return parseInt(toString(key).split(' ', 1)[0], 10) * 1000;
         },
         getTargetKeyFromTimestampMs: (timestampMs) => {
-          return String(Math.floor(timestampMs / 1000)).padStart(10, '0');
+          return {
+            value: String(Math.floor(timestampMs / 1000)).padStart(10, '0'),
+          };
         },
         getInitialIntermediateAccumulator: ({prevTargetItem}) =>
           prevTargetItem !== null ? prevTargetItem.sum : 0,
         getEmptyIntermediateAccumulator: () => 0,
         reduceIntermediateWithInitialAccumulator: ({accumulator, items}) => {
-          let sum = accumulator;
+          let sum: number = accumulator;
 
           items.forEach(({prev, next}) => {
             if (prev !== null) {
@@ -160,7 +171,7 @@ export const uniqueCounterTest = ({
       const testAggregated = async ({
         expectedGenerationId,
       }: {
-        expectedGenerationId: string;
+        expectedGenerationId: EncodedValue;
       }) => {
         const preExpectedRecords = new Map<
           string,
@@ -199,12 +210,12 @@ export const uniqueCounterTest = ({
 
         const {items, generationId} = await dumpCollection(targetCollection);
 
-        expect(generationId).toBe(expectedGenerationId);
+        expect(generationId).toStrictEqual(expectedGenerationId);
 
         const actualRecords = new Map<string, string>();
 
         items.forEach((item) => {
-          actualRecords.set(item.key, item.value);
+          actualRecords.set(toString(item.key), toString(item.value));
         });
 
         actualRecords.forEach((value, key) => {
@@ -216,41 +227,43 @@ export const uniqueCounterTest = ({
       };
 
       await transform({context: {database, logger}});
-      await testAggregated({expectedGenerationId: '00000000001'});
+      await testAggregated({expectedGenerationId: {value: '00000000001'}});
 
       {
         // Update records
         const currentRecordsList: KeyValue[] = [];
         currentRecords.forEach((value, key) => {
-          currentRecordsList.push({key, value});
+          currentRecordsList.push({key: {value: key}, value: {value}});
         });
         currentRecordsList.sort(({key: keyA}, {key: keyB}) =>
           keyA < keyB ? -1 : keyA > keyB ? 1 : 0,
         );
 
-        await initialCollection.startGeneration({generationId: '00000000002'});
+        await initialCollection.startGeneration({
+          generationId: {value: '00000000002'},
+        });
 
         const removedItemsA = currentRecordsList.splice(0, 3);
         await initialCollection.putMany({
           items: removedItemsA.map((item) => ({key: item.key, value: null})),
-          generationId: '00000000002',
+          generationId: {value: '00000000002'},
         });
         const removedItemsB = currentRecordsList.splice(100, 2);
         await initialCollection.putMany({
           items: removedItemsB.map((item) => ({key: item.key, value: null})),
-          generationId: '00000000002',
+          generationId: {value: '00000000002'},
         });
 
         const removedItemsC = currentRecordsList.splice(600, 150);
         await initialCollection.putMany({
           items: removedItemsC.map((item) => ({key: item.key, value: null})),
-          generationId: '00000000002',
+          generationId: {value: '00000000002'},
         });
 
         [removedItemsA, removedItemsB, removedItemsC].forEach(
           (removedItems) => {
             removedItems.forEach((item) => {
-              currentRecords.delete(item.key);
+              currentRecords.delete(toString(item.key));
             });
           },
         );
@@ -263,19 +276,21 @@ export const uniqueCounterTest = ({
           const value = String(b % 256);
 
           currentRecords.set(key, value);
-          recordsToAdd.push({key, value});
+          recordsToAdd.push({key: {value: key}, value: {value}});
         }
 
         await initialCollection.putMany({
           items: recordsToAdd,
-          generationId: '00000000002',
+          generationId: {value: '00000000002'},
         });
 
-        await initialCollection.commitGeneration({generationId: '00000000002'});
+        await initialCollection.commitGeneration({
+          generationId: {value: '00000000002'},
+        });
       }
 
       await transform({context: {database, logger}});
-      await testAggregated({expectedGenerationId: '00000000002'});
+      await testAggregated({expectedGenerationId: {value: '00000000002'}});
 
       expect(testLogger.hasErrorsOrWarnings()).toBe(false);
     });

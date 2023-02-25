@@ -1,4 +1,4 @@
-import {EncodingTypeEnum} from '@-/diffbelt-types/src/database/types';
+import {EncodedValue} from '@-/diffbelt-types/src/database/types';
 import {ZodInfer} from '@-/types/src/zod/zod';
 import {any, array, boolean, object, string} from 'zod';
 
@@ -27,10 +27,8 @@ export const VoidParser = any();
 
 export const GetCollectionResponse = object({
   isManual: boolean(),
-  generationId: string().optional(),
-  generationIdEncoding: EncodingTypeEnum.optional(),
-  nextGenerationId: string().optional(),
-  nextGenerationIdEncoding: EncodingTypeEnum.optional(),
+  generationId: EncodedValue.optional(),
+  nextGenerationId: EncodedValue.optional(),
 });
 export type GetCollectionResponse = ZodInfer<typeof GetCollectionResponse>;
 
@@ -39,8 +37,6 @@ export const ListCollectionsResponse = object({
     object({
       name: string(),
       isManual: boolean(),
-      generationId: string(),
-      generationIdEncoding: EncodingTypeEnum.optional(),
     }),
   ),
 });

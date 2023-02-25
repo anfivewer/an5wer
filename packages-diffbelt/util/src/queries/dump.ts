@@ -1,4 +1,8 @@
-import {Collection, KeyValue} from '@-/diffbelt-types/src/database/types';
+import {
+  Collection,
+  EncodedValue,
+  KeyValue,
+} from '@-/diffbelt-types/src/database/types';
 import {FinishableStream} from '@-/types/src/stream/stream';
 import {createFinishableStream} from '@-/util/src/stream/finishable-stream';
 
@@ -9,11 +13,14 @@ export const queryCollection = async (
     onInitialQuery,
     onReadCursor,
   }: {
-    generationId?: string;
-    onInitialQuery?: (options: {generationId: string}) => void;
-    onReadCursor?: (options: {generationId: string}) => void;
+    generationId?: EncodedValue;
+    onInitialQuery?: (options: {generationId: EncodedValue}) => void;
+    onReadCursor?: (options: {generationId: EncodedValue}) => void;
   } = {},
-): Promise<{generationId: string; stream: FinishableStream<KeyValue[]>}> => {
+): Promise<{
+  generationId: EncodedValue;
+  stream: FinishableStream<KeyValue[]>;
+}> => {
   const {
     generationId: initialGenerationId,
     items,
@@ -34,7 +41,7 @@ export const queryCollection = async (
   (async () => {
     let currentCursor = cursorId;
 
-    while (currentCursor) {
+    while (typeof currentCursor === 'string') {
       const {generationId, items, cursorId} = await collection.readQueryCursor({
         cursorId: currentCursor,
       });
@@ -62,8 +69,8 @@ export const dumpCollection = async (
     onInitialQuery,
     onReadCursor,
   }: {
-    onInitialQuery?: (options: {generationId: string}) => void;
-    onReadCursor?: (options: {generationId: string}) => void;
+    onInitialQuery?: (options: {generationId: EncodedValue}) => void;
+    onReadCursor?: (options: {generationId: EncodedValue}) => void;
   } = {},
 ) => {
   const {generationId, stream} = await queryCollection(collection, {

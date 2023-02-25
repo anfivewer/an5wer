@@ -1,8 +1,14 @@
-import {Database, KeyValue} from '@-/diffbelt-types/src/database/types';
+import {
+  Database,
+  EncodedValue,
+  KeyValue,
+} from '@-/diffbelt-types/src/database/types';
 import {queryCollection} from '@-/diffbelt-util/src/queries/dump';
 import {CreateDatabaseFn} from './types';
 import {createRandomGenerator} from './util';
 import {createMapFilterTransform} from '@-/diffbelt-util/src/transform/map-filter';
+import {toString} from '@-/diffbelt-util/src/keys/encoding';
+import {isLessThan} from '@-/diffbelt-util/src/keys/compare';
 
 export const mapFilterTest = ({
   createDatabase,
@@ -16,7 +22,7 @@ export const mapFilterTest = ({
       const {generationId: initialGenerationId} =
         await database.createCollection({
           name: 'mapFilterInitial',
-          generationId: '',
+          generationId: {value: ''},
         });
 
       await database.createCollection({
@@ -34,13 +40,13 @@ export const mapFilterTest = ({
         collectionName: 'mapFilterInitial',
       });
 
-      const mapFilter = ({key, value}: {key: string; value: number}) => {
+      const mapFilter = ({key, value}: {key: EncodedValue; value: number}) => {
         if (value % 2 === 0) {
           return null;
         }
 
         return {
-          key: String(value).padStart(10, '0'),
+          key: {value: String(value).padStart(10, '0')},
           value: key,
         };
       };
@@ -50,7 +56,7 @@ export const mapFilterTest = ({
         targetCollectionName: 'mapFilterTarget',
         targetCollectionReaderName: 'fromInitial',
         getDatabaseFromContext: ({database}: {database: Database}) => database,
-        parseSourceCollectionItem: (value) => parseInt(value, 10),
+        parseSourceCollectionItem: (value) => parseInt(toString(value), 10),
         mapFilter,
       });
 
@@ -63,7 +69,9 @@ export const mapFilterTest = ({
 
       initialCollectionGenerationId++;
       await initialCollection.startGeneration({
-        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+        generationId: {
+          value: String(initialCollectionGenerationId).padStart(11, '0'),
+        },
       });
 
       // Create initial records
@@ -76,54 +84,59 @@ export const mapFilterTest = ({
           const key = `key-${a.toString(16)}`;
           currentRecords.set(key, String(b));
 
-          records.push({key, value: String(b)});
-          currentRecordsList.push({key, value: String(b)});
+          records.push({key: {value: key}, value: {value: String(b)}});
+          currentRecordsList.push({
+            key: {value: key},
+            value: {value: String(b)},
+          });
         }
 
         await initialCollection.putMany({
           items: records,
-          generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+          generationId: {
+            value: String(initialCollectionGenerationId).padStart(11, '0'),
+          },
         });
 
         if (i === 0 || i === 3 || i === 8) {
           await initialCollection.commitGeneration({
-            generationId: String(initialCollectionGenerationId).padStart(
-              11,
-              '0',
-            ),
+            generationId: {
+              value: String(initialCollectionGenerationId).padStart(11, '0'),
+            },
           });
           initialCollectionGenerationId++;
           await initialCollection.startGeneration({
-            generationId: String(initialCollectionGenerationId).padStart(
-              11,
-              '0',
-            ),
+            generationId: {
+              value: String(initialCollectionGenerationId).padStart(11, '0'),
+            },
           });
         }
       }
 
       await initialCollection.commitGeneration({
-        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+        generationId: {
+          value: String(initialCollectionGenerationId).padStart(11, '0'),
+        },
       });
 
       const testInitialCollection = async ({
         expectedGenerationId,
       }: {
-        expectedGenerationId: string;
+        expectedGenerationId: EncodedValue;
       }) => {
         const {generationId, stream} = await queryCollection(initialCollection);
-        expect(generationId).toBe(expectedGenerationId);
+        expect(generationId).toStrictEqual(expectedGenerationId);
 
         const actualItems = new Map<string, string>();
 
-        let prevItemKey = '';
+        let prevItemKey: EncodedValue = {value: ''};
 
         for await (const items of stream) {
           // eslint-disable-next-line no-loop-func
           items.forEach((item) => {
-            actualItems.set(item.key, item.value);
+            actualItems.set(toString(item.key), toString(item.value));
 
-            expect(prevItemKey < item.key).toBe(true);
+            expect(isLessThan(prevItemKey, item.key)).toBe(true);
             prevItemKey = item.key;
           });
         }
@@ -136,37 +149,39 @@ export const mapFilterTest = ({
         });
       };
 
-      await testInitialCollection({expectedGenerationId: '00000000004'});
+      await testInitialCollection({
+        expectedGenerationId: {value: '00000000004'},
+      });
 
       await myMapFilterTransform({context: {database}});
 
       const testMappedCollection = async ({
         expectedGenerationId,
       }: {
-        expectedGenerationId: string;
+        expectedGenerationId: EncodedValue;
       }) => {
         const {generationId, stream} = await queryCollection(targetCollection);
-        expect(generationId).toBe(expectedGenerationId);
+        expect(generationId).toStrictEqual(expectedGenerationId);
 
         const actualItems = new Map<string, string>();
         const expectedItems = new Map<string, string>();
         currentRecords.forEach((value, key) => {
           const valueNum = parseInt(value, 10);
-          const mapped = mapFilter({key, value: valueNum});
+          const mapped = mapFilter({key: {value: key}, value: valueNum});
 
           if (mapped) {
-            expectedItems.set(mapped.key, mapped.value);
+            expectedItems.set(toString(mapped.key), toString(mapped.value));
           }
         });
 
-        let prevItemKey = '';
+        let prevItemKey: EncodedValue = {value: ''};
 
         for await (const items of stream) {
           // eslint-disable-next-line no-loop-func
           items.forEach((item) => {
-            actualItems.set(item.key, item.value);
+            actualItems.set(toString(item.key), toString(item.value));
 
-            expect(prevItemKey < item.key).toBe(true);
+            expect(isLessThan(prevItemKey, item.key)).toBe(true);
             prevItemKey = item.key;
           });
         }
@@ -181,42 +196,56 @@ export const mapFilterTest = ({
         });
       };
 
-      await testMappedCollection({expectedGenerationId: '00000000004'});
+      await testMappedCollection({
+        expectedGenerationId: {value: '00000000004'},
+      });
 
       initialCollectionGenerationId++;
       await initialCollection.startGeneration({
-        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+        generationId: {
+          value: String(initialCollectionGenerationId).padStart(11, '0'),
+        },
       });
 
       const removedItemsA = currentRecordsList.splice(5, 250);
       await initialCollection.putMany({
         items: removedItemsA.map((item) => ({key: item.key, value: null})),
-        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+        generationId: {
+          value: String(initialCollectionGenerationId).padStart(11, '0'),
+        },
       });
       const removedItemsB = currentRecordsList.splice(100, 2);
       await initialCollection.putMany({
         items: removedItemsB.map((item) => ({key: item.key, value: null})),
-        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+        generationId: {
+          value: String(initialCollectionGenerationId).padStart(11, '0'),
+        },
       });
 
       await initialCollection.commitGeneration({
-        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+        generationId: {
+          value: String(initialCollectionGenerationId).padStart(11, '0'),
+        },
       });
 
       initialCollectionGenerationId++;
       await initialCollection.startGeneration({
-        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+        generationId: {
+          value: String(initialCollectionGenerationId).padStart(11, '0'),
+        },
       });
 
       const removedItemsC = currentRecordsList.splice(600, 150);
       await initialCollection.putMany({
         items: removedItemsC.map((item) => ({key: item.key, value: null})),
-        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+        generationId: {
+          value: String(initialCollectionGenerationId).padStart(11, '0'),
+        },
       });
 
       [removedItemsA, removedItemsB, removedItemsC].forEach((removedItems) => {
         removedItems.forEach((item) => {
-          currentRecords.delete(item.key);
+          currentRecords.delete(toString(item.key));
         });
       });
 
@@ -227,23 +256,31 @@ export const mapFilterTest = ({
         const key = `key-${a.toString(16)}`;
         currentRecords.set(key, String(b));
 
-        recordsToAdd.push({key, value: String(b)});
+        recordsToAdd.push({key: {value: key}, value: {value: String(b)}});
       }
 
       await initialCollection.putMany({
         items: recordsToAdd,
-        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+        generationId: {
+          value: String(initialCollectionGenerationId).padStart(11, '0'),
+        },
       });
 
       await initialCollection.commitGeneration({
-        generationId: String(initialCollectionGenerationId).padStart(11, '0'),
+        generationId: {
+          value: String(initialCollectionGenerationId).padStart(11, '0'),
+        },
       });
 
-      await testInitialCollection({expectedGenerationId: '00000000006'});
+      await testInitialCollection({
+        expectedGenerationId: {value: '00000000006'},
+      });
 
       await myMapFilterTransform({context: {database}});
 
-      await testMappedCollection({expectedGenerationId: '00000000006'});
+      await testMappedCollection({
+        expectedGenerationId: {value: '00000000006'},
+      });
     }, 10000);
   });
 };

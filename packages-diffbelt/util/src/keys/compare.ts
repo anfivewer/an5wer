@@ -1,51 +1,40 @@
-import {EncodedKey, EncodingType} from '@-/diffbelt-types/src/database/types';
+import {EncodedValue, EncodingType} from '@-/diffbelt-types/src/database/types';
 
 const toBase64 = (s: string): string =>
   Buffer.from(s, 'utf8').toString('base64');
 
-export const toBase64Key = (key: EncodedKey): EncodedKey => {
-  if (key.encoding === 'base64') {
-    return key;
-  }
-
-  return {
-    encoding: 'base64',
-    key: Buffer.from(key.key, 'utf8').toString('base64'),
-  };
-};
-
-export const isEqual = (a: EncodedKey, b: EncodedKey) => {
+export const isEqual = (a: EncodedValue, b: EncodedValue) => {
   if (a.encoding === b.encoding) {
-    return a.key === b.key;
+    return a.value === b.value;
   }
 
-  const aBase64 = a.encoding === 'base64' ? a.key : toBase64(a.key);
-  const bBase64 = b.encoding === 'base64' ? b.key : toBase64(b.key);
+  const aBase64 = a.encoding === 'base64' ? a.value : toBase64(a.value);
+  const bBase64 = b.encoding === 'base64' ? b.value : toBase64(b.value);
 
   return aBase64 === bBase64;
 };
 
-const toBytes = ({key, encoding}: EncodedKey): Buffer => {
+const toBytes = ({value, encoding}: EncodedValue): Buffer => {
   if (encoding === 'base64') {
-    return Buffer.from(key, 'base64');
+    return Buffer.from(value, 'base64');
   }
 
-  return Buffer.from(key, 'utf-8');
+  return Buffer.from(value, 'utf-8');
 };
 
-export const isLessThan = (a: EncodedKey, b: EncodedKey) => {
+export const isLessThan = (a: EncodedValue, b: EncodedValue) => {
   return Buffer.compare(toBytes(a), toBytes(b)) < 0;
 };
 
-export const isGreaterThan = (a: EncodedKey, b: EncodedKey) => {
+export const isGreaterThan = (a: EncodedValue, b: EncodedValue) => {
   return Buffer.compare(toBytes(a), toBytes(b)) > 0;
 };
 
-export const isGreaterOrEqualThan = (a: EncodedKey, b: EncodedKey) => {
+export const isGreaterOrEqualThan = (a: EncodedValue, b: EncodedValue) => {
   return Buffer.compare(toBytes(a), toBytes(b)) >= 0;
 };
 
-export const basicCompareKey = (a: EncodedKey, b: EncodedKey) => {
+export const basicCompareKey = (a: EncodedValue, b: EncodedValue) => {
   return Buffer.compare(toBytes(a), toBytes(b));
 };
 

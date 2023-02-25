@@ -3,7 +3,6 @@ import {
   DiffOptions,
   DiffResultItems,
   EncodedValue,
-  EncodingType,
 } from '@-/diffbelt-types/src/database/types';
 import {FinishableStream} from '@-/types/src/stream/stream';
 import {createFinishableStream} from '@-/util/src/stream/finishable-stream';
@@ -16,19 +15,17 @@ export const diffCollection = async (
     onReadCursor,
   }: {
     diffOptions: DiffOptions;
-    onInitialQuery?: (options: {generationId: string}) => void;
-    onReadCursor?: (options: {generationId: string}) => void;
+    onInitialQuery?: (options: {generationId: EncodedValue}) => void;
+    onReadCursor?: (options: {generationId: EncodedValue}) => void;
   },
 ): Promise<{
   fromGenerationId: EncodedValue;
-  generationId: string;
-  generationIdEncoding: EncodingType | undefined;
+  toGenerationId: EncodedValue;
   stream: FinishableStream<DiffResultItems>;
 }> => {
   const {
     fromGenerationId,
-    generationId: initialGenerationId,
-    generationIdEncoding,
+    toGenerationId: initialGenerationId,
     items,
     cursorId,
   } = await collection.diff(diffOptions);
@@ -48,15 +45,17 @@ export const diffCollection = async (
     let currentCursor = cursorId;
 
     while (currentCursor !== undefined) {
-      const {generationId, items, cursorId} = await collection.readDiffCursor({
-        cursorId: currentCursor,
-      });
+      const {toGenerationId, items, cursorId} = await collection.readDiffCursor(
+        {
+          cursorId: currentCursor,
+        },
+      );
 
       if (isClosed) {
         return;
       }
 
-      onReadCursor?.({generationId});
+      onReadCursor?.({generationId: toGenerationId});
 
       stream.push(items);
 
@@ -68,8 +67,7 @@ export const diffCollection = async (
 
   return {
     fromGenerationId,
-    generationId: initialGenerationId,
-    generationIdEncoding,
+    toGenerationId: initialGenerationId,
     stream: stream.getGenerator(),
   };
 };

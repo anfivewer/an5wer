@@ -10,13 +10,19 @@ export const testEmptyStringValue = async ({
 }) => {
   await database.createCollection({
     name: 'testEmptyStringValue',
-    generationId: '',
+    generationId: {value: ''},
   });
   const collection = await database.getCollection('testEmptyStringValue');
 
-  await collection.startGeneration({generationId: '1'});
-  await collection.put({key: 'test', value: '', generationId: '1'});
-  await collection.commitGeneration({generationId: '1'});
+  await collection.startGeneration({generationId: {value: '1'}});
+  await collection.put({
+    item: {
+      key: {value: 'test'},
+      value: {value: ''},
+    },
+    generationId: {value: '1'},
+  });
+  await collection.commitGeneration({generationId: {value: '1'}});
 
   const {stream} = await queryCollection(collection);
 
@@ -28,5 +34,5 @@ export const testEmptyStringValue = async ({
     });
   }
 
-  expect(allItems).toStrictEqual([{key: 'test', value: ''}]);
+  expect(allItems).toStrictEqual([{key: {value: 'test'}, value: {value: ''}}]);
 };

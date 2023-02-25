@@ -1,9 +1,4 @@
-import {
-  Collection,
-  EncodedKey,
-  EncodedValue,
-  EncodingType,
-} from '@-/diffbelt-types/src/database/types';
+import {Collection, EncodedValue} from '@-/diffbelt-types/src/database/types';
 import {
   PercentilesData,
   SinglePercentileData,
@@ -16,9 +11,9 @@ const AROUND_ITEMS_COUNT = 200;
 
 type PercentilesStatePercentile = SinglePercentileData & {
   // TODO: reverse this array to simplify code
-  aroundLeft: EncodedKey[];
+  aroundLeft: EncodedValue[];
   hasMoreOnTheLeft: boolean;
-  aroundRight: EncodedKey[];
+  aroundRight: EncodedValue[];
   hasMoreOnTheRight: boolean;
 };
 
@@ -28,10 +23,7 @@ export class PercentilesState {
   private initialPercentiles: number[];
   private collection: Collection;
   private fromGenerationId: EncodedValue;
-  private generationId: string;
-  private generationIdEncoding: EncodingType | undefined;
-  private phantomId: string | undefined;
-  private phantomIdEncoding: EncodingType | undefined;
+  private phantomId: EncodedValue | undefined;
   private phantomChanges: (() => Promise<void>)[] = [];
 
   constructor({
@@ -39,22 +31,16 @@ export class PercentilesState {
     percentilesData,
     collection,
     fromGenerationId,
-    generationId,
-    generationIdEncoding,
   }: {
     percentiles: number[];
     percentilesData: PercentilesData | undefined;
     collection: Collection;
     fromGenerationId: EncodedValue | null;
-    generationId: string;
-    generationIdEncoding: EncodingType | undefined;
   }) {
     this.initialPercentiles = percentiles;
     this.collection = collection;
     this.fromGenerationId =
       fromGenerationId !== null ? fromGenerationId : {value: ''};
-    this.generationId = generationId;
-    this.generationIdEncoding = generationIdEncoding;
 
     if (percentilesData) {
       const {count, percentiles} = percentilesData;
@@ -78,10 +64,8 @@ export class PercentilesState {
     }
 
     if (this.phantomId === undefined) {
-      const {phantomId, phantomIdEncoding} =
-        await this.collection.startPhantom();
+      const {phantomId} = await this.collection.startPhantom();
       this.phantomId = phantomId;
-      this.phantomIdEncoding = phantomIdEncoding;
     }
 
     // TODO: do it in a parallel, no need to wait for `fetchAround`,
@@ -114,14 +98,11 @@ export class PercentilesState {
         (async () => {
           const {foundKey, left, right, hasMoreOnTheLeft, hasMoreOnTheRight} =
             await this.collection.getKeysAround({
-              key: key.key,
-              keyEncoding: key.encoding,
+              key,
               requireKeyExistance: true,
               limit: AROUND_ITEMS_COUNT,
-              generationId: this.fromGenerationId.value,
-              generationIdEncoding: this.fromGenerationId.encoding,
+              generationId: this.fromGenerationId,
               phantomId: this.phantomId,
-              phantomIdEncoding: this.phantomIdEncoding,
             });
 
           if (!foundKey) {
@@ -144,17 +125,16 @@ export class PercentilesState {
   }
 
   /** returns `true` if you need to call `fetchAround()` */
-  keyAdded(key: EncodedKey): boolean {
+  keyAdded(key: EncodedValue): boolean {
     this.phantomChanges.push(async () => {
       assertNonNullable(this.phantomId);
       await this.collection.put({
-        key: key.key,
-        keyEncoding: key.encoding,
-        value: '',
-        generationId: this.fromGenerationId.value,
-        generationIdEncoding: this.fromGenerationId.encoding,
+        item: {
+          key,
+          value: {value: ''},
+        },
+        generationId: this.fromGenerationId,
         phantomId: this.phantomId,
-        phantomIdEncoding: this.phantomIdEncoding,
       });
     });
 
@@ -306,7 +286,7 @@ export class PercentilesState {
   }
 
   /** returns `true` if you need to call `fetchAround()` */
-  keyRemoved(key: EncodedKey): boolean {
+  keyRemoved(key: EncodedValue): boolean {
     if (!this.percentiles) {
       throw new Error('PercentilesState:keyRemoved but no percentiles');
     }
@@ -314,13 +294,12 @@ export class PercentilesState {
     this.phantomChanges.push(async () => {
       assertNonNullable(this.phantomId);
       await this.collection.put({
-        key: key.key,
-        keyEncoding: key.encoding,
-        value: null,
-        generationId: this.fromGenerationId.value,
-        generationIdEncoding: this.fromGenerationId.encoding,
+        item: {
+          key,
+          value: null,
+        },
+        generationId: this.fromGenerationId,
         phantomId: this.phantomId,
-        phantomIdEncoding: this.phantomIdEncoding,
       });
     });
 

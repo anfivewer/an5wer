@@ -31,6 +31,7 @@ import {
 import {CallApiFn, VoidParser} from './types';
 import {createFinishableStream} from '@-/util/src/stream/finishable-stream';
 import {GetKeysAroundRequestBody, GetRequestBody} from '../types/client';
+import {isEqual} from '@-/diffbelt-util/src/keys/compare';
 
 export type CollectionOptions = {
   call: CallApiFn;
@@ -86,10 +87,10 @@ export class Collection implements ICollection {
           parser: GetGenerationIdResult,
         });
 
-        const isSame =
-          newGenerationId.generationId === prevGenerationId.generationId &&
-          newGenerationId.generationIdEncoding ===
-            prevGenerationId.generationIdEncoding;
+        const isSame = isEqual(
+          newGenerationId.generationId,
+          prevGenerationId.generationId,
+        );
 
         if (isSame) {
           if (stream.isClosed()) {

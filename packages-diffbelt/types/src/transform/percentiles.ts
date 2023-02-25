@@ -1,11 +1,11 @@
 import {ZodInfer} from '@-/types/src/zod/zod';
 import {array, number, object} from 'zod';
-import {EncodedKey} from '../database/types';
+import {EncodedValue} from '../database/types';
 
 export const SinglePercentileData = object({
   p: number(),
   index: number(),
-  key: EncodedKey,
+  key: EncodedValue,
 });
 export type SinglePercentileData = ZodInfer<typeof SinglePercentileData>;
 

@@ -1,8 +1,4 @@
-import {
-  Database,
-  EncodedValue,
-  EncodingType,
-} from '@-/diffbelt-types/src/database/types';
+import {Database, EncodedValue} from '@-/diffbelt-types/src/database/types';
 import {Parallel} from '@-/util/src/async/parallel';
 import {IdlingStatus} from '@-/util/src/state/idling-status';
 import {diffCollection} from '../queries/diff';
@@ -12,6 +8,7 @@ import {Defer} from '@-/util/src/async/defer';
 import {assertNonNullable} from '@-/types/src/assert/runtime';
 import {getIntervalTsMs} from '../intervals/get-interval-ts';
 import {isEqual} from '../keys/compare';
+import {toBase64Value} from '../keys/encoding';
 
 /** @deprecated */
 export {AggregateInterval};
@@ -20,8 +17,7 @@ type IntervalData<TargetItem> = {
   intervalTimestampMs: number;
   prevTargetItem: TargetItem | null;
   fromGenerationId: EncodedValue | null;
-  generationId: string;
-  generationIdEncoding: EncodingType | undefined;
+  generationId: EncodedValue;
 };
 
 export type BaseAggregateTransformOptions = {
@@ -55,17 +51,17 @@ type AggregateTransformOptions<
   ReducedItem,
   CustomData = unknown,
 > = BaseAggregateTransformOptions & {
-  parseSourceItem: (value: string) => SourceItem;
-  parseTargetItem: (value: string) => TargetItem;
-  serializeTargetItem: (value: TargetItem) => string;
-  getTimestampMs: (sourceKey: string) => number;
-  getTargetKey?: (intervalTimestampMs: number) => string;
+  parseSourceItem: (value: EncodedValue) => SourceItem;
+  parseTargetItem: (value: EncodedValue) => TargetItem;
+  serializeTargetItem: (value: TargetItem) => EncodedValue;
+  getTimestampMs: (sourceKey: EncodedValue) => number;
+  getTargetKey?: (intervalTimestampMs: number) => EncodedValue;
 
   extractContext: (context: Context) => {database: Database; logger: Logger};
   mapFilter: (
     options: IntervalData<TargetItem> & {
       timestampMs: number;
-      sourceKey: string;
+      sourceKey: EncodedValue;
       // `null` if was removed
       sourceItem: SourceItem | null;
     },
@@ -162,7 +158,7 @@ export const createAggregateByTimestampTransform = <
     parseTargetItem,
     serializeTargetItem,
     getTimestampMs,
-    getTargetKey = (timestamp) => new Date(timestamp).toISOString(),
+    getTargetKey = (timestamp) => ({value: new Date(timestamp).toISOString()}),
     extractContext,
     mapFilter,
     maxItemsForReduce = 100,
@@ -191,26 +187,24 @@ export const createAggregateByTimestampTransform = <
       db.getCollection(targetCollectionName),
     ]);
 
-    const {stream, fromGenerationId, generationId, generationIdEncoding} =
-      await diffCollection(sourceCollection, {
+    const {stream, fromGenerationId, toGenerationId} = await diffCollection(
+      sourceCollection,
+      {
         diffOptions: {
-          readerId: targetFromSourceReaderName,
-          readerCollectionName: targetCollectionName,
+          fromReader: {
+            readerId: targetFromSourceReaderName,
+            collectionName: targetCollectionName,
+          },
         },
-      });
+      },
+    );
 
-    if (
-      isEqual(
-        {key: fromGenerationId.value, encoding: fromGenerationId.encoding},
-        {key: generationId, encoding: generationIdEncoding},
-      )
-    ) {
+    if (isEqual(fromGenerationId, toGenerationId)) {
       return false;
     }
 
     await targetCollection.startGeneration({
-      generationId,
-      generationIdEncoding,
+      generationId: toGenerationId,
       abortOutdated: true,
     });
 
@@ -219,8 +213,8 @@ export const createAggregateByTimestampTransform = <
     const finishTasks = new IdlingStatus();
 
     type IntervalChanges = {
-      startKey: string;
-      nextKey: string | undefined;
+      startKey: EncodedValue;
+      nextKey: EncodedValue | undefined;
       items: ItemChange<MappedItem>[];
     };
 
@@ -232,8 +226,8 @@ export const createAggregateByTimestampTransform = <
     let catchedError: unknown;
 
     type PendingReducedItem = {
-      startKey: string;
-      nextKey: string | undefined;
+      startKey: EncodedValue;
+      nextKey: EncodedValue | undefined;
       item: ReducedItem;
     };
 
@@ -256,8 +250,8 @@ export const createAggregateByTimestampTransform = <
       item,
       progressStatus,
     }: {
-      startKey: string;
-      nextKey: string | undefined;
+      startKey: EncodedValue;
+      nextKey: EncodedValue | undefined;
       item: ReducedItem;
       progressStatus: IntervalProgressStatus;
     }) => {
@@ -269,9 +263,11 @@ export const createAggregateByTimestampTransform = <
 
       const chain: PendingReducedItem[] = [];
 
-      let prevKey: string | undefined = startKey;
+      let prevKey: EncodedValue | undefined = startKey;
       while (prevKey !== undefined) {
-        const prevPending = progressStatus.reducedItemsByNextKey.get(prevKey);
+        const prevPending = progressStatus.reducedItemsByNextKey.get(
+          toBase64Value(prevKey).value,
+        );
         if (!prevPending) {
           break;
         }
@@ -284,7 +280,9 @@ export const createAggregateByTimestampTransform = <
 
       let lastKey = nextKey;
       while (lastKey !== undefined) {
-        const nextPending = progressStatus.reducedItems.get(lastKey);
+        const nextPending = progressStatus.reducedItems.get(
+          toBase64Value(lastKey).value,
+        );
         if (!nextPending) {
           break;
         }
@@ -297,10 +295,12 @@ export const createAggregateByTimestampTransform = <
         // Remove items from pending to process them,
         // else they can be included in other chain
         chain.forEach(({startKey, nextKey}) => {
-          progressStatus.reducedItems.delete(startKey);
+          progressStatus.reducedItems.delete(toBase64Value(startKey).value);
 
-          if (typeof nextKey === 'string') {
-            progressStatus.reducedItemsByNextKey.delete(nextKey);
+          if (nextKey) {
+            progressStatus.reducedItemsByNextKey.delete(
+              toBase64Value(nextKey).value,
+            );
           }
         });
 
@@ -310,10 +310,16 @@ export const createAggregateByTimestampTransform = <
         });
       } else {
         // Wait for finish or some chain creation
-        progressStatus.reducedItems.set(startKey, pendingReducedItem);
+        progressStatus.reducedItems.set(
+          toBase64Value(startKey).value,
+          pendingReducedItem,
+        );
 
-        if (typeof nextKey === 'string') {
-          progressStatus.reducedItemsByNextKey.set(nextKey, pendingReducedItem);
+        if (nextKey) {
+          progressStatus.reducedItemsByNextKey.set(
+            toBase64Value(nextKey).value,
+            pendingReducedItem,
+          );
         }
       }
     };
@@ -367,8 +373,7 @@ export const createAggregateByTimestampTransform = <
                 prevTargetItem,
                 context,
                 fromGenerationId,
-                generationId,
-                generationIdEncoding,
+                generationId: toGenerationId,
               });
 
               progressStatus.state = state;
@@ -377,8 +382,7 @@ export const createAggregateByTimestampTransform = <
                 intervalTimestampMs,
                 prevTargetItem,
                 fromGenerationId,
-                generationId,
-                generationIdEncoding,
+                generationId: toGenerationId,
               });
 
               let lastChanges = changes;
@@ -393,17 +397,19 @@ export const createAggregateByTimestampTransform = <
                   items,
                   state,
                   fromGenerationId,
-                  generationId,
-                  generationIdEncoding,
+                  generationId: toGenerationId,
                 });
 
                 if (typeof nextKey !== 'string') {
                   // All items are reduced, it will be taken at finish part
-                  progressStatus.reducedItems.set(initialKey, {
-                    startKey: initialKey,
-                    nextKey: undefined,
-                    item: accumulator,
-                  });
+                  progressStatus.reducedItems.set(
+                    toBase64Value(initialKey).value,
+                    {
+                      startKey: initialKey,
+                      nextKey: undefined,
+                      item: accumulator,
+                    },
+                  );
                   break;
                 }
 
@@ -426,7 +432,10 @@ export const createAggregateByTimestampTransform = <
               return;
             }
 
-            progressStatus.sequentalChanges.set(changes.startKey, changes);
+            progressStatus.sequentalChanges.set(
+              toBase64Value(changes.startKey).value,
+              changes,
+            );
             progressStatus.sequentalDefer.resolve();
 
             return;
@@ -448,8 +457,7 @@ export const createAggregateByTimestampTransform = <
                       intervalTimestampMs,
                       prevTargetItem,
                       fromGenerationId,
-                      generationId,
-                      generationIdEncoding,
+                      generationId: toGenerationId,
                     })
                   : getEmptyAccumulator();
 
@@ -459,8 +467,7 @@ export const createAggregateByTimestampTransform = <
                   prevTargetItem,
                   items,
                   fromGenerationId,
-                  generationId,
-                  generationIdEncoding,
+                  generationId: toGenerationId,
                 });
               }
 
@@ -472,8 +479,7 @@ export const createAggregateByTimestampTransform = <
                 prevTargetItem,
                 items,
                 fromGenerationId,
-                generationId,
-                generationIdEncoding,
+                generationId: toGenerationId,
               });
             })();
 
@@ -515,8 +521,7 @@ export const createAggregateByTimestampTransform = <
               prevTargetItem,
               items: chain.map(({item}) => item),
               fromGenerationId,
-              generationId,
-              generationIdEncoding,
+              generationId: toGenerationId,
             });
 
             const {startKey} = chain[0];
@@ -583,8 +588,7 @@ export const createAggregateByTimestampTransform = <
             prevTargetItem,
             mergedItem,
             fromGenerationId,
-            generationId,
-            generationIdEncoding,
+            generationId: toGenerationId,
             state: progressStatus.state!,
           });
 
@@ -593,10 +597,11 @@ export const createAggregateByTimestampTransform = <
             targetItem !== null ? serializeTargetItem(targetItem) : null;
 
           await targetCollection.put({
-            key,
-            value,
-            generationId,
-            generationIdEncoding,
+            item: {
+              key,
+              value,
+            },
+            generationId: toGenerationId,
           });
         })
         .catch((error) => {
@@ -614,7 +619,7 @@ export const createAggregateByTimestampTransform = <
       change,
       prevTargetItem,
     }: {
-      key: string;
+      key: EncodedValue;
       intervalTimestampMs: number;
       change: ItemChange<MappedItem>;
       prevTargetItem: TargetItem | null;
@@ -672,25 +677,21 @@ export const createAggregateByTimestampTransform = <
     };
 
     for await (const diffs of stream) {
-      for (const {key, keyEncoding, fromValue, toValue} of diffs) {
-        if (
-          fromValue?.encoding === 'base64' ||
-          toValue?.encoding === 'base64'
-        ) {
-          throw new Error('base64 is not supported yet');
+      for (const {key, fromValue, toValue} of diffs) {
+        if (fromValue === toValue) {
+          continue;
         }
-
-        const prevValueRaw = fromValue?.value ?? null;
-        const lastValueRaw = toValue?.value ?? null;
-
-        if (prevValueRaw === lastValueRaw) {
+        if (
+          fromValue !== null &&
+          toValue !== null &&
+          isEqual(fromValue, toValue)
+        ) {
           continue;
         }
 
         const prevValue =
-          prevValueRaw !== null ? parseSourceItem(prevValueRaw) : null;
-        const lastValue =
-          lastValueRaw !== null ? parseSourceItem(lastValueRaw) : null;
+          fromValue !== null ? parseSourceItem(fromValue) : null;
+        const lastValue = toValue !== null ? parseSourceItem(toValue) : null;
 
         const keyTs = getTimestampMs(key);
 
@@ -704,8 +705,7 @@ export const createAggregateByTimestampTransform = <
 
                 const {item: prevTargetItemRaw} = await targetCollection.get({
                   key: targetKey,
-                  generationId: fromGenerationId?.value,
-                  generationIdEncoding: fromGenerationId?.encoding,
+                  generationId: fromGenerationId,
                 });
 
                 return prevTargetItemRaw
@@ -720,8 +720,7 @@ export const createAggregateByTimestampTransform = <
           sourceKey: key,
           sourceItem: prevValue,
           fromGenerationId,
-          generationId,
-          generationIdEncoding,
+          generationId: toGenerationId,
         });
         const lastMappedItem = mapFilter({
           intervalTimestampMs: intervalTs,
@@ -730,12 +729,11 @@ export const createAggregateByTimestampTransform = <
           sourceKey: key,
           sourceItem: lastValue,
           fromGenerationId,
-          generationId,
-          generationIdEncoding,
+          generationId: toGenerationId,
         });
 
         const change = {
-          key: {key, keyEncoding},
+          key,
           prev: prevMappedItem,
           next: lastMappedItem,
         };
@@ -789,13 +787,11 @@ export const createAggregateByTimestampTransform = <
     }
 
     await targetCollection.commitGeneration({
-      generationId,
-      generationIdEncoding,
+      generationId: toGenerationId,
       updateReaders: [
         {
           readerId: targetFromSourceReaderName,
-          generationId,
-          generationIdEncoding,
+          generationId: toGenerationId,
         },
       ],
     });

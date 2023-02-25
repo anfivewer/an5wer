@@ -1,4 +1,4 @@
-import {Database} from '@-/diffbelt-types/src/database/types';
+import {Database, EncodedValue} from '@-/diffbelt-types/src/database/types';
 import {Logger} from '@-/types/src/logging/logging';
 import {createAggregateByTimestampTransform} from './aggregate-by-timestamp';
 import {createMapFilterTransform} from './map-filter';
@@ -20,21 +20,21 @@ type UniqueCounterTransformOptions<
   targetCollectionName: string;
   targetToIntermediateReaderName: string;
 
-  parseSourceItem: (value: string) => SourceItem;
-  parseIntermediateItem: (value: string) => IntermediateItem;
-  serializeIntermediateItem: (item: IntermediateItem) => string;
-  parseTargetItem: (value: string) => TargetItem;
-  serializeTargetItem: (item: TargetItem) => string;
+  parseSourceItem: (value: EncodedValue) => SourceItem;
+  parseIntermediateItem: (value: EncodedValue) => IntermediateItem;
+  serializeIntermediateItem: (item: IntermediateItem) => EncodedValue;
+  parseTargetItem: (value: EncodedValue) => TargetItem;
+  serializeTargetItem: (item: TargetItem) => EncodedValue;
 
   getIntermediateFromSource: (options: {
-    key: string;
+    key: EncodedValue;
     sourceItem: SourceItem;
   }) => {
-    key: string;
+    key: EncodedValue;
     value: IntermediateItem | null;
   } | null;
-  getIntermediateTimestampMsFromKey: (key: string) => number;
-  getTargetKeyFromTimestampMs?: (timestampMs: number) => string;
+  getIntermediateTimestampMsFromKey: (key: EncodedValue) => number;
+  getTargetKeyFromTimestampMs?: (timestampMs: number) => EncodedValue;
 
   getInitialIntermediateAccumulator: (options: {
     prevTargetItem: TargetItem | null;

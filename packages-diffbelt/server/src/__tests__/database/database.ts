@@ -13,6 +13,8 @@ import {mapFilterTest} from './map-filter';
 import {aggregateByTimestampTest} from './aggregate-by-timestamp';
 import {uniqueCounterTest} from './unique-counter';
 import {percentilesTest} from './percentiles';
+import {toString} from '@-/diffbelt-util/src/keys/encoding';
+import {isGreaterOrEqualThan} from '@-/diffbelt-util/src/keys/compare';
 
 export const databaseTest = <Db extends Database>({
   createDatabase,
@@ -32,12 +34,15 @@ export const databaseTest = <Db extends Database>({
       expect(collections).toStrictEqual([]);
     }
 
-    await database.createCollection({name: 'colA', generationId: '01'});
+    await database.createCollection({
+      name: 'colA',
+      generationId: {value: '01'},
+    });
     const colA = await database.getCollection('colA');
 
     await database.createCollection({
       name: 'colB',
-      generationId: '',
+      generationId: {value: ''},
     });
 
     {
@@ -72,37 +77,37 @@ export const databaseTest = <Db extends Database>({
     // Then we'll group it to `colB` -- `timestamp(every 60 seconds) -> sum of numbers from colA`
 
     const initialItems = [
-      {key: makeId(3), value: '2'},
-      {key: makeId(65), value: '5'},
-      {key: makeId(69), value: '11'},
-      {key: makeId(70), value: '8'},
-      {key: makeId(249), value: '13'},
-      {key: makeId(270), value: '15'},
-      {key: makeId(300), value: '42'},
+      {key: {value: makeId(3)}, value: {value: '2'}},
+      {key: {value: makeId(65)}, value: {value: '5'}},
+      {key: {value: makeId(69)}, value: {value: '11'}},
+      {key: {value: makeId(70)}, value: {value: '8'}},
+      {key: {value: makeId(249)}, value: {value: '13'}},
+      {key: {value: makeId(270)}, value: {value: '15'}},
+      {key: {value: makeId(300)}, value: {value: '42'}},
     ];
 
-    await colA.startGeneration({generationId: '00000000001'});
+    await colA.startGeneration({generationId: {value: '00000000001'}});
 
     const {generationId: firstPutGenerationId} = await colA.putMany({
       items: initialItems,
-      generationId: '00000000001',
+      generationId: {value: '00000000001'},
     });
 
     await colA.putMany({
       items: [
-        {key: makeId(3), value: null},
-        {key: makeId(70), value: '9'},
+        {key: {value: makeId(3)}, value: null},
+        {key: {value: makeId(70)}, value: {value: '9'}},
       ],
       generationId: firstPutGenerationId,
-      phantomId: 'A',
+      phantomId: {value: 'A'},
     });
     await colA.putMany({
-      items: [{key: makeId(70), value: '11'}],
+      items: [{key: {value: makeId(70)}, value: {value: '11'}}],
       generationId: firstPutGenerationId,
-      phantomId: 'B',
+      phantomId: {value: 'B'},
     });
 
-    await colA.commitGeneration({generationId: '00000000001'});
+    await colA.commitGeneration({generationId: {value: '00000000001'}});
 
     {
       const {items, generationId} = await dumpCollection(colA);
@@ -113,7 +118,7 @@ export const databaseTest = <Db extends Database>({
 
     await colB.createReader({
       readerId: 'aToB',
-      generationId: '',
+      generationId: {value: ''},
       collectionName: 'colA',
     });
 
@@ -123,43 +128,43 @@ export const databaseTest = <Db extends Database>({
         colB,
         expectedItems: [
           {
-            key: makeId(3),
+            key: {value: makeId(3)},
             fromValue: null,
             toValue: {value: '2'},
             intermediateValues: [],
           },
           {
-            key: makeId(65),
+            key: {value: makeId(65)},
             fromValue: null,
             toValue: {value: '5'},
             intermediateValues: [],
           },
           {
-            key: makeId(69),
+            key: {value: makeId(69)},
             fromValue: null,
             toValue: {value: '11'},
             intermediateValues: [],
           },
           {
-            key: makeId(70),
+            key: {value: makeId(70)},
             fromValue: null,
             toValue: {value: '8'},
             intermediateValues: [],
           },
           {
-            key: makeId(249),
+            key: {value: makeId(249)},
             fromValue: null,
             toValue: {value: '13'},
             intermediateValues: [],
           },
           {
-            key: makeId(270),
+            key: {value: makeId(270)},
             fromValue: null,
             toValue: {value: '15'},
             intermediateValues: [],
           },
           {
-            key: makeId(300),
+            key: {value: makeId(300)},
             fromValue: null,
             toValue: {value: '42'},
             intermediateValues: [],
@@ -168,47 +173,63 @@ export const databaseTest = <Db extends Database>({
         expectedFromGenerationId: {value: '', encoding: undefined},
       });
 
-    expect(firstTransformGenerationId).toBe(firstPutGenerationId);
+    expect(firstTransformGenerationId).toStrictEqual(firstPutGenerationId);
 
     {
       const {items, generationId} = await dumpCollection(colB);
-      expect(generationId).toBe(firstTransformGenerationId);
+      expect(generationId).toStrictEqual(firstTransformGenerationId);
 
       expect(items).toStrictEqual([
-        {key: makeId(0), value: String(2)},
-        {key: makeId(60), value: String(5 + 11 + 8)},
-        {key: makeId(240), value: String(13 + 15)},
-        {key: makeId(300), value: String(42)},
+        {key: {value: makeId(0)}, value: {value: String(2)}},
+        {key: {value: makeId(60)}, value: {value: String(5 + 11 + 8)}},
+        {key: {value: makeId(240)}, value: {value: String(13 + 15)}},
+        {key: {value: makeId(300)}, value: {value: String(42)}},
       ]);
     }
 
-    await colA.startGeneration({generationId: '00000000002'});
+    await colA.startGeneration({generationId: {value: '00000000002'}});
 
     // Add
-    await colA.put({key: makeId(66), value: '7', generationId: '00000000002'});
+    await colA.put({
+      item: {
+        key: {value: makeId(66)},
+        value: {value: '7'},
+      },
+      generationId: {value: '00000000002'},
+    });
     // Remove
-    await colA.put({key: makeId(3), value: null, generationId: '00000000002'});
+    await colA.put({
+      item: {
+        key: {value: makeId(3)},
+        value: null,
+      },
+      generationId: {value: '00000000002'},
+    });
     // Update
     const {generationId: updateValueGenerationId} = await colA.put({
-      key: makeId(270),
-      value: '12',
-      generationId: '00000000002',
+      item: {
+        key: {value: makeId(270)},
+        value: {value: '12'},
+      },
+      generationId: {value: '00000000002'},
     });
 
-    await colA.commitGeneration({generationId: '00000000002'});
+    await colA.commitGeneration({generationId: {value: '00000000002'}});
 
     {
       const {items, generationId} = await dumpCollection(colA);
-      expect(generationId >= updateValueGenerationId).toBe(true);
+      expect(isGreaterOrEqualThan(generationId, updateValueGenerationId)).toBe(
+        true,
+      );
 
       expect(items).toStrictEqual([
-        {key: makeId(65), value: '5'},
-        {key: makeId(66), value: '7'},
-        {key: makeId(69), value: '11'},
-        {key: makeId(70), value: '8'},
-        {key: makeId(249), value: '13'},
-        {key: makeId(270), value: '12'},
-        {key: makeId(300), value: '42'},
+        {key: {value: makeId(65)}, value: {value: '5'}},
+        {key: {value: makeId(66)}, value: {value: '7'}},
+        {key: {value: makeId(69)}, value: {value: '11'}},
+        {key: {value: makeId(70)}, value: {value: '8'}},
+        {key: {value: makeId(249)}, value: {value: '13'}},
+        {key: {value: makeId(270)}, value: {value: '12'}},
+        {key: {value: makeId(300)}, value: {value: '42'}},
       ]);
     }
 
@@ -218,41 +239,40 @@ export const databaseTest = <Db extends Database>({
         colB,
         expectedItems: [
           {
-            key: makeId(3),
+            key: {value: makeId(3)},
             fromValue: {value: '2'},
             toValue: null,
             intermediateValues: [],
           },
           {
-            key: makeId(66),
+            key: {value: makeId(66)},
             fromValue: null,
             toValue: {value: '7'},
             intermediateValues: [],
           },
           {
-            key: makeId(270),
+            key: {value: makeId(270)},
             fromValue: {value: '15'},
             toValue: {value: '12'},
             intermediateValues: [],
           },
         ],
-        expectedFromGenerationId: {
-          value: firstTransformGenerationId,
-          encoding: undefined,
-        },
+        expectedFromGenerationId: firstTransformGenerationId,
       });
 
-    expect(secondTransformGenerationId).toBe(updateValueGenerationId);
+    expect(secondTransformGenerationId).toStrictEqual(updateValueGenerationId);
 
     {
       const {items, generationId} = await dumpCollection(colB);
-      expect(generationId >= secondTransformGenerationId).toBe(true);
+      expect(
+        isGreaterOrEqualThan(generationId, secondTransformGenerationId),
+      ).toBe(true);
 
       expect(items).toStrictEqual([
-        {key: makeId(0), value: String(0)},
-        {key: makeId(60), value: String(5 + 7 + 11 + 8)},
-        {key: makeId(240), value: String(13 + 12)},
-        {key: makeId(300), value: String(42)},
+        {key: {value: makeId(0)}, value: {value: String(0)}},
+        {key: {value: makeId(60)}, value: {value: String(5 + 7 + 11 + 8)}},
+        {key: {value: makeId(240)}, value: {value: String(13 + 12)}},
+        {key: {value: makeId(300)}, value: {value: String(42)}},
       ]);
     }
 
@@ -285,10 +305,12 @@ const doTransformFromAtoB = async ({
 }) => {
   const {
     fromGenerationId,
-    generationId: toGenerationId,
+    toGenerationId: initialToGenerationId,
     items,
     cursorId: initialCursorId,
-  } = await colA.diff({readerId: 'aToB', readerCollectionName: 'colB'});
+  } = await colA.diff({
+    fromReader: {readerId: 'aToB', collectionName: 'colB'},
+  });
 
   const normalizeGenerationId = (
     generationId: EncodedValue | null,
@@ -306,7 +328,7 @@ const doTransformFromAtoB = async ({
 
   const dumpedBeforeGeneration = await dumpCollection(colB);
 
-  await colB.startGeneration({generationId: toGenerationId});
+  await colB.startGeneration({generationId: initialToGenerationId});
 
   const actualItems: DiffResultItems = [];
 
@@ -320,22 +342,26 @@ const doTransformFromAtoB = async ({
       return;
     }
 
-    const key = makeId(prevTs);
+    const key = {value: makeId(prevTs)};
 
     const {item} = await colB.get({key});
     if (item) {
       const {value} = item;
-      const valueN = parseInt(value, 10);
+      const valueN = parseInt(toString(value), 10);
       await colB.put({
-        key,
-        value: String(valueN + prevTsDiff),
-        generationId: toGenerationId,
+        item: {
+          key,
+          value: {value: String(valueN + prevTsDiff)},
+        },
+        generationId: initialToGenerationId,
       });
     } else {
       await colB.put({
-        key,
-        value: String(prevTsDiff),
-        generationId: toGenerationId,
+        item: {
+          key,
+          value: {value: String(prevTsDiff)},
+        },
+        generationId: initialToGenerationId,
       });
     }
 
@@ -349,7 +375,7 @@ const doTransformFromAtoB = async ({
 
       const {key, fromValue, toValue: maybeLastValue} = item;
 
-      const ts = parseInt(key, 10);
+      const ts = parseInt(toString(key), 10);
       const ts60 = ts - (ts % 60);
 
       const prevValue = parseInt(
@@ -374,12 +400,12 @@ const doTransformFromAtoB = async ({
 
   while (typeof cursorId === 'string') {
     const {
-      generationId,
+      toGenerationId,
       items,
       cursorId: nextCursorId,
     } = await colA.readDiffCursor({cursorId});
 
-    expect(generationId).toBe(toGenerationId);
+    expect(toGenerationId).toStrictEqual(initialToGenerationId);
 
     await processItems(items);
 
@@ -393,29 +419,29 @@ const doTransformFromAtoB = async ({
   expect(dumpedBeforeCommit).toStrictEqual(dumpedBeforeGeneration);
 
   await colB.commitGeneration({
-    generationId: toGenerationId,
+    generationId: initialToGenerationId,
     updateReaders: [
       {
         readerId: 'aToB',
-        generationId: toGenerationId,
+        generationId: initialToGenerationId,
       },
     ],
   });
 
   expect(actualItems).toStrictEqual(expectedItems);
 
-  return {generationId: toGenerationId};
+  return {generationId: initialToGenerationId};
 };
 
 const dumpCollection = (collection: Collection) => {
-  let initialGenerationId = '';
+  let initialGenerationId: EncodedValue = {value: ''};
 
   return dumpCollectionUtil(collection, {
     onInitialQuery({generationId}) {
       initialGenerationId = generationId;
     },
     onReadCursor({generationId}) {
-      expect(generationId).toBe(initialGenerationId);
+      expect(generationId).toStrictEqual(initialGenerationId);
     },
   });
 };

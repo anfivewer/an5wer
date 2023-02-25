@@ -1,8 +1,12 @@
-import {Database, KeyValueUpdate} from '@-/diffbelt-types/src/database/types';
+import {
+  Database,
+  EncodedValue,
+  KeyValueUpdate,
+} from '@-/diffbelt-types/src/database/types';
 import {isEqual} from '../keys/compare';
 import {diffCollection} from '../queries/diff';
 
-type FilterResult = {key: string; value: string | null} | null;
+type FilterResult = {key: EncodedValue; value: EncodedValue | null} | null;
 
 export const createMapFilterTransform = <Context, SourceItem>({
   sourceCollectionName,
@@ -15,9 +19,9 @@ export const createMapFilterTransform = <Context, SourceItem>({
   sourceCollectionName: string;
   targetCollectionName: string;
   targetCollectionReaderName: string;
-  parseSourceCollectionItem: (value: string) => SourceItem;
+  parseSourceCollectionItem: (value: EncodedValue) => SourceItem;
   getDatabaseFromContext: (context: Context) => Database;
-  mapFilter: (options: {key: string; value: SourceItem}) => FilterResult;
+  mapFilter: (options: {key: EncodedValue; value: SourceItem}) => FilterResult;
 }): ((options: {context: Context}) => Promise<void>) => {
   const run = async ({context}: {context: Context}): Promise<boolean> => {
     const db = getDatabaseFromContext(context);
@@ -27,26 +31,24 @@ export const createMapFilterTransform = <Context, SourceItem>({
       db.getCollection(targetCollectionName),
     ]);
 
-    const {stream, fromGenerationId, generationId, generationIdEncoding} =
-      await diffCollection(sourceCollection, {
+    const {stream, fromGenerationId, toGenerationId} = await diffCollection(
+      sourceCollection,
+      {
         diffOptions: {
-          readerId: targetCollectionReaderName,
-          readerCollectionName: targetCollectionName,
+          fromReader: {
+            readerId: targetCollectionReaderName,
+            collectionName: targetCollectionName,
+          },
         },
-      });
+      },
+    );
 
-    if (
-      isEqual(
-        {key: fromGenerationId.value, encoding: fromGenerationId.encoding},
-        {key: generationId, encoding: generationIdEncoding},
-      )
-    ) {
+    if (isEqual(fromGenerationId, toGenerationId)) {
       return false;
     }
 
     await targetCollection.startGeneration({
-      generationId,
-      generationIdEncoding,
+      generationId: toGenerationId,
       abortOutdated: true,
     });
 
@@ -61,21 +63,18 @@ export const createMapFilterTransform = <Context, SourceItem>({
           throw new Error('base64 is not supported yet');
         }
 
-        const prevValue = fromValue?.value ?? null;
-        const lastValue = toValue?.value ?? null;
-
-        let prevKey: string | undefined;
+        let prevKey: EncodedValue | undefined;
         let newFiltered: FilterResult = null;
 
-        if (prevValue !== null) {
-          const sourceItem = parseSourceCollectionItem(prevValue);
+        if (fromValue !== null) {
+          const sourceItem = parseSourceCollectionItem(fromValue);
           const filtered = mapFilter({key, value: sourceItem});
 
           prevKey = filtered?.key;
         }
 
-        if (lastValue !== null) {
-          const sourceItem = parseSourceCollectionItem(lastValue);
+        if (toValue !== null) {
+          const sourceItem = parseSourceCollectionItem(toValue);
           newFiltered = mapFilter({key, value: sourceItem});
         }
 
@@ -97,20 +96,17 @@ export const createMapFilterTransform = <Context, SourceItem>({
       if (updates.length) {
         await targetCollection.putMany({
           items: updates,
-          generationId,
-          generationIdEncoding,
+          generationId: toGenerationId,
         });
       }
     }
 
     await targetCollection.commitGeneration({
-      generationId,
-      generationIdEncoding,
+      generationId: toGenerationId,
       updateReaders: [
         {
           readerId: targetCollectionReaderName,
-          generationId,
-          generationIdEncoding,
+          generationId: toGenerationId,
         },
       ],
     });

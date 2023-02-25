@@ -23,7 +23,7 @@ export const initializeDatabaseStructure = async ({
         const createCollection = () =>
           database.createCollection({
             name,
-            generationId: isManual ? '' : undefined,
+            generationId: isManual ? {value: ''} : undefined,
           });
 
         if (!collectionsSet.has(name)) {

@@ -1,4 +1,4 @@
-import {EncodedKey} from '@-/diffbelt-types/src/database/types';
+import {EncodedValue} from '@-/diffbelt-types/src/database/types';
 
 export const enum AggregateInterval {
   MINUTE = 60,
@@ -11,7 +11,7 @@ export const enum AggregateInterval {
   MONTH = 'month',
 }
 
-export type ItemChange<Item> = {key: EncodedKey} & ( // updated
+export type ItemChange<Item> = {key: EncodedValue} & ( // updated
   | {prev: Item; next: Item}
   // created
   | {prev: null; next: Item}
@@ -20,7 +20,7 @@ export type ItemChange<Item> = {key: EncodedKey} & ( // updated
 );
 
 export const isItemChange = <Item>(value: {
-  key: EncodedKey;
+  key: EncodedValue;
   prev: Item | null;
   next: Item | null;
 }): value is ItemChange<Item> => {
