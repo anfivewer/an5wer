@@ -1,4 +1,5 @@
 import {getIntervalTsMs} from '@-/diffbelt-util/src/intervals/get-interval-ts';
+import {toString} from '@-/diffbelt-util/src/keys/encoding';
 import {createPercentilesTransform} from '@-/diffbelt-util/src/transform/percentiles';
 import {AggregateInterval} from '@-/diffbelt-util/src/transform/types';
 import {LogLevel} from '@-/types/src/logging/logging';
@@ -33,14 +34,15 @@ export const aggregateUpdatesHandlingPerDay = createPercentilesTransform({
     HANDLE_UPDATE_PER_DAY_PARSED_LINES_READER_NAME,
   targetCollectionName: HANDLE_UPDATE_PER_DAY_PERCENTILES_COLLECTION_NAME,
   targetToIntermediateReaderName: HANDLE_UPDATE_PER_DAY_PERCENTILES_READER_NAME,
-  parseSourceItem: (value) => ParsedLogLine.parse(JSON.parse(value)),
+  parseSourceItem: (value) => ParsedLogLine.parse(JSON.parse(toString(value))),
   parseIntermediateItem: (value) =>
-    UpdateHandleIntermediateItem.parse(JSON.parse(value)),
-  serializeIntermediateItem: (item) => JSON.stringify(item),
-  parseTargetItem: (value) => UpdateHandleTargetItem.parse(JSON.parse(value)),
-  serializeTargetItem: (item) => JSON.stringify(item),
+    UpdateHandleIntermediateItem.parse(JSON.parse(toString(value))),
+  serializeIntermediateItem: (item) => ({value: JSON.stringify(item)}),
+  parseTargetItem: (value) =>
+    UpdateHandleTargetItem.parse(JSON.parse(toString(value))),
+  serializeTargetItem: (item) => ({value: JSON.stringify(item)}),
   extractPercentilesDataFromTargetItem: (item) => item.percentilesData,
-  getIntermediateFromSource: ({key, sourceItem}) => {
+  getIntermediateFromSource: ({key: encodedKey, sourceItem}) => {
     const isOurLog =
       sourceItem.logLevel === LogLevel.STATS &&
       sourceItem.logKey === 'handleFull' &&
@@ -72,6 +74,8 @@ export const aggregateUpdatesHandlingPerDay = createPercentilesTransform({
       throw new Error(`msFixed.length !== 11, ms: ${ms}, msFixed: ${msFixed}`);
     }
 
+    const key = toString(encodedKey);
+
     const timestampMs = extractTimestampFromTimestampWithLoggerKey(key);
     const intervalTsMs = getIntervalTsMs({
       interval: AggregateInterval.DAY,
@@ -79,14 +83,15 @@ export const aggregateUpdatesHandlingPerDay = createPercentilesTransform({
     });
 
     return {
-      key: `${new Date(intervalTsMs).toISOString()} ${msFixed} ${key}`,
+      key: {value: `${new Date(intervalTsMs).toISOString()} ${msFixed} ${key}`},
       value: {
         updateType: updateType ?? '???',
         ms,
       },
     };
   },
-  getIntermediateTimestampMsFromKey: extractTimestampFromTimestampWithLoggerKey,
+  getIntermediateTimestampMsFromKey: (key) =>
+    extractTimestampFromTimestampWithLoggerKey(toString(key)),
   getInitialIntermediateAccumulator: ({prevTargetItem}) =>
     prevTargetItem !== null
       ? {sumMs: prevTargetItem.sumMs, msByType: prevTargetItem.msByType}

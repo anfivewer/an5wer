@@ -12,6 +12,7 @@ import {
 import {decrement, increment} from '@-/util/src/object/counter-record';
 import {extractTimestampFromTimestampWithLoggerKey} from './helpers/extract-timestamp';
 import {Context} from '../context/types';
+import {toString} from '@-/diffbelt-util/src/keys/encoding';
 
 export const aggregateParsedLinesPerDay = createAggregateByTimestampTransform<
   Context,
@@ -24,11 +25,14 @@ export const aggregateParsedLinesPerDay = createAggregateByTimestampTransform<
   targetCollectionName: PARSED_LINES_PER_DAY_COLLECTION_NAME,
   sourceCollectionName: PARSED_LINES_COLLECTION_NAME,
   targetFromSourceReaderName: PARSED_LINES_PER_DAY_PARSED_LINES_READER_NAME,
-  parseSourceItem: (value) => ParsedLogLine.parse(JSON.parse(value)),
+  parseSourceItem: (value) => ParsedLogLine.parse(JSON.parse(toString(value))),
   parseTargetItem: (value) =>
-    AggregatedParsedLinesPerDayCollectionItem.parse(JSON.parse(value)),
-  serializeTargetItem: (item) => JSON.stringify(item),
-  getTimestampMs: extractTimestampFromTimestampWithLoggerKey,
+    AggregatedParsedLinesPerDayCollectionItem.parse(
+      JSON.parse(toString(value)),
+    ),
+  serializeTargetItem: (item) => ({value: JSON.stringify(item)}),
+  getTimestampMs: (key) =>
+    extractTimestampFromTimestampWithLoggerKey(toString(key)),
   extractContext: ({database, logger}) => ({
     database: database.getDiffbelt(),
     logger,

@@ -101,7 +101,9 @@ const processLogFileInternal = async ({
     LOG_LINES_COLLECTION_NAME,
   );
 
-  const lastLineResult = await logLinesCollection.get({key: last.line});
+  const lastLineResult = await logLinesCollection.get({
+    key: {value: last.line},
+  });
 
   if (lastLineResult.item) {
     // Last line of log already added, skip it
@@ -149,7 +151,7 @@ const processLogFileInternal = async ({
     lastLineStart = foundLinePosition;
     lastLineEnd = nextLinePosition;
 
-    const lineResult = await logLinesCollection.get({key: line});
+    const lineResult = await logLinesCollection.get({key: {value: line}});
     if (lineResult.item) {
       ({value: position, done} = iterator.next({
         comparison: 1,

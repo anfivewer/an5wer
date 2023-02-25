@@ -400,7 +400,7 @@ export const createAggregateByTimestampTransform = <
                   generationId: toGenerationId,
                 });
 
-                if (typeof nextKey !== 'string') {
+                if (!nextKey) {
                   // All items are reduced, it will be taken at finish part
                   progressStatus.reducedItems.set(
                     toBase64Value(initialKey).value,
@@ -416,8 +416,9 @@ export const createAggregateByTimestampTransform = <
                 // Wait for next batch availability and process it
                 lastChanges = await (async () => {
                   while (true) {
-                    const changes =
-                      progressStatus.sequentalChanges.get(nextKey);
+                    const changes = progressStatus.sequentalChanges.get(
+                      toBase64Value(nextKey).value,
+                    );
 
                     if (changes) {
                       return changes;
@@ -567,7 +568,6 @@ export const createAggregateByTimestampTransform = <
             throw new Error('finish: not single item');
           }
           if (reducedItemsByNextKey.size !== 0) {
-            console.log(reducedItemsByNextKey);
             throw new Error('finish: reducedItemsByNextKey is not empty');
           }
 

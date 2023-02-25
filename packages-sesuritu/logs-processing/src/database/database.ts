@@ -10,7 +10,7 @@ import {AsyncBatcher} from '@-/util/src/async/batch';
 import {
   Database as DiffbeltDatabase,
   Collection,
-  EncodedKey,
+  EncodedValue,
 } from '@-/diffbelt-types/src/database/types';
 import {waitForGeneration} from '@-/diffbelt-util/src/collection/wait-for-generation';
 import {initializeDatabaseStructure} from '@-/diffbelt-util/src/database/initialize-structure';
@@ -21,7 +21,7 @@ export class Database extends BaseComponent implements Component<Context> {
   private batcher!: AsyncBatcher<NormalizedLogLine>;
   private linesCollection!: Collection;
   private getNeedToDump!: () => boolean;
-  private lastLinesPutGenerationId: EncodedKey | undefined;
+  private lastLinesPutGenerationId: EncodedValue | undefined;
 
   async init({context}: {context: Context}) {
     this.getNeedToDump = () => context.needDumpDatabaseOnStop;
@@ -64,27 +64,23 @@ export class Database extends BaseComponent implements Component<Context> {
 
     await waitForGeneration({
       collection: this.linesCollection,
-      generationId: this.lastLinesPutGenerationId.key,
-      generationIdEncoding: this.lastLinesPutGenerationId.encoding,
+      generationId: this.lastLinesPutGenerationId,
     });
   }
 
   private async handleBatch(lines: NormalizedLogLine[]) {
-    const {generationId, generationIdEncoding} =
-      await this.linesCollection.putMany({
-        items: lines.map((line) => ({
-          key: line,
-          value: '',
-          ifNotPresent: true,
-        })),
-      });
-
-    const key: EncodedKey = {key: generationId, encoding: generationIdEncoding};
+    const {generationId} = await this.linesCollection.putMany({
+      items: lines.map((line) => ({
+        key: {value: line},
+        value: {value: ''},
+        ifNotPresent: true,
+      })),
+    });
 
     if (!this.lastLinesPutGenerationId) {
-      this.lastLinesPutGenerationId = key;
-    } else if (isGreaterThan(key, this.lastLinesPutGenerationId)) {
-      this.lastLinesPutGenerationId = key;
+      this.lastLinesPutGenerationId = generationId;
+    } else if (isGreaterThan(generationId, this.lastLinesPutGenerationId)) {
+      this.lastLinesPutGenerationId = generationId;
     }
   }
 

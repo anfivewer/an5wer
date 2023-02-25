@@ -20,6 +20,8 @@ import {AggregatedParsedLinesPerDayCollectionItem} from '../types/collections/pa
 import {PercentilesData} from '@-/diffbelt-types/src/transform/percentiles';
 import {UpdateHandleTargetItem} from '../types/collections/update-handle';
 import {UPDATE_HANDLE_PERCENTILES} from '../transforms/update-handle';
+import {toString} from '@-/diffbelt-util/src/keys/encoding';
+import {EncodedValue} from '@-/diffbelt-types/src/database/types';
 
 export const collectReportData = async ({
   context,
@@ -54,9 +56,11 @@ export const collectReportData = async ({
     const {stream} = await queryCollection(collection);
 
     for await (const items of stream) {
-      for (const {key, value} of items) {
+      for (const {key: encodedKey, value} of items) {
+        const key = toString(encodedKey);
+
         const tsMs = extractTimestampFromTimestampWithLoggerKey(key);
-        const item = itemParser.parse(JSON.parse(value));
+        const item = itemParser.parse(JSON.parse(toString(value)));
 
         onItem?.({key, item, tsMs});
 
@@ -81,8 +85,8 @@ export const collectReportData = async ({
     percentiles: number[];
     itemParser: {parse: (value: unknown) => T};
     getPercentilesData: (item: T) => PercentilesData;
-    getValueFromKey: (key: string) => number;
-    onItem?: (options: {key: string; tsMs: number; item: T}) => void;
+    getValueFromKey: (key: EncodedValue) => number;
+    onItem?: (options: {key: EncodedValue; tsMs: number; item: T}) => void;
   }) => {
     const metric: PercentileMetric = {
       type: ReportType.percentileMetric,
@@ -97,13 +101,15 @@ export const collectReportData = async ({
     const {stream} = await queryCollection(collection);
 
     for await (const items of stream) {
-      for (const {key, value} of items) {
+      for (const {key: encodedKey, value} of items) {
+        const key = toString(encodedKey);
+
         const tsMs = extractTimestampFromTimestampWithLoggerKey(key);
-        const item = itemParser.parse(JSON.parse(value));
+        const item = itemParser.parse(JSON.parse(toString(value)));
         const {count, percentiles: percentilesFromData} =
           getPercentilesData(item);
 
-        onItem?.({key, item, tsMs});
+        onItem?.({key: encodedKey, item, tsMs});
 
         let percentileIndex = 0;
         const values = percentiles.map((bigP) => {
@@ -119,7 +125,7 @@ export const collectReportData = async ({
               continue;
             }
 
-            return getValueFromKey(obj.key.key);
+            return getValueFromKey(obj.key);
           }
         });
 
@@ -210,7 +216,7 @@ export const collectReportData = async ({
       percentiles: UPDATE_HANDLE_PERCENTILES,
       getPercentilesData: ({percentilesData}) => percentilesData,
       getValueFromKey: (key) => {
-        const match = /^[^\s]+\s(\d+\.\d+)\s/.exec(key);
+        const match = /^[^\s]+\s(\d+\.\d+)\s/.exec(toString(key));
         if (!match) {
           return NaN;
         }

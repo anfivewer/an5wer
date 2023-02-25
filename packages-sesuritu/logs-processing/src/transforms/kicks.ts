@@ -18,6 +18,7 @@ import {decrement, increment} from '@-/util/src/object/counter-record';
 import {extractTimestampFromTimestampWithLoggerKey} from './helpers/extract-timestamp';
 import {createParsedLinesFilterTransform} from './helpers/filter-parsed-lines';
 import {Context} from '../context/types';
+import {toString} from '@-/diffbelt-util/src/keys/encoding';
 
 export const transformParsedLinesToKicks = createParsedLinesFilterTransform({
   targetCollectionName: KICKS_COLLECTION_NAME,
@@ -39,7 +40,7 @@ export const transformParsedLinesToKicks = createParsedLinesFilterTransform({
       userId,
     };
 
-    return {key, value: JSON.stringify(value)};
+    return {key, value: {value: JSON.stringify(value)}};
   },
 });
 
@@ -54,11 +55,13 @@ export const aggregateKicksPerHour = createAggregateByTimestampTransform<
   targetCollectionName: KICKS_PER_HOUR_COLLECTION_NAME,
   sourceCollectionName: KICKS_COLLECTION_NAME,
   targetFromSourceReaderName: KICKS_PER_HOUR_KICKS_READER_NAME,
-  parseSourceItem: (value) => KicksCollectionItem.parse(JSON.parse(value)),
+  parseSourceItem: (value) =>
+    KicksCollectionItem.parse(JSON.parse(toString(value))),
   parseTargetItem: (value) =>
-    AggregatedKicksCollectionItem.parse(JSON.parse(value)),
-  serializeTargetItem: (item) => JSON.stringify(item),
-  getTimestampMs: extractTimestampFromTimestampWithLoggerKey,
+    AggregatedKicksCollectionItem.parse(JSON.parse(toString(value))),
+  serializeTargetItem: (item) => ({value: JSON.stringify(item)}),
+  getTimestampMs: (key) =>
+    extractTimestampFromTimestampWithLoggerKey(toString(key)),
   extractContext: ({database, logger}) => ({
     database: database.getDiffbelt(),
     logger,
@@ -156,11 +159,12 @@ function createAggregateKicksMoreThanHour({
     sourceCollectionName,
     targetFromSourceReaderName,
     parseSourceItem: (value) =>
-      AggregatedKicksCollectionItem.parse(JSON.parse(value)),
+      AggregatedKicksCollectionItem.parse(JSON.parse(toString(value))),
     parseTargetItem: (value) =>
-      AggregatedKicksCollectionItem.parse(JSON.parse(value)),
-    serializeTargetItem: (item) => JSON.stringify(item),
-    getTimestampMs: extractTimestampFromTimestampWithLoggerKey,
+      AggregatedKicksCollectionItem.parse(JSON.parse(toString(value))),
+    serializeTargetItem: (item) => ({value: JSON.stringify(item)}),
+    getTimestampMs: (key) =>
+      extractTimestampFromTimestampWithLoggerKey(toString(key)),
     extractContext: ({database, logger}) => ({
       database: database.getDiffbelt(),
       logger,

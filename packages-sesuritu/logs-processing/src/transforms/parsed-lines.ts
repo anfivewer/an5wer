@@ -8,6 +8,7 @@ import {diffCollection} from '@-/diffbelt-util/src/queries/diff';
 import {KeyValueUpdate} from '@-/diffbelt-types/src/database/types';
 import {maybeParseLogLine} from '@-/util/src/logging/parser';
 import {isEqual} from '@-/diffbelt-util/src/keys/compare';
+import {toString} from '@-/diffbelt-util/src/keys/encoding';
 
 export const transformLogsLinesToParsedLines = async ({
   context,
@@ -23,26 +24,24 @@ export const transformLogsLinesToParsedLines = async ({
   ]);
 
   while (true) {
-    const {stream, fromGenerationId, generationId, generationIdEncoding} =
-      await diffCollection(logLinesCollection, {
+    const {stream, fromGenerationId, toGenerationId} = await diffCollection(
+      logLinesCollection,
+      {
         diffOptions: {
-          readerId: PARSED_LINES_LOG_LINES_READER_NAME,
-          readerCollectionName: PARSED_LINES_COLLECTION_NAME,
+          fromReader: {
+            readerId: PARSED_LINES_LOG_LINES_READER_NAME,
+            collectionName: PARSED_LINES_COLLECTION_NAME,
+          },
         },
-      });
+      },
+    );
 
-    if (
-      isEqual(
-        {key: fromGenerationId.value, encoding: fromGenerationId.encoding},
-        {key: generationId, encoding: generationIdEncoding},
-      )
-    ) {
+    if (isEqual(fromGenerationId, toGenerationId)) {
       return;
     }
 
     await parsedLinesCollection.startGeneration({
-      generationId,
-      generationIdEncoding,
+      generationId: toGenerationId,
       abortOutdated: true,
     });
 
@@ -50,7 +49,7 @@ export const transformLogsLinesToParsedLines = async ({
       const updates: KeyValueUpdate[] = [];
 
       for (const {key, toValue} of diffs) {
-        const parsedLine = maybeParseLogLine(key);
+        const parsedLine = maybeParseLogLine(toString(key));
         if (!parsedLine) {
           continue;
         }
@@ -63,30 +62,30 @@ export const transformLogsLinesToParsedLines = async ({
         const isDeleted = toValue === null;
 
         if (isDeleted) {
-          updates.push({key: parsedKey, value: null});
+          updates.push({key: {value: parsedKey}, value: null});
           continue;
         }
 
-        updates.push({key: parsedKey, value: JSON.stringify(parsedLine)});
+        updates.push({
+          key: {value: parsedKey},
+          value: {value: JSON.stringify(parsedLine)},
+        });
       }
 
       if (updates.length) {
         await parsedLinesCollection.putMany({
           items: updates,
-          generationId,
-          generationIdEncoding,
+          generationId: toGenerationId,
         });
       }
     }
 
     await parsedLinesCollection.commitGeneration({
-      generationId,
-      generationIdEncoding,
+      generationId: toGenerationId,
       updateReaders: [
         {
           readerId: PARSED_LINES_LOG_LINES_READER_NAME,
-          generationId,
-          generationIdEncoding,
+          generationId: toGenerationId,
         },
       ],
     });
