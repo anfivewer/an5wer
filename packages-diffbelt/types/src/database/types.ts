@@ -277,14 +277,13 @@ export type Collection = {
   ) => Promise<CollectionGetKeysAroundResult>;
   query: (options?: QueryOptions) => Promise<QueryResult>;
   readQueryCursor: (options: ReadQueryCursorOptions) => Promise<QueryResult>;
+  closeQueryCursor: (options: CloseCursorOptions) => Promise<void>;
 
   put: (options: PutOptions) => Promise<PutResult>;
   putMany: (options: PutManyOptions) => Promise<PutResult>;
   diff: (options: DiffOptions) => Promise<DiffResult>;
   readDiffCursor: (options: ReadDiffCursorOptions) => Promise<DiffResult>;
-
-  // FIXME: split to closeQueryCursor/closeDiffCursor
-  closeCursor: (options: CloseCursorOptions) => Promise<void>;
+  closeDiffCursor: (options: CloseCursorOptions) => Promise<void>;
 
   listReaders: () => Promise<ListReadersResult>;
   createReader: (options: CreateReaderOptions) => Promise<void>;

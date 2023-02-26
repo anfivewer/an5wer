@@ -1,5 +1,6 @@
 import {
   AbortGenerationOptions,
+  CloseCursorOptions,
   Collection as ICollection,
   CollectionGetKeysAroundOptions,
   CollectionGetKeysAroundResult,
@@ -148,17 +149,33 @@ export class Collection implements ICollection {
   query(options?: QueryOptions): Promise<QueryResult> {
     return this.call({
       method: 'POST',
-      path: `/collections/${encodeURIComponent(this.name)}/query/start`,
+      path: `/collections/${encodeURIComponent(this.name)}/query/`,
       parser: QueryResult,
       body: options || {},
     });
   }
   readQueryCursor(options: ReadQueryCursorOptions): Promise<QueryResult> {
+    const {cursorId, ...rest} = options;
+    assertTypesEqual<typeof rest, Record<string, never>>(true);
+
     return this.call({
-      method: 'POST',
-      path: `/collections/${encodeURIComponent(this.name)}/query/next`,
+      method: 'GET',
+      path: `/collections/${encodeURIComponent(
+        this.name,
+      )}/query/${encodeURIComponent(cursorId)}`,
       parser: QueryResult,
-      body: options,
+    });
+  }
+  closeQueryCursor(options: CloseCursorOptions): Promise<void> {
+    const {cursorId, ...rest} = options;
+    assertTypesEqual<typeof rest, Record<string, never>>(true);
+
+    return this.call({
+      method: 'DELETE',
+      path: `/collections/${encodeURIComponent(
+        this.name,
+      )}/query/${encodeURIComponent(cursorId)}`,
+      parser: VoidParser,
     });
   }
 
@@ -181,22 +198,34 @@ export class Collection implements ICollection {
   diff(options: DiffOptions): Promise<DiffResult> {
     return this.call({
       method: 'POST',
-      path: `/collections/${encodeURIComponent(this.name)}/diff/start`,
+      path: `/collections/${encodeURIComponent(this.name)}/diff/`,
       parser: DiffResult,
       body: options,
     });
   }
   readDiffCursor(options: ReadDiffCursorOptions): Promise<DiffResult> {
+    const {cursorId, ...rest} = options;
+    assertTypesEqual<typeof rest, Record<string, never>>(true);
+
     return this.call({
-      method: 'POST',
-      path: `/collections/${encodeURIComponent(this.name)}/diff/next`,
+      method: 'GET',
+      path: `/collections/${encodeURIComponent(
+        this.name,
+      )}/diff/${encodeURIComponent(cursorId)}`,
       parser: DiffResult,
-      body: options,
     });
   }
+  closeDiffCursor(options: CloseCursorOptions): Promise<void> {
+    const {cursorId, ...rest} = options;
+    assertTypesEqual<typeof rest, Record<string, never>>(true);
 
-  closeCursor(): Promise<void> {
-    return Promise.resolve();
+    return this.call({
+      method: 'DELETE',
+      path: `/collections/${encodeURIComponent(
+        this.name,
+      )}/diff/${encodeURIComponent(cursorId)}`,
+      parser: VoidParser,
+    });
   }
 
   listReaders(): Promise<ListReadersResult> {
