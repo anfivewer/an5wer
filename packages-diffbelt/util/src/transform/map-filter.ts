@@ -36,7 +36,7 @@ export const createMapFilterTransform = <Context, SourceItem>({
       {
         diffOptions: {
           fromReader: {
-            readerId: targetCollectionReaderName,
+            readerName: targetCollectionReaderName,
             collectionName: targetCollectionName,
           },
         },
@@ -105,7 +105,7 @@ export const createMapFilterTransform = <Context, SourceItem>({
       generationId: toGenerationId,
       updateReaders: [
         {
-          readerId: targetCollectionReaderName,
+          readerName: targetCollectionReaderName,
           generationId: toGenerationId,
         },
       ],

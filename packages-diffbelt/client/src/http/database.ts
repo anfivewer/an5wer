@@ -40,7 +40,7 @@ export class Database implements IDatabase {
       method: 'POST',
       path: '/collections/',
       body: {
-        collectionId: name,
+        collectionName: name,
         isManual,
         initialGenerationId: generationId,
       },

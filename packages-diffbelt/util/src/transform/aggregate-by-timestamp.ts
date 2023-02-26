@@ -192,7 +192,7 @@ export const createAggregateByTimestampTransform = <
       {
         diffOptions: {
           fromReader: {
-            readerId: targetFromSourceReaderName,
+            readerName: targetFromSourceReaderName,
             collectionName: targetCollectionName,
           },
         },
@@ -790,7 +790,7 @@ export const createAggregateByTimestampTransform = <
       generationId: toGenerationId,
       updateReaders: [
         {
-          readerId: targetFromSourceReaderName,
+          readerName: targetFromSourceReaderName,
           generationId: toGenerationId,
         },
       ],

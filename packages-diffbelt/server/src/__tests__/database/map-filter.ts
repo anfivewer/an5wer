@@ -35,7 +35,7 @@ export const mapFilterTest = ({
       ]);
 
       targetCollection.createReader({
-        readerId: 'fromInitial',
+        readerName: 'fromInitial',
         generationId: null,
         collectionName: 'mapFilterInitial',
       });

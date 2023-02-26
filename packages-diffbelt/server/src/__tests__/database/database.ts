@@ -117,7 +117,7 @@ export const databaseTest = <Db extends Database>({
     }
 
     await colB.createReader({
-      readerId: 'aToB',
+      readerName: 'aToB',
       generationId: {value: ''},
       collectionName: 'colA',
     });
@@ -309,7 +309,7 @@ const doTransformFromAtoB = async ({
     items,
     cursorId: initialCursorId,
   } = await colA.diff({
-    fromReader: {readerId: 'aToB', collectionName: 'colB'},
+    fromReader: {readerName: 'aToB', collectionName: 'colB'},
   });
 
   const normalizeGenerationId = (
@@ -422,7 +422,7 @@ const doTransformFromAtoB = async ({
     generationId: initialToGenerationId,
     updateReaders: [
       {
-        readerId: 'aToB',
+        readerName: 'aToB',
         generationId: initialToGenerationId,
       },
     ],

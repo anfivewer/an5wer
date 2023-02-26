@@ -53,12 +53,12 @@ export const aggregateByTimestampTest = ({
         ]);
 
       hourCollection.createReader({
-        readerId: 'fromInitial',
+        readerName: 'fromInitial',
         generationId: null,
         collectionName: 'aggregateByTimeStampInitial',
       });
       dayCollection.createReader({
-        readerId: 'fromHour',
+        readerName: 'fromHour',
         generationId: null,
         collectionName: 'aggregateByTimeStampInitial',
       });

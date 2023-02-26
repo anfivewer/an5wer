@@ -84,7 +84,7 @@ export type DiffOptionsFromGenerationInputProvided = ZodInfer<
 
 export const DiffOptionsFromGenerationInputFromReader = object({
   fromReader: object({
-    readerId: string(),
+    readerName: string(),
     collectionName: string().optional(),
   }),
 });
@@ -189,7 +189,7 @@ export type CloseCursorOptions = ZodInfer<typeof CloseCursorOptions>;
 export const ListReadersResult = object({
   items: array(
     object({
-      readerId: string(),
+      readerName: string(),
       generationId: EncodedValue.nullable(),
       collectionName: string().optional(),
     }),
@@ -198,20 +198,20 @@ export const ListReadersResult = object({
 export type ListReadersResult = ZodInfer<typeof ListReadersResult>;
 
 export const CreateReaderOptions = object({
-  readerId: string(),
+  readerName: string(),
   generationId: EncodedValue.nullable(),
   collectionName: string().optional(),
 });
 export type CreateReaderOptions = ZodInfer<typeof CreateReaderOptions>;
 
 export const UpdateReaderOptions = object({
-  readerId: string(),
+  readerName: string(),
   generationId: EncodedValue,
 });
 export type UpdateReaderOptions = ZodInfer<typeof UpdateReaderOptions>;
 
 export const DeleteReaderOptions = object({
-  readerId: string(),
+  readerName: string(),
 });
 export type DeleteReaderOptions = ZodInfer<typeof DeleteReaderOptions>;
 
@@ -225,7 +225,7 @@ export const CommitGenerationOptions = object({
   generationId: EncodedValue,
   updateReaders: array(
     object({
-      readerId: string(),
+      readerName: string(),
       generationId: EncodedValue,
     }),
   ).optional(),

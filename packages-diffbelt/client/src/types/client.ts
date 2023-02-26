@@ -7,14 +7,14 @@ import {ZodInfer} from '@-/types/src/zod/zod';
 
 export const GetRequestBody = GetOptions.and(
   object({
-    collectionId: string(),
+    collectionName: string(),
   }),
 );
 export type GetRequestBody = ZodInfer<typeof GetRequestBody>;
 
 export const GetKeysAroundRequestBody = CollectionGetKeysAroundOptions.and(
   object({
-    collectionId: string(),
+    collectionName: string(),
   }),
 );
 export type GetKeysAroundRequestBody = ZodInfer<

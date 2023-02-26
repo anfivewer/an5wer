@@ -39,7 +39,7 @@ export const initializeDatabaseStructure = async ({
 
         const actualReaders = await collection.listReaders();
         const actualReadersMap = new Map(
-          actualReaders.items.map((reader) => [reader.readerId, reader]),
+          actualReaders.items.map((reader) => [reader.readerName, reader]),
         );
 
         const promises: Promise<void>[] = [];
@@ -50,7 +50,7 @@ export const initializeDatabaseStructure = async ({
           if (!actualReader) {
             promises.push(
               collection.createReader({
-                readerId: name,
+                readerName: name,
                 generationId: null,
                 collectionName,
               }),
@@ -65,9 +65,9 @@ export const initializeDatabaseStructure = async ({
 
           promises.push(
             (async () => {
-              await collection.deleteReader({readerId: name});
+              await collection.deleteReader({readerName: name});
               await collection.createReader({
-                readerId: name,
+                readerName: name,
                 generationId: null,
                 collectionName,
               });

@@ -123,7 +123,7 @@ export class Collection implements ICollection {
 
   get(options: GetOptions): Promise<GetResult> {
     const requestOptions: GetRequestBody = {
-      collectionId: this.name,
+      collectionName: this.name,
       ...options,
     };
 
@@ -138,7 +138,7 @@ export class Collection implements ICollection {
     options: CollectionGetKeysAroundOptions,
   ): Promise<CollectionGetKeysAroundResult> {
     const requestOptions: GetKeysAroundRequestBody = {
-      collectionId: this.name,
+      collectionName: this.name,
       ...options,
     };
 

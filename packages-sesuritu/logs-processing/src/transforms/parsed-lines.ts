@@ -29,7 +29,7 @@ export const transformLogsLinesToParsedLines = async ({
       {
         diffOptions: {
           fromReader: {
-            readerId: PARSED_LINES_LOG_LINES_READER_NAME,
+            readerName: PARSED_LINES_LOG_LINES_READER_NAME,
             collectionName: PARSED_LINES_COLLECTION_NAME,
           },
         },
@@ -84,7 +84,7 @@ export const transformLogsLinesToParsedLines = async ({
       generationId: toGenerationId,
       updateReaders: [
         {
-          readerId: PARSED_LINES_LOG_LINES_READER_NAME,
+          readerName: PARSED_LINES_LOG_LINES_READER_NAME,
           generationId: toGenerationId,
         },
       ],
