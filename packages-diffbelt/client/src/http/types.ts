@@ -14,7 +14,7 @@ type Json =
   | boolean;
 
 export type CallApiOptions<T> = {
-  method: 'GET' | 'POST' | 'DELETE';
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE';
   path: string;
   params?: Record<string, string | undefined>;
   body?: JsonObject;

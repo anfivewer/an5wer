@@ -31,6 +31,7 @@ import {
 import {CallApiFn, VoidParser} from './types';
 import {createFinishableStream} from '@-/util/src/stream/finishable-stream';
 import {isEqual} from '@-/diffbelt-util/src/keys/compare';
+import {assertTypesEqual} from '@-/types/src/assert/is-equal';
 
 export type CollectionOptions = {
   call: CallApiFn;
@@ -200,34 +201,41 @@ export class Collection implements ICollection {
 
   listReaders(): Promise<ListReadersResult> {
     return this.call({
-      method: 'POST',
-      path: `/collections/${encodeURIComponent(this.name)}/reader/list`,
+      method: 'GET',
+      path: `/collections/${encodeURIComponent(this.name)}/readers/`,
       parser: ListReadersResult,
-      body: {},
     });
   }
   createReader(options: CreateReaderOptions): Promise<void> {
     return this.call({
       method: 'POST',
-      path: `/collections/${encodeURIComponent(this.name)}/reader/create`,
+      path: `/collections/${encodeURIComponent(this.name)}/readers/`,
       parser: VoidParser,
       body: options,
     });
   }
   updateReader(options: UpdateReaderOptions): Promise<void> {
+    const {readerName, ...opts} = options;
+
     return this.call({
-      method: 'POST',
-      path: `/collections/${encodeURIComponent(this.name)}/reader/update`,
+      method: 'PUT',
+      path: `/collections/${encodeURIComponent(
+        this.name,
+      )}/readers/${encodeURIComponent(readerName)}`,
       parser: VoidParser,
-      body: options,
+      body: opts,
     });
   }
   deleteReader(options: DeleteReaderOptions): Promise<void> {
+    const {readerName, ...rest} = options;
+    assertTypesEqual<typeof rest, Record<string, never>>(true);
+
     return this.call({
-      method: 'POST',
-      path: `/collections/${encodeURIComponent(this.name)}/reader/delete`,
+      method: 'DELETE',
+      path: `/collections/${encodeURIComponent(
+        this.name,
+      )}/readers/${encodeURIComponent(readerName)}`,
       parser: VoidParser,
-      body: options,
     });
   }
 
