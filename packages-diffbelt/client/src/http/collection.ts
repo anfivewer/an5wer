@@ -30,7 +30,6 @@ import {
 } from '@-/types/src/stream/stream';
 import {CallApiFn, VoidParser} from './types';
 import {createFinishableStream} from '@-/util/src/stream/finishable-stream';
-import {GetKeysAroundRequestBody, GetRequestBody} from '../types/client';
 import {isEqual} from '@-/diffbelt-util/src/keys/compare';
 
 export type CollectionOptions = {
@@ -60,7 +59,7 @@ export class Collection implements ICollection {
   getGeneration(): Promise<GetGenerationIdResult> {
     return this.call({
       method: 'GET',
-      path: `/collections/${this.name}?fields=generationId`,
+      path: `/collections/${encodeURIComponent(this.name)}?fields=generationId`,
       parser: GetGenerationIdResult,
     });
   }
@@ -70,7 +69,9 @@ export class Collection implements ICollection {
     (async () => {
       let prevGenerationId = await this.call({
         method: 'GET',
-        path: `/collections/${this.name}/generationId/stream`,
+        path: `/collections/${encodeURIComponent(
+          this.name,
+        )}/generationId/stream`,
         parser: GetGenerationIdResult,
       });
 
@@ -83,7 +84,9 @@ export class Collection implements ICollection {
 
         const newGenerationId = await this.call({
           method: 'GET',
-          path: `/collections/${this.name}/generationId/stream`,
+          path: `/collections/${encodeURIComponent(
+            this.name,
+          )}/generationId/stream`,
           parser: GetGenerationIdResult,
         });
 
@@ -116,37 +119,29 @@ export class Collection implements ICollection {
   getPlannedGeneration(): Promise<GetNextGenerationIdResult> {
     return this.call({
       method: 'GET',
-      path: `/collections/${this.name}?fields=nextGenerationId`,
+      path: `/collections/${encodeURIComponent(
+        this.name,
+      )}?fields=nextGenerationId`,
       parser: GetNextGenerationIdResult,
     });
   }
 
   get(options: GetOptions): Promise<GetResult> {
-    const requestOptions: GetRequestBody = {
-      collectionName: this.name,
-      ...options,
-    };
-
     return this.call({
       method: 'POST',
-      path: '/get',
+      path: `/collections/${encodeURIComponent(this.name)}/get`,
       parser: GetResult,
-      body: requestOptions,
+      body: options,
     });
   }
   getKeysAround(
     options: CollectionGetKeysAroundOptions,
   ): Promise<CollectionGetKeysAroundResult> {
-    const requestOptions: GetKeysAroundRequestBody = {
-      collectionName: this.name,
-      ...options,
-    };
-
     return this.call({
       method: 'POST',
-      path: '/getKeysAround',
+      path: `/collections/${encodeURIComponent(this.name)}/getKeysAround`,
       parser: CollectionGetKeysAroundResult,
-      body: requestOptions,
+      body: options,
     });
   }
   query(options?: QueryOptions): Promise<QueryResult> {
