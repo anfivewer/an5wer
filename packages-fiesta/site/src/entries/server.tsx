@@ -131,7 +131,7 @@ const renderStyles = ({
       stylesCache.set(cssPath, content);
     }
 
-    return <style key={cssPath}>{content}</style>;
+    return <style key={cssPath} dangerouslySetInnerHTML={{__html: content}} />;
   });
 
   return Promise.all(promises);
