@@ -15,6 +15,7 @@
   --color-ev-plate: #259c3f;
   --color-text-primary: rgb(0, 0, 0);
   --color-text-secondary: rgba(0, 0, 0, 0.5);
+  --color-text-hover: #3c5399;
 }
 
 @custom-media --mobile-screen screen and (max-width: 390px);
