@@ -51,10 +51,12 @@ export class DirectusDatabase extends BaseComponent implements Database {
       this.directus.items('events').readByQuery({
         filter: {type: {_neq: CarEventType.planned}},
         sort: ['-id'],
+        limit: -1,
       }),
       this.directus.items('events').readByQuery({
         filter: {type: {_eq: CarEventType.planned}},
         sort: ['id'],
+        limit: -1,
       }),
     ]);
 
