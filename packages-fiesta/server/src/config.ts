@@ -15,8 +15,8 @@ export const getConfig = createGetConfig(
       // sets logger to not escape \n in stack traces
       isDebug: getBoolean('IS_DEBUG', false),
       dataPath,
-      adminPath: getNonEmptyString('FIESTA_ADMIN_PATH', '/admin/'),
-      directusPath: getNonEmptyString('FIESTA_DIRECTUS_PATH', '/_directus/'),
+      adminPath: getNonEmptyString('FIESTA_ADMIN_PATH', '/admin'),
+      directusPath: getNonEmptyString('FIESTA_DIRECTUS_PATH', '/_directus'),
       serverPort: getInteger('FIESTA_PORT'),
       directusPort: getInteger('FIESTA_DIRECTUS_PORT'),
       buildsPath: path.join(dataPath, 'builds'),

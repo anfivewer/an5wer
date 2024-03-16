@@ -13,24 +13,35 @@ const CreateEventForm: FC<Record<string, never>> = () => {
     defaultValue: 'odometer',
   });
   const {value: date, onChange: onChangeDate} = useField({
-    defaultValue: '2022-10-20',
+    defaultValue: '2024-03-16',
   });
   const {value: mileageKm, onChange: onChangeMileage} = useField();
-  const {
-    value: title,
-    onChange: onChangeTitle,
-    setValue: setTitle,
-  } = useField();
+  const {value: addFuelLiters, onChange: onChangeAddFuelLiters} = useField();
+  const {value: title, onChange: onChangeTitle} = useField();
 
   const isValid = useMemo(() => {
-    const valid =
-      type === 'odometer' &&
-      /^\d\d\d\d-\d\d-\d\d$/.test(date) &&
-      (!mileageKm || /^[1-9]\d{0,6}$/.test(mileageKm)) &&
-      title;
+    if (mileageKm) {
+      const km = Number(mileageKm);
+
+      if (!isFinite(km) || km <= 0) {
+        return false;
+      }
+    }
+
+    if (type === 'fuel') {
+      const liters = Number(addFuelLiters);
+
+      if (!isFinite(liters) || liters <= 0) {
+        return false;
+      }
+    } else if (addFuelLiters) {
+      return false;
+    }
+
+    const valid = /^\d\d\d\d-\d\d-\d\d$/.test(date) && title;
 
     return Boolean(valid);
-  }, [type, date, mileageKm, title]);
+  }, [type, date, mileageKm, addFuelLiters, title]);
 
   const createEventId = useCallback(
     (counter = 0) => {
@@ -60,7 +71,8 @@ const CreateEventForm: FC<Record<string, never>> = () => {
         const event: CarEvent = {
           id: createEventId(counter),
           date,
-          mileageKm: parseInt(mileageKm, 10),
+          mileageKm: mileageKm ? Number(mileageKm) : undefined,
+          addFuelLiters: addFuelLiters ? Number(addFuelLiters) : undefined,
           title,
           type: parsedType,
         };
@@ -78,8 +90,6 @@ const CreateEventForm: FC<Record<string, never>> = () => {
 
         break;
       }
-
-      setTitle('');
     })().catch((error) => {
       console.error(error);
     });
@@ -95,6 +105,9 @@ const CreateEventForm: FC<Record<string, never>> = () => {
         <div>type:</div>
         <select value={type} onChange={onChangeType}>
           <option value="odometer">odometer</option>
+          <option value="fuel">fuel</option>
+          <option value="service">service</option>
+          <option value="planned">planned</option>
         </select>
       </div>
       <div>
@@ -104,6 +117,14 @@ const CreateEventForm: FC<Record<string, never>> = () => {
       <div>
         <div>mileageKm:</div>
         <input type="text" value={mileageKm} onChange={onChangeMileage} />
+      </div>
+      <div>
+        <div>addFuelLiters:</div>
+        <input
+          type="text"
+          value={addFuelLiters}
+          onChange={onChangeAddFuelLiters}
+        />
       </div>
       <div>
         <div>title:</div>
