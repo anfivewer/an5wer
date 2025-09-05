@@ -1,12 +1,12 @@
 import {createContext, useContext} from 'react';
 import {MainDispatchFn} from '../state/main/dispatch';
-import {MainMst} from '../state/main/mst';
+import {MainStore} from '../state/main/store';
 
-export const MainMstContext = createContext<MainMst | undefined>(undefined);
-export const useMainMst = () => {
-  const store = useContext(MainMstContext);
+export const MainStoreContext = createContext<MainStore | undefined>(undefined);
+export const useMainStore = () => {
+  const store = useContext(MainStoreContext);
   if (!store) {
-    throw new Error('No MainMstContext');
+    throw new Error('No MainStoreContext');
   }
 
   return store;
@@ -15,10 +15,10 @@ export const useMainMst = () => {
 export const MainDispatchContext = createContext<MainDispatchFn | undefined>(
   undefined,
 );
-export const useRootDispatch = () => {
+export const useMainDispatch = () => {
   const dispatch = useContext(MainDispatchContext);
   if (!dispatch) {
-    throw new Error('No RootDispatchContext');
+    throw new Error('No MainDispatchContext');
   }
 
   return dispatch;

@@ -9,6 +9,6 @@
   "license": "ISC",
   "dependencies": {
     "@-/types": "workspace:*",
-    "typescript": "4.8.3"
+    "typescript": "5.9.2"
   }
 }

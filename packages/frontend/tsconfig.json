@@ -5,6 +5,7 @@
     "jsx": "react",
     "noEmit": false,
     "outDir": "./lib",
+    "baseUrl": ".",
     "declaration": true
   },
   "include": ["src/**/*"]

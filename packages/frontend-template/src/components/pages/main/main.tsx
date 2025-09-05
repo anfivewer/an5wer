@@ -1,10 +1,10 @@
 import {observer} from 'mobx-react-lite';
 import React, {FC} from 'react';
-import {useMainMst} from '../../../contexts/main';
+import {useMainStore} from '../../../contexts/main';
 import styles from './main.module.css';
 
 const MainPage: FC = () => {
-  const store = useMainMst();
+  const store = useMainStore();
   const {
     serverState: {answer},
   } = store;

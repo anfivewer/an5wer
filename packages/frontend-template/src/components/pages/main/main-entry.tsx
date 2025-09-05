@@ -1,13 +1,13 @@
 import {MainPageState} from '@-/app-types-template/src/site/state/main';
 import React, {FC, useState} from 'react';
-import {MainDispatchContext, MainMstContext} from '../../../contexts/main';
-import {MainMst} from '../../../state/main/mst';
+import {MainDispatchContext, MainStoreContext} from '../../../contexts/main';
 import {getDispatch} from './dispatch';
 import {MainPage} from './main';
+import {MainStore} from '../../../state/main/store';
 
 export const MainPageEntry: FC<{state: MainPageState}> = ({state}) => {
   const [{store, dispatch}] = useState(() => {
-    const store = MainMst.create({
+    const store = new MainStore({
       serverState: state,
     });
 
@@ -18,9 +18,9 @@ export const MainPageEntry: FC<{state: MainPageState}> = ({state}) => {
 
   return (
     <MainDispatchContext.Provider value={dispatch}>
-      <MainMstContext.Provider value={store}>
+      <MainStoreContext.Provider value={store}>
         <MainPage />
-      </MainMstContext.Provider>
+      </MainStoreContext.Provider>
     </MainDispatchContext.Provider>
   );
 };

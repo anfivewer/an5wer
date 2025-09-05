@@ -2,10 +2,10 @@ import {
   MainDispatchEventType,
   MainDispatchFn,
 } from '../../../state/main/dispatch';
-import {MainMst} from '../../../state/main/mst';
+import {MainStore} from '../../../state/main/store';
 
 export const getDispatch: (options: {
-  store: MainMst;
+  store: MainStore;
 }) => MainDispatchFn = (): MainDispatchFn => {
   return (event) => {
     const eventType = event.type;
