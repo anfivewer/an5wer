@@ -3,3 +3,4 @@ packages:
   - './packages-fiesta/*'
   - './packages-diffbelt/*'
   - './packages-sesuritu/*'
+  - './packages-lazy-planner/*'
