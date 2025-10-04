@@ -291,7 +291,7 @@ importers:
         version: 5.9.2
       vite:
         specifier: 7.1.4
-        version: 7.1.4(@types/node@22.18.1)(sass-embedded@1.92.0)(sass@1.55.0)(terser@5.44.0)
+        version: 7.1.4(@types/node@22.18.1)(sass-embedded@1.92.0)(sass@1.55.0)(terser@5.44.0)(tsx@4.20.5)
       vite-plugin-sass-dts:
         specifier: git+https://github.com/Rulexec/vite-plugin-sass-dts.git#e649921b58c44f12d21298f7f676d5a2033b4a43
         version: https://codeload.github.com/Rulexec/vite-plugin-sass-dts/tar.gz/e649921b58c44f12d21298f7f676d5a2033b4a43(postcss@8.4.14)(prettier@2.7.1)(sass@1.55.0)
@@ -313,6 +313,67 @@ importers:
         version: 10.8.1(@types/node@22.18.1)(typescript@5.9.2)
 
   packages-fiesta/types:
+    dependencies:
+      '@-/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+      zod:
+        specifier: 3.17.3
+        version: 3.17.3
+
+  packages-lazy-planner/site:
+    dependencies:
+      '@-/frontend':
+        specifier: workspace:*
+        version: link:../../packages/frontend
+      '@-/lazy-planner-types':
+        specifier: workspace:*
+        version: link:../types
+      '@-/types':
+        specifier: workspace:*
+        version: link:../../packages/types
+      '@-/util':
+        specifier: workspace:*
+        version: link:../../packages/util
+      '@-/util-react':
+        specifier: workspace:*
+        version: link:../../packages/util-react
+      classnames:
+        specifier: 2.3.1
+        version: 2.3.1
+      mobx:
+        specifier: 6.13.7
+        version: 6.13.7
+      mobx-react-lite:
+        specifier: 4.1.0
+        version: 4.1.0(mobx@6.13.7)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+      react:
+        specifier: 19.1.1
+        version: 19.1.1
+      react-dom:
+        specifier: 19.1.1
+        version: 19.1.1(react@19.1.1)
+      typescript:
+        specifier: 5.9.2
+        version: 5.9.2
+    devDependencies:
+      '@types/node':
+        specifier: 22.18.1
+        version: 22.18.1
+      '@types/react':
+        specifier: 19.1.12
+        version: 19.1.12
+      '@types/react-dom':
+        specifier: 19.1.9
+        version: 19.1.9(@types/react@19.1.12)
+      tsx:
+        specifier: 4.20.5
+        version: 4.20.5
+
+  packages-lazy-planner/types:
     dependencies:
       '@-/types':
         specifier: workspace:*
@@ -515,7 +576,7 @@ importers:
         version: link:../util-react
       '@vitejs/plugin-react':
         specifier: 5.0.2
-        version: 5.0.2(vite@7.1.4(@types/node@22.18.1)(sass-embedded@1.92.0)(sass@1.55.0)(terser@5.44.0))
+        version: 5.0.2(vite@7.1.4(@types/node@22.18.1)(sass-embedded@1.92.0)(sass@1.55.0)(terser@5.44.0)(tsx@4.20.5))
       postcss:
         specifier: 8.4.14
         version: 8.4.14
@@ -548,10 +609,10 @@ importers:
         version: 5.9.2
       vite:
         specifier: 7.1.4
-        version: 7.1.4(@types/node@22.18.1)(sass-embedded@1.92.0)(sass@1.55.0)(terser@5.44.0)
+        version: 7.1.4(@types/node@22.18.1)(sass-embedded@1.92.0)(sass@1.55.0)(terser@5.44.0)(tsx@4.20.5)
       vite-plugin-sass-dts:
         specifier: 1.3.31
-        version: 1.3.31(postcss@8.4.14)(prettier@2.7.1)(sass-embedded@1.92.0)(vite@7.1.4(@types/node@22.18.1)(sass-embedded@1.92.0)(sass@1.55.0)(terser@5.44.0))
+        version: 1.3.31(postcss@8.4.14)(prettier@2.7.1)(sass-embedded@1.92.0)(vite@7.1.4(@types/node@22.18.1)(sass-embedded@1.92.0)(sass@1.55.0)(terser@5.44.0)(tsx@4.20.5))
       zod:
         specifier: 3.17.3
         version: 3.17.3
@@ -614,9 +675,9 @@ importers:
       '@types/react-dom':
         specifier: 19.1.9
         version: 19.1.9(@types/react@19.1.12)
-      ts-node:
-        specifier: 10.8.1
-        version: 10.8.1(@types/node@22.18.1)(typescript@5.9.2)
+      tsx:
+        specifier: 4.20.5
+        version: 4.20.5
 
   packages/statics:
     dependencies:
@@ -4364,6 +4425,9 @@ packages:
     resolution: {integrity: sha512-ts6Wi+2j3jQjqi70w5AlN8DFnkSwC+MqmxEzdEALB2qXZYV3X/b1CTfgPLGJNMeAWxdPfU8FO1ms3NUfaHCPYg==}
     engines: {node: '>=10'}
 
+  get-tsconfig@4.10.1:
+    resolution: {integrity: sha512-auHyJ4AgMz7vgS8Hp3N6HXSmlMdUyhSUrfBF16w153rxtLIEOE+HGqaBppczZvnHLqQJfiHotCYpNhl0lUROFQ==}
+
   get-uri@6.0.5:
     resolution: {integrity: sha512-b1O07XYq8eRuVzBNgJLstU6FYc1tS6wnMtF1I1D9lE8LxZSOGZ7LhxN54yPP6mGw5f2CkXY2BQUL9Fx41qvcIg==}
     engines: {node: '>= 14'}
@@ -6530,6 +6594,9 @@ packages:
     resolution: {integrity: sha512-qYg9KP24dD5qka9J47d0aVky0N+b4fTU89LN9iDnjB5waksiC49rvMB0PrUJQGoTmH50XPiqOvAjDfaijGxYZw==}
     engines: {node: '>=8'}
 
+  resolve-pkg-maps@1.0.0:
+    resolution: {integrity: sha512-seS2Tj26TBVOC2NIc2rOe2y2ZO7efxITtLZcGSOnHHNOQ7CkiUBfw0Iw2ck6xkIhPwLhKNLS8BO+hEpngQlqzw==}
+
   resolve.exports@2.0.3:
     resolution: {integrity: sha512-OcXjMsGdhL4XnbShKpAcSqPMzQoYkYyhbEaeSko47MjRP9NfEQMhZkXL1DoFlt9LWQn4YttrdnV6X2OiyzBi+A==}
     engines: {node: '>=10'}
@@ -7273,6 +7340,11 @@ packages:
     engines: {node: '>= 6'}
     peerDependencies:
       typescript: '>=2.8.0 || >= 3.2.0-dev || >= 3.3.0-dev || >= 3.4.0-dev || >= 3.5.0-dev || >= 3.6.0-dev || >= 3.6.0-beta || >= 3.7.0-dev || >= 3.7.0-beta'
+
+  tsx@4.20.5:
+    resolution: {integrity: sha512-+wKjMNU9w/EaQayHXb7WA7ZaHY6hN8WgfvHNQ3t1PnU91/7O8TcTnIhCDYTZwnt8JsO9IBqZ30Ln1r7pPF52Aw==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
 
   tunnel-agent@0.6.0:
     resolution: {integrity: sha512-McnNiV1l8RYeY8tBgEpuodCC1mLUdbSN+CYBL7kJsJNInOP8UjDDEwdk6Mw60vdLLrr5NHKZhMAOSrR2NZuQ+w==}
@@ -10157,7 +10229,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@vitejs/plugin-react@5.0.2(vite@7.1.4(@types/node@22.18.1)(sass-embedded@1.92.0)(sass@1.55.0)(terser@5.44.0))':
+  '@vitejs/plugin-react@5.0.2(vite@7.1.4(@types/node@22.18.1)(sass-embedded@1.92.0)(sass@1.55.0)(terser@5.44.0)(tsx@4.20.5))':
     dependencies:
       '@babel/core': 7.28.4
       '@babel/plugin-transform-react-jsx-self': 7.27.1(@babel/core@7.28.4)
@@ -10165,7 +10237,7 @@ snapshots:
       '@rolldown/pluginutils': 1.0.0-beta.34
       '@types/babel__core': 7.20.5
       react-refresh: 0.17.0
-      vite: 7.1.4(@types/node@22.18.1)(sass-embedded@1.92.0)(sass@1.55.0)(terser@5.44.0)
+      vite: 7.1.4(@types/node@22.18.1)(sass-embedded@1.92.0)(sass@1.55.0)(terser@5.44.0)(tsx@4.20.5)
     transitivePeerDependencies:
       - supports-color
 
@@ -12143,6 +12215,10 @@ snapshots:
       pump: 3.0.3
 
   get-stream@6.0.1: {}
+
+  get-tsconfig@4.10.1:
+    dependencies:
+      resolve-pkg-maps: 1.0.0
 
   get-uri@6.0.5:
     dependencies:
@@ -14749,6 +14825,8 @@ snapshots:
 
   resolve-from@5.0.0: {}
 
+  resolve-pkg-maps@1.0.0: {}
+
   resolve.exports@2.0.3: {}
 
   resolve@1.22.10:
@@ -15617,6 +15695,13 @@ snapshots:
       tslib: 1.14.1
       typescript: 5.9.2
 
+  tsx@4.20.5:
+    dependencies:
+      esbuild: 0.25.9
+      get-tsconfig: 4.10.1
+    optionalDependencies:
+      fsevents: 2.3.3
+
   tunnel-agent@0.6.0:
     dependencies:
       safe-buffer: 5.2.1
@@ -15778,13 +15863,13 @@ snapshots:
       core-util-is: 1.0.2
       extsprintf: 1.4.1
 
-  vite-plugin-sass-dts@1.3.31(postcss@8.4.14)(prettier@2.7.1)(sass-embedded@1.92.0)(vite@7.1.4(@types/node@22.18.1)(sass-embedded@1.92.0)(sass@1.55.0)(terser@5.44.0)):
+  vite-plugin-sass-dts@1.3.31(postcss@8.4.14)(prettier@2.7.1)(sass-embedded@1.92.0)(vite@7.1.4(@types/node@22.18.1)(sass-embedded@1.92.0)(sass@1.55.0)(terser@5.44.0)(tsx@4.20.5)):
     dependencies:
       postcss: 8.4.14
       postcss-js: 4.0.1(postcss@8.4.14)
       prettier: 2.7.1
       sass-embedded: 1.92.0
-      vite: 7.1.4(@types/node@22.18.1)(sass-embedded@1.92.0)(sass@1.55.0)(terser@5.44.0)
+      vite: 7.1.4(@types/node@22.18.1)(sass-embedded@1.92.0)(sass@1.55.0)(terser@5.44.0)(tsx@4.20.5)
 
   vite-plugin-sass-dts@https://codeload.github.com/Rulexec/vite-plugin-sass-dts/tar.gz/e649921b58c44f12d21298f7f676d5a2033b4a43(postcss@8.4.14)(prettier@2.7.1)(sass@1.55.0):
     dependencies:
@@ -15793,7 +15878,7 @@ snapshots:
       prettier: 2.7.1
       sass: 1.55.0
 
-  vite@7.1.4(@types/node@22.18.1)(sass-embedded@1.92.0)(sass@1.55.0)(terser@5.44.0):
+  vite@7.1.4(@types/node@22.18.1)(sass-embedded@1.92.0)(sass@1.55.0)(terser@5.44.0)(tsx@4.20.5):
     dependencies:
       esbuild: 0.25.9
       fdir: 6.5.0(picomatch@4.0.3)
@@ -15807,6 +15892,7 @@ snapshots:
       sass: 1.55.0
       sass-embedded: 1.92.0
       terser: 5.44.0
+      tsx: 4.20.5
 
   vizion@2.2.1:
     dependencies:

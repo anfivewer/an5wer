@@ -1,5 +1,5 @@
 {
-  "name": "@-/frontend-template",
+  "name": "@-/lazy-planner-site",
   "version": "0.0.1",
   "description": "",
   "scripts": {
@@ -11,7 +11,7 @@
   "author": "Alexander Ruliov <alexander.rulov@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "@-/app-types-template": "workspace:*",
+    "@-/lazy-planner-types": "workspace:*",
     "@-/frontend": "workspace:*",
     "@-/types": "workspace:*",
     "@-/util": "workspace:*",
