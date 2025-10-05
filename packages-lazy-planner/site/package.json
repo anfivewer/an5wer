@@ -11,8 +11,8 @@
   "author": "Alexander Ruliov <alexander.rulov@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "@-/lazy-planner-types": "workspace:*",
     "@-/frontend": "workspace:*",
+    "@-/lazy-planner-types": "workspace:*",
     "@-/types": "workspace:*",
     "@-/util": "workspace:*",
     "@-/util-react": "workspace:*",
@@ -24,6 +24,7 @@
     "typescript": "5.9.2"
   },
   "devDependencies": {
+    "@gravity-ui/uikit": "^7.23.0",
     "@types/node": "22.18.1",
     "@types/react": "19.1.12",
     "@types/react-dom": "19.1.9",

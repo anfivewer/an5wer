@@ -12,7 +12,7 @@ export type ViteMiddleware = (
 export const createViteDevServer = async () => {
   const vite = await createViteServer({
     configFile: resolve(__dirname, '../../vite-client.config.ts'),
-    server: {middlewareMode: 'ssr'},
+    server: {middlewareMode: true},
   });
 
   const viteRender: SiteRenderFun = async (options) => {

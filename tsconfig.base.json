@@ -9,6 +9,7 @@
     "noEmit": true,
     "outDir": "dist",
     "baseUrl": "src",
+    "useDefineForClassFields": true,
     "strict": true
   }
 }

@@ -10,4 +10,6 @@
   @media (--mobile-screen) {
     color: blue;
   }
+
+  --size-m: 20px;
 }

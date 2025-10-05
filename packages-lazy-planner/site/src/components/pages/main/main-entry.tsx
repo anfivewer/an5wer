@@ -4,6 +4,10 @@ import {MainDispatchContext, MainStoreContext} from '../../../contexts/main';
 import {getDispatch} from './dispatch';
 import {MainPage} from './main';
 import {MainStore} from '../../../state/main/store';
+import {ThemeProvider} from '@gravity-ui/uikit';
+
+import '@gravity-ui/uikit/styles/fonts.css';
+import '@gravity-ui/uikit/styles/styles.css';
 
 export const MainPageEntry: FC<{state: MainPageState}> = ({state}) => {
   const [{store, dispatch}] = useState(() => {
@@ -19,7 +23,9 @@ export const MainPageEntry: FC<{state: MainPageState}> = ({state}) => {
   return (
     <MainDispatchContext.Provider value={dispatch}>
       <MainStoreContext.Provider value={store}>
-        <MainPage />
+        <ThemeProvider theme="light">
+          <MainPage />
+        </ThemeProvider>
       </MainStoreContext.Provider>
     </MainDispatchContext.Provider>
   );

@@ -3,6 +3,11 @@ declare module '*.jpg' {
   export default url;
 }
 
+declare module '*.svg?raw' {
+  const url: string;
+  export default url;
+}
+
 declare module '*.css' {
   const css: Record<string, string>;
   export default css;

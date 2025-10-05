@@ -9,6 +9,7 @@
   "license": "ISC",
   "dependencies": {
     "@-/types": "workspace:*",
+    "@-/util": "workspace:*",
     "mobx": "6.6.2",
     "mobx-state-tree": "5.1.6",
     "react": "19.1.1",

@@ -2,15 +2,22 @@ import {observer} from 'mobx-react-lite';
 import React, {FC} from 'react';
 import {useMainStore} from '../../../contexts/main';
 import styles from './main.module.css';
+import {FloatingIconButton} from '../../FloatingIconButton/FloatingIconButton';
+import {MainRoute} from '../../../state/main/routes/main';
 
-const MainPage: FC = () => {
+export const MainPage: FC = observer(() => {
   const store = useMainStore();
   const {
     serverState: {answer},
   } = store;
 
-  return <div className={styles.page}>Answer is {answer}</div>;
-};
+  const page = store.router.activeRoute instanceof MainRoute ? 'main' : 'new';
 
-const MainPageWrapped = observer(MainPage);
-export {MainPageWrapped as MainPage};
+  return (
+    <div className={styles.page}>
+      Answer is {answer}, page {page}, route{' '}
+      {store.router.activeRoute ? '1' : '0'}
+      <FloatingIconButton />
+    </div>
+  );
+});

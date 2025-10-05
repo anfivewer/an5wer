@@ -35,7 +35,7 @@ const options = {
         '@typescript-eslint/ban-ts-comment': 0,
         '@typescript-eslint/no-unused-vars': [
           'error',
-          {varsIgnorePattern: '^shouldBeNever$'},
+          {varsIgnorePattern: '^shouldBeNever$', argsIgnorePattern: '^_'},
         ],
         '@typescript-eslint/strict-boolean-expressions': [
           'warn',

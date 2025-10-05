@@ -1,0 +1,5 @@
+.wrap {
+  position: fixed;
+  bottom: var(--size-m);
+  right: var(--size-m);
+}

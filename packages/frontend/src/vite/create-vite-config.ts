@@ -22,6 +22,9 @@ export const createViteConfig = ({
     build: {
       assetsDir: '.',
     },
+    ssr: {
+      noExternal: ['@gravity-ui/uikit'],
+    },
   };
 
   const clientViteEntries: Record<string, string> = {};
