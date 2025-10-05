@@ -251,14 +251,14 @@ importers:
         specifier: 2.3.1
         version: 2.3.1
       mobx:
-        specifier: 6.6.2
-        version: 6.6.2
+        specifier: 6.13.7
+        version: 6.13.7
       mobx-react-lite:
         specifier: 3.4.0
-        version: 3.4.0(mobx@6.6.2)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+        version: 3.4.0(mobx@6.13.7)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       mobx-state-tree:
         specifier: 5.1.6
-        version: 5.1.6(mobx@6.6.2)
+        version: 5.1.6(mobx@6.13.7)
       postcss:
         specifier: 8.4.14
         version: 8.4.14
@@ -409,14 +409,14 @@ importers:
         specifier: 2.3.1
         version: 2.3.1
       mobx:
-        specifier: 6.6.2
-        version: 6.6.2
+        specifier: 6.13.7
+        version: 6.13.7
       mobx-react-lite:
         specifier: 3.4.0
-        version: 3.4.0(mobx@6.6.2)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
+        version: 3.4.0(mobx@6.13.7)(react-dom@19.1.1(react@19.1.1))(react@19.1.1)
       mobx-state-tree:
         specifier: 5.1.6
-        version: 5.1.6(mobx@6.6.2)
+        version: 5.1.6(mobx@6.13.7)
       prop-types:
         specifier: 15.8.1
         version: 15.8.1
@@ -768,11 +768,11 @@ importers:
         specifier: workspace:*
         version: link:../util
       mobx:
-        specifier: 6.6.2
-        version: 6.6.2
+        specifier: 6.13.7
+        version: 6.13.7
       mobx-state-tree:
         specifier: 5.1.6
-        version: 5.1.6(mobx@6.6.2)
+        version: 5.1.6(mobx@6.13.7)
       react:
         specifier: 19.1.1
         version: 19.1.1
@@ -5648,9 +5648,6 @@ packages:
 
   mobx@6.13.7:
     resolution: {integrity: sha512-aChaVU/DO5aRPmk1GX8L+whocagUUpBQqoPtJk+cm7UOXUk87J4PeWCh6nNmTTIfEhiR9DI/+FnA8dln/hTK7g==}
-
-  mobx@6.6.2:
-    resolution: {integrity: sha512-IOpS0bf3+hXIhDIy+CmlNMBfFpAbHS0aVHcNC+xH/TFYEKIIVDKNYRh9eKlXuVfJ1iRKAp0cRVmO145CyJAMVQ==}
 
   module-details-from-path@1.0.4:
     resolution: {integrity: sha512-EGWKgxALGMgzvxYF1UyGTy0HXX/2vHLkw6+NvDKW2jypWbHpjQuj4UMcqQWXHERJhVGKikolT06G3bcKe4fi7w==}
@@ -13841,9 +13838,9 @@ snapshots:
 
   mkdirp@1.0.4: {}
 
-  mobx-react-lite@3.4.0(mobx@6.6.2)(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
+  mobx-react-lite@3.4.0(mobx@6.13.7)(react-dom@19.1.1(react@19.1.1))(react@19.1.1):
     dependencies:
-      mobx: 6.6.2
+      mobx: 6.13.7
       react: 19.1.1
     optionalDependencies:
       react-dom: 19.1.1(react@19.1.1)
@@ -13856,13 +13853,11 @@ snapshots:
     optionalDependencies:
       react-dom: 19.1.1(react@19.1.1)
 
-  mobx-state-tree@5.1.6(mobx@6.6.2):
+  mobx-state-tree@5.1.6(mobx@6.13.7):
     dependencies:
-      mobx: 6.6.2
+      mobx: 6.13.7
 
   mobx@6.13.7: {}
-
-  mobx@6.6.2: {}
 
   module-details-from-path@1.0.4: {}
 

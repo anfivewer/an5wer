@@ -1,10 +1,15 @@
 import {IRouteStore, RouteData, RouterLocation} from '@-/util-react/src/router';
-import {Page, QUERY_PAGE} from './constants';
+import {AUTO_OBSERVABLE_ANNOTATIONS, Page, QUERY_PAGE} from './constants';
+import {makeAutoObservable} from 'mobx';
 
 export type NewTodoRouteData = RouteData;
 
 export class NewTodoRoute implements IRouteStore<NewTodoRouteData> {
   data: NewTodoRouteData | null = null;
+
+  constructor() {
+    makeAutoObservable(this, AUTO_OBSERVABLE_ANNOTATIONS);
+  }
 
   parseLocation(location: RouterLocation): RouteData | null {
     const {search} = location;
@@ -26,4 +31,8 @@ export class NewTodoRoute implements IRouteStore<NewTodoRouteData> {
       search,
     };
   }
+
+  goTo = () => {
+    this.data = {};
+  };
 }

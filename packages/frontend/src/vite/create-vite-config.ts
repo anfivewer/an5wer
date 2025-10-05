@@ -2,22 +2,31 @@ import {UserConfig, defineConfig} from 'vite';
 import react from '@vitejs/plugin-react';
 import sassDts from 'vite-plugin-sass-dts';
 import {resolve} from 'path';
+import {createHmrPlugin} from './hmr-plugin';
 
 export const createViteConfig = ({
   packagePath,
   assetsBaseUrl,
   entries,
   ssrEntries = ['main'],
+  fullReloadOnFoldersChange,
 }: {
   packagePath: string;
   assetsBaseUrl: string | undefined;
   entries: string[];
   ssrEntries?: string[];
+  fullReloadOnFoldersChange?: string[];
 }) => {
   const viteBaseConfig: UserConfig = {
     root: packagePath,
     base: assetsBaseUrl,
-    plugins: [react(), sassDts()],
+    plugins: [
+      react(),
+      sassDts(),
+      fullReloadOnFoldersChange
+        ? createHmrPlugin({fullReloadOnFoldersChange})
+        : null,
+    ],
     clearScreen: false,
     build: {
       assetsDir: '.',

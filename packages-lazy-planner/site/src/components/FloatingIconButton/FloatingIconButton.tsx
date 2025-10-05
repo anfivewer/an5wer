@@ -9,15 +9,16 @@ import icon from './assets/plus.svg?raw';
 
 type FloatingIconButtonProps = {
   className?: string;
+  onClick: () => void;
 };
 
 export const FloatingIconButton: FC<FloatingIconButtonProps> = observer(
   (props) => {
-    const {className} = props;
+    const {className, onClick} = props;
 
     return (
       <div className={classNames(className, styles.wrap)}>
-        <Button size="xl" pin="circle-circle">
+        <Button size="xl" pin="circle-circle" onClick={onClick}>
           <Icon data={icon} size={24} />
         </Button>
       </div>

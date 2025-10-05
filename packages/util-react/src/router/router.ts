@@ -66,9 +66,9 @@ export class Router {
         };
 
         if (needReplace) {
-          window.history.replaceState(null, '', serializeLocation(location));
+          window.history.replaceState({}, '', serializeLocation(location));
         } else {
-          window.history.pushState(null, '', serializeLocation(location));
+          window.history.pushState({}, '', serializeLocation(location));
         }
       },
     );

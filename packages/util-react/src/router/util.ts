@@ -14,7 +14,9 @@ export const parseCurrentLocation = (): RouterLocation => {
 export const serializeLocation = (location: RouterLocation): string => {
   const search = location.search.toString();
 
-  return `${location.path}${search ? '?' : ''}${search}${location.hash}`;
+  return `${normalizePath(location.path)}${
+    search ? '?' : ''
+  }${search}${normalizeHash(location.hash)}`;
 };
 
 export const isLocationEqual = (
@@ -24,7 +26,10 @@ export const isLocationEqual = (
   const {path: pathA, hash: hashA, search: searchA} = a;
   const {path: pathB, hash: hashB, search: searchB} = b;
 
-  if (pathA !== pathB || hashA !== hashB) {
+  if (
+    normalizePath(pathA) !== normalizePath(pathB) ||
+    normalizeHash(hashA) !== normalizeHash(hashB)
+  ) {
     return false;
   }
 
@@ -42,4 +47,20 @@ export const isLocationEqual = (
   }
 
   return true;
+};
+
+const normalizePath = (path: string): string => {
+  if (!path) {
+    return '/';
+  }
+
+  return path;
+};
+
+const normalizeHash = (hash: string): string => {
+  if (hash === '#') {
+    return '';
+  }
+
+  return hash;
 };

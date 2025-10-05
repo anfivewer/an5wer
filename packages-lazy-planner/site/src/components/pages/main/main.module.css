@@ -1,15 +1,5 @@
-@custom-media --mobile-screen screen and (max-width: 390px);
-
 .page {
   margin: 24px;
-
-  &:hover {
-    color: red;
-  }
-
-  @media (--mobile-screen) {
-    color: blue;
-  }
 
   --size-m: 20px;
 }
