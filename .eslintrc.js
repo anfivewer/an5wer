@@ -41,6 +41,7 @@ const options = {
           'warn',
           {allowNullableObject: true, allowAny: true},
         ],
+        '@typescript-eslint/no-explicit-any': 0,
       },
     },
     {

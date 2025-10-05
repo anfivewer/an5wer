@@ -2,8 +2,6 @@ import {action, makeAutoObservable, reaction, runInAction} from 'mobx';
 import {IRouteStore, RouteData, RouterLocation} from './types';
 import {isLocationEqual, parseCurrentLocation, serializeLocation} from './util';
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-
 export class Router {
   _routes = new Set<IRouteStore<any>>();
   _activeRoute: IRouteStore<any> | null = null;
