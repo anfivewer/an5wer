@@ -11,6 +11,7 @@ import {noop} from '@-/util/src/fn/noop';
 import {Modal} from '../../../../Modal/Modal';
 import {ConfirmContent} from '../../../../ConfirmContent/ConfirmContent';
 import wind from '@/styles/wind.module.css';
+import {Text, TextInput} from '@gravity-ui/uikit';
 
 type CreateTodoProps = {
   className?: string;
@@ -25,12 +26,42 @@ export const CreateTodo: FC<CreateTodoProps> = observer((props) => {
 
   return (
     <div className={classNames(className, styles.wrap)}>
-      <FullWidthButton view="action" onClick={noop}>
+      <TextInput
+        size="l"
+        value={createTodoStore.todo.title.value}
+        onChange={createTodoStore.todo.title.onChange}
+        placeholder={i18n('titlePlaceholder')}
+      />
+      <TextInput
+        className={wind.marginTopSizeS}
+        size="l"
+        value={createTodoStore.todo.estimateDurationText.value}
+        onChange={createTodoStore.todo.estimateDurationText.onChange}
+        label={i18n('estimateDuration')}
+        note={
+          <Text variant="caption-1" color="secondary">
+            {i18n('estimateDurationNote')}
+          </Text>
+        }
+        validationState={
+          createTodoStore.todo.estimateDuration === 'invalid'
+            ? 'invalid'
+            : undefined
+        }
+      />
+      <div className={styles.spacer} />
+      <FullWidthButton
+        className={wind.marginTopSizeL}
+        view="action"
+        onClick={noop}
+        disabled={createTodoStore.isSaveDisabled}
+      >
         {i18n('save')}
       </FullWidthButton>
       <FullWidthButton
         className={wind.marginTopSizeS}
         onClick={createTodoStore.onCancelClick}
+        view={createTodoStore.todo.isChanged ? 'normal' : 'action'}
       >
         {i18n('cancel')}
       </FullWidthButton>

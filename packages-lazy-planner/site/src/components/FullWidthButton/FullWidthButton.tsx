@@ -6,15 +6,14 @@ import classNames from 'classnames';
 import styles from './FullWidthButton.module.css';
 import {Button, ButtonProps} from '@gravity-ui/uikit';
 
-type FullWidthButtonProps = {
+type FullWidthButtonProps = Pick<ButtonProps, 'view' | 'disabled'> & {
   className?: string;
-  view?: ButtonProps['view'];
   onClick: () => void;
   children: ReactNode;
 };
 
 export const FullWidthButton: FC<FullWidthButtonProps> = observer((props) => {
-  const {className, view, onClick, children} = props;
+  const {className, view, onClick, disabled, children} = props;
 
   return (
     <Button
@@ -22,6 +21,7 @@ export const FullWidthButton: FC<FullWidthButtonProps> = observer((props) => {
       view={view}
       size="l"
       onClick={onClick}
+      disabled={disabled}
     >
       {children}
     </Button>

@@ -1,3 +1,11 @@
 .marginTopSizeS {
   margin-top: var(--size-s);
 }
+
+.marginTopSizeM {
+  margin-top: var(--size-m);
+}
+
+.marginTopSizeL {
+  margin-top: var(--size-l);
+}
