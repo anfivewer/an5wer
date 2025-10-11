@@ -1,0 +1,16 @@
+.wrap {
+  padding: var(--size-l);
+}
+
+.title {
+  margin-bottom: var(--size-m);
+}
+
+.buttons {
+  display: flex;
+  gap: var(--size-m);
+}
+
+.button {
+  flex-grow: 1;
+}

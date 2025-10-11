@@ -5,6 +5,8 @@ import styles from './main.module.css';
 import {MainScreen} from './screens/MainScreen/MainScreen';
 import {CreateTodo} from './screens/CreateTodo/CreateTodo';
 
+import '../../../styles/index.css';
+
 export const MainPage: FC = observer(() => {
   const store = useMainStore();
 

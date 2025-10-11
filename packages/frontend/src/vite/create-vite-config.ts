@@ -10,14 +10,19 @@ export const createViteConfig = ({
   entries,
   ssrEntries = ['main'],
   fullReloadOnFoldersChange,
+  resolveAlias,
 }: {
   packagePath: string;
   assetsBaseUrl: string | undefined;
   entries: string[];
   ssrEntries?: string[];
   fullReloadOnFoldersChange?: string[];
+  resolveAlias?: NonNullable<UserConfig['resolve']>['alias'];
 }) => {
   const viteBaseConfig: UserConfig = {
+    resolve: {
+      alias: resolveAlias,
+    },
     root: packagePath,
     base: assetsBaseUrl,
     plugins: [

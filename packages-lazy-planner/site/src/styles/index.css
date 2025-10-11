@@ -1,0 +1,12 @@
+:root {
+  --size-xxs: 8px;
+  --size-xs: 12px;
+  --size-s: 16px;
+  --size-m: 20px;
+  --size-l: 24px;
+}
+
+body {
+  padding: 0;
+  margin: 0;
+}

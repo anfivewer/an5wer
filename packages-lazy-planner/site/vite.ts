@@ -8,4 +8,7 @@ export const {clientConfig, ssrConfig} = createViteConfig({
   assetsBaseUrl: process.env.ASSETS_BASE_URL,
   entries: ['main'],
   fullReloadOnFoldersChange: [srcFolder('state')],
+  resolveAlias: {
+    '@': srcFolder('.'),
+  },
 });
