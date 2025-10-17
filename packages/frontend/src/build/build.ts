@@ -17,16 +17,16 @@ import {zodEnum} from '@-/types/src/zod/zod';
 const DefaultSsrEntriesEnum = zodEnum(['main']);
 
 export const runBuild = <
-  ClientEntries extends [string, ...string[]],
-  SsrEntries extends [string, ...string[]] = ['main'],
+  ClientEntries extends ZodEnum<any>,
+  SsrEntries extends ZodEnum<any> = ZodEnum<{main: 'main'}>,
 >({
   packagePath,
   clientEntriesZodEnum,
   ssrEntriesZodEnum: ssrEntriesZodEnumRaw,
 }: {
   packagePath: string;
-  clientEntriesZodEnum: ZodEnum<ClientEntries>;
-  ssrEntriesZodEnum?: ZodEnum<SsrEntries>;
+  clientEntriesZodEnum: ClientEntries;
+  ssrEntriesZodEnum?: SsrEntries;
 }) => {
   const ssrEntriesZodEnum = ssrEntriesZodEnumRaw || DefaultSsrEntriesEnum;
 
@@ -36,6 +36,7 @@ export const runBuild = <
   type PackageJson = Infer<typeof PackageJson>;
 
   const ViteManifest = record(
+    string(),
     object({
       file: string(),
       css: optional(array(string())),

@@ -34,7 +34,7 @@
     "typescript": "5.9.2",
     "vite": "7.1.4",
     "vite-plugin-sass-dts": "git+https://github.com/Rulexec/vite-plugin-sass-dts.git#e649921b58c44f12d21298f7f676d5a2033b4a43",
-    "zod": "3.17.3"
+    "zod": "4.1.12"
   },
   "devDependencies": {
     "@types/node": "22.18.1",
