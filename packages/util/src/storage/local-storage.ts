@@ -1,4 +1,9 @@
-export class LocalStorageProperty {
+export interface ILocalStorageProperty {
+  get: () => string | null;
+  set: (value: string) => void;
+}
+
+export class LocalStorageProperty implements ILocalStorageProperty {
   private name: string;
   private value: string | null = null;
 
@@ -31,7 +36,7 @@ export class LocalStorageProperty {
   }
 }
 
-export class MockLocalStorageProperty {
+export class MockLocalStorageProperty implements ILocalStorageProperty {
   private value: string | null = null;
 
   get() {
@@ -43,7 +48,10 @@ export class MockLocalStorageProperty {
   }
 }
 
-export const getLocalStorageProperty = (name: string) => {
+export const getLocalStorageProperty = (
+  name: string,
+): ILocalStorageProperty => {
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
   if (typeof localStorage !== 'undefined' && localStorage) {
     return new LocalStorageProperty(name);
   } else {

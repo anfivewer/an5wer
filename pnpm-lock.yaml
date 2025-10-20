@@ -359,6 +359,9 @@ importers:
       typescript:
         specifier: 5.9.2
         version: 5.9.2
+      uuidv7:
+        specifier: 1.0.2
+        version: 1.0.2
     devDependencies:
       '@gravity-ui/uikit':
         specifier: ^7.23.0
@@ -384,6 +387,9 @@ importers:
       typescript:
         specifier: 5.9.2
         version: 5.9.2
+      uuidv7:
+        specifier: 1.0.2
+        version: 1.0.2
       zod:
         specifier: 4.1.12
         version: 4.1.12
@@ -8874,6 +8880,7 @@ packages:
   /ip-address@10.0.1:
     resolution: {integrity: sha512-NWv9YLW4PoW2B7xtzaS3NCot75m6nK7Icdv0o3lfMceJVRfSoQwqD4wEH5rLwoKJwUiZ/rfpiVBhnaF0FK4HoA==}
     engines: {node: '>= 12'}
+    requiresBuild: true
     dev: false
 
   /ipaddr.js@1.9.1:
@@ -13268,6 +13275,7 @@ packages:
   /smart-buffer@4.2.0:
     resolution: {integrity: sha512-94hK0Hh8rPqQl2xXc3HsaBoOXKV20MToPkcXvwbISWLEs+64sBq5kFgn2kJDHb1Pry9yrP0dxrCI9RRci7RXKg==}
     engines: {node: '>= 6.0.0', npm: '>= 3.0.0'}
+    requiresBuild: true
     dev: false
 
   /smob@0.0.6:
@@ -14251,6 +14259,11 @@ packages:
 
   /uuid@8.3.2:
     resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
+    hasBin: true
+    dev: false
+
+  /uuidv7@1.0.2:
+    resolution: {integrity: sha512-8JQkH4ooXnm1JCIhqTMbtmdnYEn6oKukBxHn1Ic9878jMkL7daTI7anTExfY18VRCX7tcdn5quzvCb6EWrR8PA==}
     hasBin: true
     dev: false
 

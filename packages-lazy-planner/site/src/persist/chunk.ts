@@ -1,4 +1,4 @@
-export class PersistChunk {
+export class PersistChunkStore {
   constructor() {
     //
   }

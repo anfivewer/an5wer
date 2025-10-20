@@ -29,7 +29,7 @@ export type Day = ZodInfer<typeof Day>;
 export const PersistChunkMetadata = object({
   version: literal(1),
   id: ChunkId,
-  parentIds: array(string()).nullable(),
+  parentIds: array(string()),
   clientId: ClientId,
 });
 export type PersistChunkMetadata = ZodInfer<typeof PersistChunkMetadata>;
@@ -97,13 +97,16 @@ export type PersistChunk = ZodInfer<typeof PersistChunk>;
 
 export const PersistClient = object({
   id: ClientId,
-  maxVersion: literal(1),
+  maxVersion: number(),
   lastActive: Day,
+  lastChunk: ChunkId,
 });
 export type PersistClient = ZodInfer<typeof PersistClient>;
 
 export const PersistMetaChunk = object({
   version: literal(1),
+  /** used for CAS only, should be new in every modification */
+  id: ChunkId,
   clients: record(ClientId, PersistClient),
 });
 export type PersistMetaChunk = ZodInfer<typeof PersistMetaChunk>;
