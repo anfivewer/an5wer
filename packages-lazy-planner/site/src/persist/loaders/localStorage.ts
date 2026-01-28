@@ -3,7 +3,6 @@ import {
   ChunkId,
   PersistChunk,
   ClientId,
-  unsafeAsDay,
   V1_ROOT_CHUNK,
   asClientId,
   asChunkId,
@@ -17,12 +16,13 @@ import {
 import {deepEquals} from '@-/util/src/object/deep-equals';
 import {ChunkIdCollisionError, StorageIsCorruptedError} from '../errors';
 import {uuidv7} from 'uuidv7';
+import {currentDay} from '../../../../../packages/types/src/date';
 
 export class LocalStorageChunksLoader implements IPersistChunkLoader {
   #prefix: string;
   #metaProperty: ILocalStorageProperty;
   #chunkProperties = new Map<ChunkId, ILocalStorageProperty>();
-  #clientId: ClientId;
+  clientId: ClientId;
 
   constructor(options: {prefix: string}) {
     this.#prefix = options.prefix;
@@ -31,10 +31,10 @@ export class LocalStorageChunksLoader implements IPersistChunkLoader {
     const clientProp = getLocalStorageProperty(`${this.#prefix}:clientId`);
     const clientId = clientProp.get();
     if (typeof clientId === 'string') {
-      this.#clientId = asClientId(clientId);
+      this.clientId = asClientId(clientId);
     } else {
-      this.#clientId = asClientId(uuidv7());
-      clientProp.set(this.#clientId);
+      this.clientId = asClientId(uuidv7());
+      clientProp.set(this.clientId);
     }
   }
 
@@ -46,13 +46,14 @@ export class LocalStorageChunksLoader implements IPersistChunkLoader {
         version: 1,
         id: asChunkId(uuidv7()),
         clients: {
-          [this.#clientId]: {
-            id: this.#clientId,
-            lastActive: unsafeAsDay('0000-00-00'),
+          [this.clientId]: {
+            id: this.clientId,
+            lastActive: currentDay(),
             maxVersion: 1,
             lastChunk: V1_ROOT_CHUNK.metadata.id,
           },
         },
+        nextVersionFields: {},
       });
     }
 

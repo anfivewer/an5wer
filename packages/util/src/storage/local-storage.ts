@@ -25,7 +25,7 @@ export class LocalStorageProperty implements ILocalStorageProperty {
     this.value = value;
 
     try {
-      if (value) {
+      if (typeof value === 'string') {
         localStorage.setItem(this.name, value);
       } else {
         localStorage.removeItem(this.name);

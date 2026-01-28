@@ -8,6 +8,8 @@
   "author": "Alexander Ruliov <alexander.rulov@gmail.com>",
   "license": "ISC",
   "dependencies": {
+    "@date-fns/utc": "2.1.1",
+    "date-fns": "4.1.0",
     "typescript": "5.9.2",
     "zod": "4.1.12"
   }

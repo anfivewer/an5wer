@@ -724,6 +724,12 @@ importers:
 
   packages/types:
     dependencies:
+      '@date-fns/utc':
+        specifier: 2.1.1
+        version: 2.1.1
+      date-fns:
+        specifier: 4.1.0
+        version: 4.1.0
       typescript:
         specifier: 5.9.2
         version: 5.9.2
@@ -1902,6 +1908,10 @@ packages:
       postcss-selector-parser: ^6.0.10
     dependencies:
       postcss-selector-parser: 6.1.2
+    dev: false
+
+  /@date-fns/utc@2.1.1:
+    resolution: {integrity: sha512-SlJDfG6RPeEX8wEVv6ZB3kak4MmbtyiI2qX/5zuKdordbrhB/iaJ58GVMZgJ6P1sJaM1gMgENFYYeg1JWrCFrA==}
     dev: false
 
   /@directus/app@9.17.4:
@@ -6733,6 +6743,10 @@ packages:
     engines: {node: '>=0.11'}
     dependencies:
       '@babel/runtime': 7.28.4
+    dev: false
+
+  /date-fns@4.1.0:
+    resolution: {integrity: sha512-Ukq0owbQXxa/U3EGtsdVBkR1w7KOQ5gIBqdH2hkvknzZPYvBxb/aa6E8L7tmjFtkwZBu3UXBbjIgPo/Ez4xaNg==}
     dev: false
 
   /dayjs@1.8.36:
